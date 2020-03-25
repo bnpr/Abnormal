@@ -64,6 +64,13 @@ def basic_keymap(self, context, event):
         self.redraw = True
         update_orbit_empty(self)
     
+    if event.type == 'I' and event.value == 'PRESS' and event.ctrl:
+        for po in self._points_container.points:
+            if po.valid and po.hide == False:
+                po.select = not po.select
+        add_to_undostack(self, 0)
+        self.redraw = True
+        update_orbit_empty(self)
     
     if event.type == 'H':
         if event.alt:
