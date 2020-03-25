@@ -637,7 +637,7 @@ def start_point_mode(self):
     point_normals(self, sel_pos)
     return
 
-
+def end_point_mode(self, keep_normals):
     if keep_normals == False:
         sel_pos = self._points_container.get_selected()
         for i, ind in enumerate(sel_pos):
