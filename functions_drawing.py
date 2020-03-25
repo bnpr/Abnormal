@@ -18,7 +18,7 @@ def refresh_batches(self, context):
     
     center = rw/2
 
-    abn_props = context.scene.abnormal_props
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
     
     
     #LASSO SELECTION LINES
@@ -96,7 +96,7 @@ def refresh_batches(self, context):
     self.batch_rotate_screen_lines = batch_for_shader(self.shader_2d, 'LINES', {"pos": rot_screen_lines})
     
     if self.redraw:
-        self._points_container.update(abn_props.normal_size, self._active_point, abn_props.selected_only, abn_props.selected_scale)
+        self._points_container.update(addon_prefs.normal_size, self._active_point, addon_prefs.selected_only, addon_prefs.selected_scale)
         self.redraw = False
     
     force_scene_update()
@@ -105,14 +105,14 @@ def refresh_batches(self, context):
 
 
 def draw_callback_3d(self, context):
-    abn_props = context.scene.abnormal_props
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
 
-    self._points_container.draw_po(True, self._x_ray_mode, abn_props.line_brightness, abn_props.point_size)
-    self._points_container.draw_sel_po(True, self._x_ray_mode, abn_props.line_brightness, abn_props.point_size)
-    self._points_container.draw_act_po(True, self._x_ray_mode, abn_props.line_brightness, abn_props.point_size)
-    self._points_container.draw_line(self._x_ray_mode, abn_props.line_brightness)
-    self._points_container.draw_sel_line(self._x_ray_mode, abn_props.line_brightness)
-    self._points_container.draw_act_line(self._x_ray_mode, abn_props.line_brightness)
+    self._points_container.draw_po(True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
+    self._points_container.draw_sel_po(True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
+    self._points_container.draw_act_po(True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
+    self._points_container.draw_line(self._x_ray_mode, addon_prefs.line_brightness)
+    self._points_container.draw_sel_line(self._x_ray_mode, addon_prefs.line_brightness)
+    self._points_container.draw_act_line(self._x_ray_mode, addon_prefs.line_brightness)
 
     if len(self.translate_draw_line) > 0:
         bgl.glEnable(bgl.GL_BLEND)
@@ -129,7 +129,7 @@ def draw_callback_3d(self, context):
         bgl.glDisable(bgl.GL_BLEND)
         bgl.glDisable(bgl.GL_DEPTH_TEST)
 
-    if abn_props.rotate_gizmo_use and self.rotate_gizmo_draw:
+    if addon_prefs.rotate_gizmo_use and self.rotate_gizmo_draw:
         self._window.gizmo_draw()
     
     

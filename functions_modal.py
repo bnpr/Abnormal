@@ -700,12 +700,12 @@ def move_target(self):
 
 
 def gizmo_init(self, context, event):
-    abn_props = bpy.context.scene.abnormal_props
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
 
     region = bpy.context.region
     rv3d = bpy.context.region_data
 
-    if abn_props.rotate_gizmo_use and self.rotate_gizmo_draw:
+    if addon_prefs.rotate_gizmo_use and self.rotate_gizmo_draw:
         giz_hover = self._window.test_gizmo_hover(self._mouse_loc)
         if giz_hover:
             giz_status = self._window.test_gizmo_click()
@@ -792,16 +792,16 @@ def relocate_gizmo_panel(self):
     return
 
 def gizmo_hide(self):
-    abn_props = bpy.context.scene.abnormal_props
-    if abn_props.rotate_gizmo_use:
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
+    if addon_prefs.rotate_gizmo_use:
         self.rotate_gizmo_draw = False
         self._window.panels[2].visible = False
         self._window.panels[2].visible_on_hover = False
     return
 
 def gizmo_unhide(self):
-    abn_props = bpy.context.scene.abnormal_props
-    if abn_props.rotate_gizmo_use:
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
+    if addon_prefs.rotate_gizmo_use:
         self.rotate_gizmo_draw = True
         self._window.panels[2].visible_on_hover = True
     return
@@ -874,6 +874,7 @@ def button_pressed(self, event, but_type, but_id):
     status = {'RUNNING_MODAL'}
 
     abn_props = bpy.context.scene.abnormal_props
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
     
     ####
     ##ENDING MODAL
@@ -1206,28 +1207,18 @@ def button_pressed(self, event, but_type, but_id):
 
         if but_id == 34:
             print(__package__, 'Saving user preferences')
-            addon_prefs = bpy.context.preferences.addons[__package__].preferences
-
-            addon_prefs.left_select = abn_props.left_select
-            addon_prefs.selected_only = abn_props.selected_only
-            addon_prefs.selected_scale = abn_props.selected_scale
-            addon_prefs.rotate_gizmo_use = abn_props.rotate_gizmo_use
-            addon_prefs.normal_size = abn_props.normal_size
-            addon_prefs.point_size = abn_props.point_size
-            addon_prefs.line_brightness = abn_props.line_brightness
-            addon_prefs.display_wireframe = abn_props.display_wireframe
             bpy.ops.wm.save_userpref()
         
         ####
         ##Property buttons
         ####
         if but_id == 50:
-            abn_props.selected_only = not abn_props.selected_only
+            addon_prefs.selected_only = not addon_prefs.selected_only
             self._window.boolean_toggle_hover()
             self.redraw = True
         
         if but_id == 70:
-            abn_props.selected_scale = not abn_props.selected_scale
+            addon_prefs.selected_scale = not addon_prefs.selected_scale
             self._window.boolean_toggle_hover()
             self.redraw = True
         
@@ -1238,35 +1229,35 @@ def button_pressed(self, event, but_type, but_id):
         if but_id == 52:
             if but_type == 'NUM_LEFT_ARROW':
                 new_val = self._window.num_change(event.shift)
-                abn_props.normal_size = new_val
+                addon_prefs.normal_size = new_val
                 self.redraw = True
             if but_type == 'NUM_RIGHT_ARROW':
                 new_val = self._window.num_change(event.shift)
-                abn_props.normal_size = new_val
+                addon_prefs.normal_size = new_val
                 self.redraw = True
             
         if but_id == 53:
             if but_type == 'NUM_LEFT_ARROW':
                 new_val = self._window.num_change(event.shift)
-                abn_props.line_brightness = new_val
+                addon_prefs.line_brightness = new_val
             if but_type == 'NUM_RIGHT_ARROW':
                 new_val = self._window.num_change(event.shift)
-                abn_props.line_brightness = new_val
+                addon_prefs.line_brightness = new_val
         
         if but_id == 54:
             if but_type == 'NUM_LEFT_ARROW':
                 new_val = self._window.num_change(event.shift)
-                abn_props.point_size = new_val
+                addon_prefs.point_size = new_val
             if but_type == 'NUM_RIGHT_ARROW':
                 new_val = self._window.num_change(event.shift)
-                abn_props.point_size = new_val
+                addon_prefs.point_size = new_val
 
 
         if but_id == 55:
             for space in bpy.context.area.spaces:
                 if space.type == 'VIEW_3D':
                     space.overlay.show_wireframes = not space.overlay.show_wireframes
-                    abn_props.display_wireframe = space.overlay.show_wireframes
+                    addon_prefs.display_wireframe = space.overlay.show_wireframes
                     self._window.boolean_toggle_hover()
         
         if but_id == 56:
@@ -1286,19 +1277,19 @@ def button_pressed(self, event, but_type, but_id):
                 abn_props.smooth_iters = new_val
         
         if but_id == 59:
-            abn_props.rotate_gizmo_use = not abn_props.rotate_gizmo_use
+            addon_prefs.rotate_gizmo_use = not addon_prefs.rotate_gizmo_use
             self._window.boolean_toggle_hover()
             self.redraw = True
-            self._window.panels[2].visible_on_hover = abn_props.rotate_gizmo_use
+            self._window.panels[2].visible_on_hover = addon_prefs.rotate_gizmo_use
             keymap_refresh_base(self)
-            if abn_props.rotate_gizmo_use:
+            if addon_prefs.rotate_gizmo_use:
                 gizmo_unhide(self)
             else:
                 gizmo_hide(self)
 
         
         if but_id == 90:
-            abn_props.left_select = not abn_props.left_select
+            addon_prefs.left_select = not addon_prefs.left_select
             self._window.boolean_toggle_hover()
 
         if but_id == 80:
@@ -1615,7 +1606,7 @@ def add_orbit_empty(self,):
 
 
 def update_orbit_empty(self,):
-    abn_props = bpy.context.scene.abnormal_props
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
 
     sel_cos = self._points_container.get_selected_cos()
     avg_loc = average_vecs(sel_cos)
@@ -1630,7 +1621,7 @@ def update_orbit_empty(self,):
     self._orbit_ob.select_set(True)
     bpy.context.view_layer.objects.active = self._orbit_ob
 
-    if abn_props.rotate_gizmo_use:
+    if addon_prefs.rotate_gizmo_use:
         self.update_gizmos = True
         self._window.update_gizmo_pos(self._orbit_ob.matrix_world)
         relocate_gizmo_panel(self)
@@ -1697,14 +1688,14 @@ def keymap_initialize(self):
     return
 
 def keymap_refresh_base(self):
-    abn_props = bpy.context.scene.abnormal_props
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
 
     subp = self._window.panels[1].subpanels[2]
     subp.clear_rows()
 
     row = subp.add_text_row('ESC - Cancel Normal Editing', 10)
     row = subp.add_text_row('R - Rotate Selected Normals', 10)
-    if abn_props.rotate_gizmo_use:
+    if addon_prefs.rotate_gizmo_use:
         row = subp.add_text_row('R + Alt - Reset Gizmo Axis', 10)
         row = subp.add_text_row('L-Click - Select Vertex/Gizmo Axis', 10)
         row = subp.add_text_row('L-Click + Alt - Reorient Gizmo', 10)

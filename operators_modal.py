@@ -106,15 +106,6 @@ class ABN_OT_normal_editor_modal(Operator):
 
         abn_props = context.scene.abnormal_props
         addon_prefs = bpy.context.preferences.addons[__package__].preferences
-
-        abn_props.left_select = addon_prefs.left_select
-        abn_props.selected_only = addon_prefs.selected_only
-        abn_props.selected_scale = addon_prefs.selected_scale
-        abn_props.rotate_gizmo_use = addon_prefs.rotate_gizmo_use
-        abn_props.normal_size = addon_prefs.normal_size
-        abn_props.point_size = addon_prefs.point_size
-        abn_props.line_brightness = addon_prefs.line_brightness
-        abn_props.display_wireframe = addon_prefs.display_wireframe
         
         
         if context.active_object == None:
@@ -142,7 +133,7 @@ class ABN_OT_normal_editor_modal(Operator):
                     space.show_region_toolbar = False
                     space.show_region_ui = False
                     space.overlay.show_cursor = False
-                    space.overlay.show_wireframes = abn_props.display_wireframe
+                    space.overlay.show_wireframes = addon_prefs.display_wireframe
                     space.overlay.wireframe_threshold = 1.0
                     space.overlay.show_text = False
         
@@ -297,7 +288,7 @@ class ABN_OT_normal_editor_modal(Operator):
 
             subp = panel.add_subpanel(header_text='Manipulate Normals')
             row = subp.add_row()
-            row.add_bool_prop(59, 'Use Rotation Gizmo', 14, abn_props.rotate_gizmo_use)
+            row.add_bool_prop(59, 'Use Rotation Gizmo', 14, addon_prefs.rotate_gizmo_use)
             row = subp.add_row()
             row.add_button(18, 'Average Individual Vertex Normals')
             row = subp.add_row()
@@ -336,21 +327,21 @@ class ABN_OT_normal_editor_modal(Operator):
 
             subp = panel.add_subpanel(header_text='Viewport Settings')
             row = subp.add_row()
-            row.add_bool_prop(50, 'Show Only Selected Normals', 14, abn_props.selected_only)
+            row.add_bool_prop(50, 'Show Only Selected Normals', 14, addon_prefs.selected_only)
             row = subp.add_row()
-            row.add_bool_prop(70, 'Scale Up Selected Normals', 14, abn_props.selected_scale)
+            row.add_bool_prop(70, 'Scale Up Selected Normals', 14, addon_prefs.selected_scale)
             row = subp.add_row()
             row.add_bool_prop(51, 'X-Ray', 14, self._x_ray_mode)
             row = subp.add_row()
-            row.add_num_prop(52, 'Normals Length',  round(abn_props.normal_size,2), 2, 0.01, 0.01, 10.0)
+            row.add_num_prop(52, 'Normals Length',  round(addon_prefs.normal_size,2), 2, 0.01, 0.01, 10.0)
             row = subp.add_row()
-            row.add_num_prop(53, 'Normals Brightness',  round(abn_props.line_brightness,2), 2, 0.01, 0.01, 2.0)
+            row.add_num_prop(53, 'Normals Brightness',  round(addon_prefs.line_brightness,2), 2, 0.01, 0.01, 2.0)
             row = subp.add_row()
-            row.add_num_prop(54, 'Vertex Point Size',  round(abn_props.point_size,1), 1, 0.1, 0.1, 10.0)
+            row.add_num_prop(54, 'Vertex Point Size',  round(addon_prefs.point_size,1), 1, 0.1, 0.1, 10.0)
             row = subp.add_row()
-            row.add_bool_prop(55, 'Display Wireframe', 14, abn_props.display_wireframe)
+            row.add_bool_prop(55, 'Display Wireframe', 14, addon_prefs.display_wireframe)
             row = subp.add_row()
-            row.add_bool_prop(90, 'Left Click Select', 14, abn_props.left_select)
+            row.add_bool_prop(90, 'Left Click Select', 14, addon_prefs.left_select)
             row = subp.add_row()
             row.add_button(34, 'Save Addon Preferences')
 

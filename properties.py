@@ -4,14 +4,6 @@ from bpy.types import PropertyGroup, AddonPreferences
 
 
 class ABNScnProperties(PropertyGroup):
-    left_select: BoolProperty(default=True)
-    selected_only: BoolProperty(default=False)
-    selected_scale: BoolProperty(default=True)
-    rotate_gizmo_use: BoolProperty(default=True)
-    display_wireframe: BoolProperty(default=True)
-    normal_size: FloatProperty(default=0.5)
-    point_size: FloatProperty(default=1.0)
-    line_brightness: FloatProperty(default=1.0)
     smooth_strength: FloatProperty(default=0.25)
     smooth_iters: IntProperty(default=5)
 

@@ -9,7 +9,7 @@ from .classes import *
 def basic_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
-    abn_props = bpy.context.scene.abnormal_props
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
     
     region = context.region
     rv3d = context.region_data
@@ -30,7 +30,7 @@ def basic_keymap(self, context, event):
         update_gizmo = True
 
     
-    if update_gizmo and abn_props.rotate_gizmo_use:
+    if update_gizmo and addon_prefs.rotate_gizmo_use:
         self._window.update_gizmo_pos(self._orbit_ob.matrix_world)
         relocate_gizmo_panel(self)
         self.prev_view = context.region_data.view_matrix.copy()
@@ -43,7 +43,7 @@ def basic_keymap(self, context, event):
 
 
     if event.type == 'MOUSEMOVE':
-        if abn_props.rotate_gizmo_use and self.rotate_gizmo_draw:
+        if addon_prefs.rotate_gizmo_use and self.rotate_gizmo_draw:
             giz_hover = self._window.test_gizmo_hover(self._mouse_loc)
         hov_status = self._window.test_hover(self._mouse_loc)
 
@@ -110,7 +110,7 @@ def basic_keymap(self, context, event):
 
     if event.type == 'R' and event.value == 'PRESS':
         if event.alt:
-            if abn_props.rotate_gizmo_use:
+            if addon_prefs.rotate_gizmo_use:
                 loc = self._orbit_ob.location.copy()
                 self._orbit_ob.matrix_world = self._object.matrix_world
                 self._orbit_ob.matrix_world.translation = loc
@@ -162,7 +162,7 @@ def basic_keymap(self, context, event):
             move_undostack(self, 0, 1)
 
     #test selection of points/roots and hovering of buttons
-    if event.type == 'RIGHTMOUSE' and event.value == 'PRESS' and event.ctrl != True and abn_props.left_select == False:
+    if event.type == 'RIGHTMOUSE' and event.value == 'PRESS' and event.ctrl != True and addon_prefs.left_select == False:
         sel_res = selection_test(self, context, event)
         if sel_res:
             self.redraw = True
@@ -191,7 +191,7 @@ def basic_keymap(self, context, event):
                 self._stored_mouse = [self._mouse_loc[0], self._mouse_loc[1]]
 
 
-            if hov_status == None and abn_props.left_select:
+            if hov_status == None and addon_prefs.left_select:
                 sel_res = selection_test(self, context, event)
                 if sel_res:
                     self.redraw = True
@@ -385,20 +385,21 @@ def rotating_keymap(self, context, event):
 def num_sliding_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
     abn_props = context.scene.abnormal_props
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
     
     if event.type == 'MOUSEMOVE':
         new_value = self._window.slide_number(self._mouse_loc, event.shift)
 
         if self._window.num_slide_cache[3] == 52:
-            abn_props.normal_size = new_value
+            addon_prefs.normal_size = new_value
             self.redraw = True
         
         if self._window.num_slide_cache[3] == 53:
-            abn_props.line_brightness = new_value
+            addon_prefs.line_brightness = new_value
             self.redraw = True
         
         if self._window.num_slide_cache[3] == 54:
-            abn_props.point_size = new_value
+            addon_prefs.point_size = new_value
             self.redraw = True
     
         if self._window.num_slide_cache[3] == 56:
@@ -428,15 +429,15 @@ def num_sliding_keymap(self, context, event):
         og_value = self._window.cancel_num_slide()
 
         if self._window.num_slide_cache[3] == 52:
-            abn_props.normal_size = og_value
+            addon_prefs.normal_size = og_value
             self.redraw = True
         
         if self._window.num_slide_cache[3] == 53:
-            abn_props.line_brightness = og_value
+            addon_prefs.line_brightness = og_value
             self.redraw = True
         
         if self._window.num_slide_cache[3] == 54:
-            abn_props.point_size = og_value
+            addon_prefs.point_size = og_value
             self.redraw = True
         
         if self._window.num_slide_cache[3] == 56:
