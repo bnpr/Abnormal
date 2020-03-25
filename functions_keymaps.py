@@ -138,6 +138,7 @@ def basic_keymap(self, context, event):
                 self._changing_po_cache.append(avg_loc)
                 self._changing_po_cache.append(cache_norms)
                 self._changing_po_cache.append(0)
+                self._changing_po_cache.append(1)
                 self.rotating = True
                 del(sel_cos)
                 del(avg_loc)
@@ -311,19 +312,22 @@ def rotating_keymap(self, context, event):
 
     if event.type == 'X' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 0)
-        rotate_vectors(self, self._changing_po_cache[3])
+        self._changing_po_cache[4] = translate_axis_side(self)
+        rotate_vectors(self, self._changing_po_cache[3]*self._changing_po_cache[4])
         self.redraw = True
     
 
     if event.type == 'Y' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 1)
-        rotate_vectors(self, self._changing_po_cache[3])
+        self._changing_po_cache[4] = translate_axis_side(self)
+        rotate_vectors(self, self._changing_po_cache[3]*self._changing_po_cache[4])
         self.redraw = True
 
 
     if event.type == 'Z' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 2)
-        rotate_vectors(self, self._changing_po_cache[3])
+        self._changing_po_cache[4] = translate_axis_side(self)
+        rotate_vectors(self, self._changing_po_cache[3]*self._changing_po_cache[4])
         self.redraw = True
         
     
@@ -342,7 +346,7 @@ def rotating_keymap(self, context, event):
         
         if ang != 0.0:
             self._changing_po_cache[3] = self._changing_po_cache[3]+ang
-            rotate_vectors(self, self._changing_po_cache[3])
+            rotate_vectors(self, self._changing_po_cache[3]*self._changing_po_cache[4])
             self._changing_po_cache.pop(0)
             self._changing_po_cache.insert(0, self._mouse_loc)
 
@@ -485,12 +489,17 @@ def sphereize_keymap(self, context, event):
         sel_pos = self._points_container.get_selected()
         if event.alt:
             if len(sel_pos) > 0:
-                self.target_emp.location = self._object.location.copy()
+                sel_cos = self._points_container.get_selected_cos()
+                avg_loc = average_vecs(sel_cos)
+
+                self.target_emp.location = avg_loc
                 sphereize_normals(self, sel_pos)
 
         else:
             if len(sel_pos) > 0:
-                
+                sel_cos = self._points_container.get_selected_cos()
+                avg_loc = average_vecs(sel_cos)
+
                 cache_norms = []
                 for ind in sel_pos:
                     po = self._points_container.points[ind]
@@ -502,10 +511,14 @@ def sphereize_keymap(self, context, event):
                 sphereize_normals(self, sel_pos)
                 self._window.set_status('VIEW TRANSLATION')
 
+                region = bpy.context.region
+                rv3d = bpy.context.region_data
+                rco = view3d_utils.location_3d_to_region_2d(region, rv3d, avg_loc)
+
                 self._changing_po_cache.insert(0, self._mouse_loc)
                 self._changing_po_cache.insert(1, self.target_emp.location.copy())
                 self._changing_po_cache.insert(2, cache_norms)
-                self._changing_po_cache.insert(3, 0)
+                self._changing_po_cache.insert(3, rco)
 
                 self.sphereize_mode = False
                 self.sphereize_move = True
@@ -547,19 +560,19 @@ def sphereize_move_keymap(self, context, event):
 
     if event.type == 'X' and event.value == 'PRESS':
         translate_axis_change(self, 'TRANSLATING', 0)
-        move_target(self)
+        move_target(self, event.shift)
         self.redraw = True
     
 
     if event.type == 'Y' and event.value == 'PRESS':
         translate_axis_change(self, 'TRANSLATING', 1)
-        move_target(self)
+        move_target(self, event.shift)
         self.redraw = True
 
 
     if event.type == 'Z' and event.value == 'PRESS':
         translate_axis_change(self, 'TRANSLATING', 2)
-        move_target(self)
+        move_target(self, event.shift)
         self.redraw = True
 
 
@@ -568,7 +581,7 @@ def sphereize_move_keymap(self, context, event):
     if event.type == 'MOUSEMOVE':
         sel_pos = self._points_container.get_selected()
         
-        move_target(self)
+        move_target(self, event.shift)
         sphereize_normals(self, sel_pos)
 
         self._changing_po_cache.pop(0)
@@ -637,11 +650,16 @@ def point_keymap(self, context, event):
         sel_pos = self._points_container.get_selected()
         if event.alt:
             if len(sel_pos) > 0:
-                self.target_emp.location = self._object.location.copy()
+                sel_cos = self._points_container.get_selected_cos()
+                avg_loc = average_vecs(sel_cos)
+
+                self.target_emp.location = avg_loc
                 point_normals(self, sel_pos)
 
         else:
             if len(sel_pos) > 0:
+                sel_cos = self._points_container.get_selected_cos()
+                avg_loc = average_vecs(sel_cos)
                 
                 cache_norms = []
                 for ind in sel_pos:
@@ -654,10 +672,14 @@ def point_keymap(self, context, event):
                 point_normals(self, sel_pos)
                 self._window.set_status('VIEW TRANSLATION')
 
+                region = bpy.context.region
+                rv3d = bpy.context.region_data
+                rco = view3d_utils.location_3d_to_region_2d(region, rv3d, avg_loc)
+
                 self._changing_po_cache.insert(0, self._mouse_loc)
                 self._changing_po_cache.insert(1, self.target_emp.location.copy())
                 self._changing_po_cache.insert(2, cache_norms)
-                self._changing_po_cache.insert(3, 0)
+                self._changing_po_cache.insert(3, rco)
 
                 self.point_mode = False
                 self.point_move = True
@@ -700,19 +722,19 @@ def point_move_keymap(self, context, event):
 
     if event.type == 'X' and event.value == 'PRESS':
         translate_axis_change(self, 'TRANSLATING', 0)
-        move_target(self)
+        move_target(self, event.shift)
         self.redraw = True
     
 
     if event.type == 'Y' and event.value == 'PRESS':
         translate_axis_change(self, 'TRANSLATING', 1)
-        move_target(self)
+        move_target(self, event.shift)
         self.redraw = True
 
 
     if event.type == 'Z' and event.value == 'PRESS':
         translate_axis_change(self, 'TRANSLATING', 2)
-        move_target(self)
+        move_target(self, event.shift)
         self.redraw = True
 
 
@@ -721,7 +743,7 @@ def point_move_keymap(self, context, event):
     if event.type == 'MOUSEMOVE':
         sel_pos = self._points_container.get_selected()
         
-        move_target(self)
+        move_target(self, event.shift)
         point_normals(self, sel_pos)
 
         self._changing_po_cache.pop(0)

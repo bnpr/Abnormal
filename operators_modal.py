@@ -40,7 +40,7 @@ class ABN_OT_normal_editor_modal(Operator):
         
         status = {"RUNNING_MODAL"}
         
-        self._mouse_loc = event.mouse_region_x, event.mouse_region_y
+        self._mouse_loc = [event.mouse_region_x, event.mouse_region_y]
         self._window.check_border_change()
         
         self.nav_list = ['MIDDLEMOUSE', 'LEFTMOUSE', 'MOUSEMOVE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE', 'NUMPAD_1', 'NUMPAD_2', 'NUMPAD_3',
@@ -140,7 +140,7 @@ class ABN_OT_normal_editor_modal(Operator):
         
         if context.space_data.type == 'VIEW_3D':
             ##INITIALIZE PROPERTIES
-            self._mouse_loc = event.mouse_region_x, event.mouse_region_y
+            self._mouse_loc = [event.mouse_region_x, event.mouse_region_y]
             self._prev_reg_dim = [rw,rh]
             self._active_point = None
             self._changing_po_cache = []

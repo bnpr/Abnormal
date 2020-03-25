@@ -58,22 +58,21 @@ def match_point_loops_index(self, po_ind, o_ind, flip_axis=None):
     o_po = self._points_container.points[o_ind]
 
     match_inds = []
-    for o_loop in self._object_bm.verts[o_po.index].link_loops:
-        o_vec = o_loop.edge.other_vert(self._object_bm.verts[o_ind]).co - o_po.co
+    for loop in self._object_bm.verts[po_ind].link_loops:
+        vec = loop.edge.other_vert(self._object_bm.verts[po_ind]).co - po.co
 
         small = 0
         small_ind = None
-        for l, loop in enumerate(self._object_bm.verts[po.index].link_loops):
-            vec = loop.edge.other_vert(self._object_bm.verts[po_ind]).co - po.co
+        for o, o_loop in enumerate(self._object_bm.verts[o_po.index].link_loops):
+            o_vec = o_loop.edge.other_vert(self._object_bm.verts[o_ind]).co - o_po.co
             if flip_axis != None:
                 vec[flip_axis] *= -1
 
-            if o_vec.angle(vec) < small or small_ind == None:
-                small_ind = l
-                small = o_vec.angle(vec)
+            if vec.angle(o_vec) < small or small_ind == None:
+                small_ind = o
+                small = vec.angle(o_vec)
         
         match_inds.append(small_ind)
-    
     return match_inds
 
 
@@ -274,6 +273,7 @@ def copy_active_to_selected(self, po_inds):
                 if po.valid:
                     inds = match_point_loops_index(self, po.index, self._active_point)
                     for l in range(len(po.loop_normals)):
+                        print(l, inds, len(self._points_container.points[self._active_point].loop_normals))
                         po.loop_normals[l] = self._points_container.points[self._active_point].loop_normals[inds[l]].copy()
 
         self.redraw = True
@@ -451,6 +451,34 @@ def translate_axis_change(self, text, axis):
             po.loop_normals[l] = self._changing_po_cache[2][i][l].copy()
     return
 
+def translate_axis_side(self):
+    region = bpy.context.region
+    rv3d = bpy.context.region_data
+    view_vec = view3d_utils.region_2d_to_vector_3d(region, rv3d, mathutils.Vector((self._mouse_loc[0], self._mouse_loc[1])))
+
+    
+    if self.translate_mode == 1:
+        mat = generate_matrix(mathutils.Vector((0,0,0)),mathutils.Vector((0,0,1)),mathutils.Vector((0,1,0)), False, True)
+    else:
+        mat = self._object.matrix_world.normalized()
+    
+    pos_vec = mathutils.Vector((0,0,0))
+    neg_vec = mathutils.Vector((0,0,0))
+    pos_vec[self.translate_axis] = 1.0
+    neg_vec[self.translate_axis] = -1.0
+
+    pos_vec = (mat @ pos_vec) - mat.translation
+    neg_vec = (mat @ neg_vec) - mat.translation
+
+    if pos_vec.angle(view_vec) < neg_vec.angle(view_vec):
+        side = -1
+    else:
+        side = 1
+    
+    if self.translate_axis == 1:
+        side *= -1
+    return side
+
 
 
 def start_sphereize_mode(self):
@@ -475,6 +503,10 @@ def start_sphereize_mode(self):
     for i in range(len(bpy.context.selected_objects)):
         bpy.context.selected_objects[i].select_set(False)
 
+    sel_cos = self._points_container.get_selected_cos()
+    avg_loc = average_vecs(sel_cos)
+
+
     self.target_emp = bpy.data.objects.new('ABN_Target Empty', None)
     self.target_emp.empty_display_size = 0.5
     self.target_emp.show_in_front = True
@@ -483,7 +515,7 @@ def start_sphereize_mode(self):
     bpy.context.collection.objects.link(self.target_emp)
     self.target_emp.select_set(True)
     bpy.context.view_layer.objects.active = self.target_emp
-    self.target_emp.location = self._object.location.copy()
+    self.target_emp.location = avg_loc
 
 
     sel_pos = self._points_container.get_selected()
@@ -576,6 +608,9 @@ def start_point_mode(self):
     for i in range(len(bpy.context.selected_objects)):
         bpy.context.selected_objects[i].select_set(False)
 
+    sel_cos = self._points_container.get_selected_cos()
+    avg_loc = average_vecs(sel_cos)
+
     self.target_emp = bpy.data.objects.new('ABN_Target Empty', None)
     self.target_emp.empty_display_size = 0.5
     self.target_emp.show_in_front = True
@@ -584,7 +619,7 @@ def start_point_mode(self):
     bpy.context.collection.objects.link(self.target_emp)
     self.target_emp.select_set(True)
     bpy.context.view_layer.objects.active = self.target_emp
-    self.target_emp.location = self._object.location.copy()
+    self.target_emp.location = avg_loc
 
 
     sel_pos = self._points_container.get_selected()
@@ -602,7 +637,7 @@ def start_point_mode(self):
     point_normals(self, sel_pos)
     return
 
-def end_point_mode(self, keep_normals):
+
     if keep_normals == False:
         sel_pos = self._points_container.get_selected()
         for i, ind in enumerate(sel_pos):
@@ -640,7 +675,9 @@ def end_point_mode(self, keep_normals):
 
 def point_normals(self, po_inds):
     if self.point_align:
-        vec = (self._object.matrix_world.inverted() @ self.target_emp.location) - (self._object.matrix_world.translation)
+        sel_cos = self._points_container.get_selected_cos()
+        avg_loc = average_vecs(sel_cos)
+        vec = (self._object.matrix_world.inverted() @ self.target_emp.location) - (self._object.matrix_world.inverted() @ avg_loc)
     
     for i, ind in enumerate(po_inds):
         po = self._points_container.points[ind]
@@ -657,39 +694,38 @@ def point_normals(self, po_inds):
     return
 
 
-def move_target(self):
+def move_target(self, shift):
     offset = [self._mouse_loc[0] - self._changing_po_cache[0][0], self._mouse_loc[1] - self._changing_po_cache[0][1]]
+
+    if shift:
+        offset[0] = offset[0]*.1
+        offset[1] = offset[1]*.1
+
+    region = bpy.context.region
+    rv3d = bpy.context.region_data
+
+    self._changing_po_cache[3][0] = self._changing_po_cache[3][0] + offset[0]
+    self._changing_po_cache[3][1] = self._changing_po_cache[3][1] + offset[1]
+
+    new_co = view3d_utils.region_2d_to_location_3d(region, rv3d, self._changing_po_cache[3], self._changing_po_cache[1])
     if self.translate_mode == 0:
-
-        region = bpy.context.region
-        rv3d = bpy.context.region_data
-
-        rco = view3d_utils.location_3d_to_region_2d(region, rv3d, self.target_emp.location)
-        new_co = view3d_utils.region_2d_to_location_3d(region, rv3d, [rco[0]+offset[0], rco[1]+offset[1]], self.target_emp.location)
-
         self.target_emp.location = new_co
-
-        self._changing_po_cache[3] += offset[0]
-        self._changing_po_cache[3] += offset[1]
-    
 
     elif self.translate_mode == 1:
         self.target_emp.location = self._changing_po_cache[1].copy()
-        self.target_emp.location[self.translate_axis] += self._changing_po_cache[3] * 0.01
-        self._changing_po_cache[3] += offset[0]
-        self._changing_po_cache[3] += offset[1]
+        self.target_emp.location[self.translate_axis] = new_co[self.translate_axis]
     
     elif self.translate_mode == 2:
-        mat = self._object.matrix_world.normalized()
-        vec = mathutils.Vector((0,0,0))
-        vec[self.translate_axis] = 1.0
+        loc_co = self._object.matrix_world.inverted() @ new_co
+        def_dist = loc_co[self.translate_axis]
 
-        vec = ((mat @ vec) - mat.translation).normalized()
+        def_vec = mathutils.Vector((0,0,0))
+        def_vec[self.translate_axis] = def_dist
+
+        def_vec = (self._object.matrix_world @ def_vec) - self._object.matrix_world.translation
 
         self.target_emp.location = self._changing_po_cache[1].copy()
-        self.target_emp.location += vec * self._changing_po_cache[3] * 0.01
-        self._changing_po_cache[3] += offset[0]
-        self._changing_po_cache[3] += offset[1]
+        self.target_emp.location += def_vec
     
 
     return
@@ -704,6 +740,7 @@ def gizmo_init(self, context, event):
 
     region = bpy.context.region
     rv3d = bpy.context.region_data
+    
 
     if addon_prefs.rotate_gizmo_use and self.rotate_gizmo_draw:
         giz_hover = self._window.test_gizmo_hover(self._mouse_loc)
