@@ -16,7 +16,7 @@ This add-on is funded by the BNPR community with the BEER dev fund.
 2. right click selection toggle
 3. normal display length and brightness
 4. vertex dot size
-5. toggle wireframe display toggle
+5. wireframe display toggle
 6. x-ray toggle
 7. scale up selected normals toggle
 8. display only selected normals toggle
