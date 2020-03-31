@@ -26,9 +26,4 @@ class ABN_PT_abnormal_panel(Panel):
         row.operator("abnormal.normal_editor_modal")
         row.alignment = 'CENTER'
         row.scale_y = 2
-
-        row = layout.row(align=True)
-        row.alignment = 'CENTER'
-        row.operator("abnormal.copy_basis_sk_normals")
-        row.alignment = 'CENTER'
-        row.scale_y = 1.5
+        

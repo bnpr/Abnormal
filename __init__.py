@@ -51,7 +51,6 @@ from .classes import *
 
 classes = [
     ABN_OT_normal_editor_modal,
-    ABN_OT_copy_basis_sk_normals,
     AbnormalAddonPreferences,
     ABNScnProperties,
     ABN_PT_abnormal_panel,
