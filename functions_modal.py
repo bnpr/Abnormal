@@ -844,6 +844,45 @@ def gizmo_unhide(self):
     return
 
 
+def init_nav_list(self):
+    self.nav_list = ['LEFTMOUSE', 'MOUSEMOVE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE',]
+
+    for item in bpy.context.window_manager.keyconfigs[0].keymaps['3D View'].keymap_items:
+        if item.name == 'Zoom View':
+            if item.type not in self.nav_list:
+                self.nav_list.append(item.type)
+        if item.name == 'Rotate View':
+            if item.type not in self.nav_list:
+                self.nav_list.append(item.type)
+        if item.name == 'Pan View':
+            if item.type not in self.nav_list:
+                self.nav_list.append(item.type)
+        if item.name == 'Dolly View':
+            if item.type not in self.nav_list:
+                self.nav_list.append(item.type)
+        if item.name == 'View Selected':
+            if item.type not in self.nav_list:
+                self.nav_list.append(item.type)
+        if item.name == 'View Camera Center':
+            if item.type not in self.nav_list:
+                self.nav_list.append(item.type)
+        if item.name == 'View All':
+            if item.type not in self.nav_list:
+                self.nav_list.append(item.type)
+        if item.name == 'View Axis':
+            if item.type not in self.nav_list:
+                self.nav_list.append(item.type)
+        if item.name == 'View Orbit':
+            if item.type not in self.nav_list:
+                self.nav_list.append(item.type)
+        if item.name == 'View Roll':
+            if item.type not in self.nav_list:
+                self.nav_list.append(item.type)
+        if item.name == 'View Persp/Ortho':
+            if item.type not in self.nav_list:
+                self.nav_list.append(item.type)
+    
+    return
 
 
 

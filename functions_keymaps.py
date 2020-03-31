@@ -63,6 +63,7 @@ def basic_keymap(self, context, event):
         add_to_undostack(self, 0)
         self.redraw = True
         update_orbit_empty(self)
+        status = {"RUNNING_MODAL"}
     
     if event.type == 'I' and event.value == 'PRESS' and event.ctrl:
         for po in self._points_container.points:
@@ -71,6 +72,7 @@ def basic_keymap(self, context, event):
         add_to_undostack(self, 0)
         self.redraw = True
         update_orbit_empty(self)
+        status = {"RUNNING_MODAL"}
     
     if event.type == 'H':
         if event.alt:
@@ -92,6 +94,7 @@ def basic_keymap(self, context, event):
                 self._points_container.points[ind].select = False
         update_orbit_empty(self,)
         self.redraw = True
+        status = {"RUNNING_MODAL"}
     
 
     if event.type == 'B':
@@ -99,6 +102,7 @@ def basic_keymap(self, context, event):
         bpy.context.window.cursor_modal_set('CROSSHAIR')
         keymap_refresh_box(self)
         gizmo_hide(self)
+        status = {"RUNNING_MODAL"}
     
 
     if event.type == 'C':
@@ -106,6 +110,7 @@ def basic_keymap(self, context, event):
         bpy.context.window.cursor_modal_set('CROSSHAIR')
         keymap_refresh_circle(self)
         gizmo_hide(self)
+        status = {"RUNNING_MODAL"}
 
     if event.type == 'LEFTMOUSE' and event.ctrl and event.value == 'PRESS':
         self.lasso_selecting = True
@@ -113,6 +118,7 @@ def basic_keymap(self, context, event):
         bpy.context.window.cursor_modal_set('CROSSHAIR')
         keymap_refresh_lasso(self)
         gizmo_hide(self)
+        status = {"RUNNING_MODAL"}
     
 
     if event.type == 'R' and event.value == 'PRESS':
@@ -151,6 +157,7 @@ def basic_keymap(self, context, event):
                 del(avg_loc)
                 keymap_refresh_rotating(self)
                 gizmo_hide(self)
+        status = {"RUNNING_MODAL"}
     
 
     if event.type == 'Z' and event.value == 'PRESS':
@@ -162,12 +169,14 @@ def basic_keymap(self, context, event):
         else:
             self._x_ray_mode = not self._x_ray_mode
             self._window.boolean_toggle_id(51)
+        status = {"RUNNING_MODAL"}
     
     if event.type == 'X' and event.value == 'PRESS' and event.ctrl:
         if event.shift:
             move_undostack(self, 0, -1)   
         else:
             move_undostack(self, 0, 1)
+        status = {"RUNNING_MODAL"}
 
     #test selection of points/roots and hovering of buttons
     if event.type == 'RIGHTMOUSE' and event.value == 'PRESS' and event.ctrl != True and addon_prefs.left_select == False:
@@ -177,6 +186,7 @@ def basic_keymap(self, context, event):
             add_to_undostack(self, 0)
             update_orbit_empty(self)
             status = {'RUNNING_MODAL'}
+        status = {"RUNNING_MODAL"}
 
     if event.type == 'LEFTMOUSE' and event.value == 'PRESS' and event.ctrl != True:
         no_gizmo = gizmo_init(self, context, event)
@@ -208,6 +218,7 @@ def basic_keymap(self, context, event):
                     status = {'RUNNING_MODAL'}
             else:
                 status = {'RUNNING_MODAL'}
+        status = {"RUNNING_MODAL"}
     
     #cancel modal
     if event.type in {'ESC'} and event.value == 'PRESS':

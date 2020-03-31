@@ -42,9 +42,6 @@ class ABN_OT_normal_editor_modal(Operator):
         
         self._mouse_loc = [event.mouse_region_x, event.mouse_region_y]
         self._window.check_border_change()
-        
-        self.nav_list = ['MIDDLEMOUSE', 'LEFTMOUSE', 'MOUSEMOVE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE', 'NUMPAD_1', 'NUMPAD_2', 'NUMPAD_3',
-        'NUMPAD_4', 'NUMPAD_5', 'NUMPAD_6', 'NUMPAD_7', 'NUMPAD_8', 'NUMPAD_9', 'NUMPAD_0', 'NUMPAD_PERIOD']
 
 
 
@@ -164,6 +161,9 @@ class ABN_OT_normal_editor_modal(Operator):
             self._rot_increment_five = False
             self._rot_increment_ten = False
             self._rot_increment = 1
+
+            ##NAVIGATION KEYS LIST
+            init_nav_list(self)
 
             ##MODES
             self.pre_moving_no_coll = False
