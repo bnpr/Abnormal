@@ -246,16 +246,16 @@ def basic_keymap(self, context, event):
                 self._stored_mouse = [self._mouse_loc[0], self._mouse_loc[1]]
 
 
-            if hov_status == None and addon_prefs.left_select:
-                sel_res = selection_test(self, context, event)
-                if sel_res:
-                    self.redraw = True
-                    add_to_undostack(self, 0)
-                    update_orbit_empty(self)
-                    status = {'RUNNING_MODAL'}
+            if hov_status == None:
+                if addon_prefs.left_select:
+                    sel_res = selection_test(self, context, event)
+                    if sel_res:
+                        self.redraw = True
+                        add_to_undostack(self, 0)
+                        update_orbit_empty(self)
+                        status = {'RUNNING_MODAL'}
             else:
                 status = {'RUNNING_MODAL'}
-        status = {"RUNNING_MODAL"}
     
     #cancel modal
     if event.type in {'ESC'} and event.value == 'PRESS':
