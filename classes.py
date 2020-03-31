@@ -82,7 +82,7 @@ class ABNPoints:
         line_co = None
         for po in self.points:
             if po.hide == False and po.valid:
-                offset_co = po.co+po.normal.normalized()*.001
+                offset_co = po.co
                 fac = 1.0
                 if po.index == act_po:
                     act_points.append(offset_co)
@@ -104,14 +104,14 @@ class ABNPoints:
                 else:
                     points.append(offset_co)
                 
-                if sel_limit == False or po.select:
-                    if sel_scale:
-                        fac = 0.333
-                    for l_norm in po.loop_normals:
-                        line_co =  offset_co + self.get_world_norm(l_norm, offset_co)*norm_scale*fac
+                    if sel_limit == False or po.select:
+                        if sel_scale:
+                            fac = 0.333
+                        for l_norm in po.loop_normals:
+                            line_co =  offset_co + self.get_world_norm(l_norm, offset_co)*norm_scale*fac
 
-                        lines.append(offset_co)
-                        lines.append(line_co)
+                            lines.append(offset_co)
+                            lines.append(line_co)
                 
 
         self.batch_po = batch_for_shader(self.shader, 'POINTS', {"pos": points}) 
@@ -127,7 +127,7 @@ class ABNPoints:
     
 
     def draw_po(self, active, depth, b_scale, po_scale):
-        size = 4*po_scale
+        size = 5*po_scale
         render_color = [self.po_color[0]*b_scale, self.po_color[1]*b_scale, self.po_color[2]*b_scale, self.po_color[3]]
         
         bgl.glEnable(bgl.GL_BLEND)
@@ -142,7 +142,7 @@ class ABNPoints:
             bgl.glDisable(bgl.GL_DEPTH_TEST)
     
     def draw_sel_po(self, active, depth, b_scale, po_scale):
-        size = 6*po_scale
+        size = 7*po_scale
         render_color = [self.po_sel_color[0]*b_scale, self.po_sel_color[1]*b_scale, self.po_sel_color[2]*b_scale, self.po_sel_color[3]]
         
         bgl.glEnable(bgl.GL_BLEND)
@@ -157,7 +157,7 @@ class ABNPoints:
             bgl.glDisable(bgl.GL_DEPTH_TEST)
     
     def draw_act_po(self, active, depth, b_scale, po_scale):
-        size = 7*po_scale
+        size = 9*po_scale
         render_color = [self.po_act_color[0]*b_scale, self.po_act_color[1]*b_scale, self.po_act_color[2]*b_scale, self.po_act_color[3]]
         
         bgl.glEnable(bgl.GL_BLEND)
@@ -191,7 +191,7 @@ class ABNPoints:
         bgl.glEnable(bgl.GL_BLEND)
         if depth == False:
             bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glLineWidth(1)
+        bgl.glLineWidth(2)
         self.shader.bind()
         self.shader.uniform_float("color", render_color)
         self.batch_sel_normal.draw(self.shader)
@@ -205,7 +205,7 @@ class ABNPoints:
         bgl.glEnable(bgl.GL_BLEND)
         if depth == False:
             bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glLineWidth(1)
+        bgl.glLineWidth(2)
         self.shader.bind()
         self.shader.uniform_float("color", render_color)
         self.batch_act_normal.draw(self.shader)

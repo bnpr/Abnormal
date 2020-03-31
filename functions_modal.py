@@ -1368,6 +1368,18 @@ def button_pressed(self, event, but_type, but_id):
             addon_prefs.left_select = not addon_prefs.left_select
             self._window.boolean_toggle_hover()
 
+        if but_id == 91:
+            if but_type == 'NUM_LEFT_ARROW':
+                new_val = self._window.num_change(event.shift)
+                abn_props.gizmo_size = new_val
+                self.rot_gizmo.update_size(new_val)
+                self._window.update_gizmo_pos(self._orbit_ob.matrix_world)
+            if but_type == 'NUM_RIGHT_ARROW':
+                new_val = self._window.num_change(event.shift)
+                abn_props.gizmo_size = new_val
+                self.rot_gizmo.update_size(new_val)
+                self._window.update_gizmo_pos(self._orbit_ob.matrix_world)
+
         if but_id == 80:
             if self._rot_increment_one == False:
                 self._rot_increment_one = True
@@ -1438,6 +1450,7 @@ def cache_point_data(self):
 
 
 
+
 def selection_test(self, context, event, radius=15.0):
     region = context.region
     rv3d = context.region_data
@@ -1462,37 +1475,24 @@ def selection_test(self, context, event, radius=15.0):
             if rco != None:
                 dist = (rco - mouse_co).length
                 if nearest_point == None or dist < nearest_dist:
+                    #if point is in range of selection radius
                     if dist < radius:
+                        #make sure point is valid. test occlusion if it is enabled
+                        valid_po = False
                         if bvh != None:
                             hit = ray_cast_view_occlude_test(point.co, mouse_co, bvh)
                             
                             if hit == False:
-                                if point.select == False:
-                                    nearest_dist = dist
-                                    nearest_point = p
-                                else:
-                                    add = False
-                                    if self._active_point != None:
-                                        if self._active_point != p:
-                                            add = True
-                                    else:
-                                        add = True
-                                    if add:
-                                        nearest_sel_point = p
+                                valid_po = True
                         else:
+                            valid_po = True
+                        
+                        if valid_po:
                             if point.select == False:
                                 nearest_dist = dist
                                 nearest_point = p
                             else:
-                                add = False
-                                if self._active_point != None:
-                                    if self._active_point != p:
-                                        add = True
-                                else:
-                                    add = True
-                                if add:
-                                    nearest_sel_point = p
-    
+                                nearest_sel_point = p
     
     if nearest_point == None and nearest_sel_point != None:
         nearest_point = nearest_sel_point
@@ -1504,9 +1504,13 @@ def selection_test(self, context, event, radius=15.0):
             self._active_point = None
             for p, point in enumerate(self._points_container.points):
                 point.select = False
-
-        self._active_point = nearest_point
-        self._points_container.points[nearest_point].select = True
+        
+        if self._active_point == nearest_point:
+            self._active_point = None
+            self._points_container.points[nearest_point].select = False
+        else:
+            self._active_point = nearest_point
+            self._points_container.points[nearest_point].select = True
 
         return True
     
@@ -1754,6 +1758,8 @@ def keymap_initialize(self):
     row = subp.add_text_row('B - Start Box Selection', 10)
     row = subp.add_text_row('A - Select All', 10)
     row = subp.add_text_row('A + Alt - Unselect All', 10)
+    row = subp.add_text_row('L - Select Linked Under Mouse', 10)
+    row = subp.add_text_row('L + Ctrl - Select Linked from Selected', 10)
     row = subp.add_text_row('I + Ctrl - Invert Selection', 10)
     row = subp.add_text_row('H - Hide Selected Vertices', 10)
     row = subp.add_text_row('H + Alt - Unhide Vertices', 10)
@@ -1783,6 +1789,8 @@ def keymap_refresh_base(self):
     row = subp.add_text_row('B - Start Box Selection', 10)
     row = subp.add_text_row('A - Select All', 10)
     row = subp.add_text_row('A + Alt - Unselect All', 10)
+    row = subp.add_text_row('L - Select Linked Under Mouse', 10)
+    row = subp.add_text_row('L + Ctrl - Select Linked from Selected', 10)
     row = subp.add_text_row('I + Ctrl - Invert Selection', 10)
     row = subp.add_text_row('H - Hide Selected Vertices', 10)
     row = subp.add_text_row('H + Alt - Unhide Vertices', 10)

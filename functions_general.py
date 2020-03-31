@@ -150,29 +150,7 @@ def ray_cast_view_occlude_test(co, mouse_co, bvh):
     return occluded
 
 
-def ray_cast_to_mouse(origin, direction, bvhs, vis):
-    
-    coord = None
-    normal = None
-    nearest = -1.0
-    near_ob_ind = None
-    for i, bvh in enumerate(bvhs):
-        if vis[i] == True:
-            hit, norm, ind, dist = bvh.ray_cast(origin, direction, 10000)
-            
-            if hit != None:
-                if near_ob_ind == None or dist < nearest:
-                    near_ob_ind = i
-                    nearest = dist
-                    
-                    coord = hit
-                    normal = norm
-            
-    
-    return near_ob_ind, coord, normal
-
-
-def ray_cast_draw(self, context, bvhs, vis, index=False):
+def ray_cast_to_mouse(self, context):
     # get the context arguments
     scn = context.scene
     region = context.region
@@ -182,10 +160,9 @@ def ray_cast_draw(self, context, bvhs, vis, index=False):
     view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, self._mouse_loc)
     ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, self._mouse_loc)
     
+    hit, norm, ind, dist = self._object_bvh.ray_cast(ray_origin, view_vector, 10000)
     
-    near_ob_ind, hit, norm = ray_cast_to_mouse(ray_origin, view_vector, bvhs, vis)
-    
-    return hit
+    return ind
 
 
 
@@ -298,3 +275,40 @@ def vec_to_dashed(co, vec, segments):
         
     
     return new_cos
+
+
+
+
+
+def get_linked_geo(bm, inds):
+
+    v_list = []
+    for ind in inds:
+        still_going = True
+        if ind not in v_list:
+            verts = [ind]
+            v_list.append(ind)
+
+            while still_going:
+                found = False
+                
+                next_verts = []
+                for v_ind in verts:
+                    vert = bm.verts[v_ind]
+                    
+                    link_eds = [ed for ed in vert.link_edges]
+                    
+                    for ed in link_eds:
+                        ov = ed.other_vert(vert)
+                        if ov.index not in v_list:
+                            next_verts.append(ov.index)
+                            v_list.append(ov.index)
+                            found = True
+                
+                
+                verts = next_verts.copy()
+                still_going = found
+    print(v_list)
+    return v_list
+
+

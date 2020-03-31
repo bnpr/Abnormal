@@ -3017,7 +3017,12 @@ class UIGizmoContainer:
 
         return
     
-
+    def update_size(self, size):
+        self.size = size
+        for giz in self.gizmos:
+            giz.size = self.size
+        return
+    
     def create_shape_data(self, matrix):
         for gizmo in self.gizmos:
             gizmo.create_shape_data()

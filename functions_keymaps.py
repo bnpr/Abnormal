@@ -51,28 +51,36 @@ def basic_keymap(self, context, event):
 
     #select all points
     if event.type == 'A' and event.value == 'PRESS':
+        change = False
         if event.alt:
             for po in self._points_container.points:
-                if po.valid:
+                if po.valid and po.select == True:
                     po.select = False
+                    change = True
             self._active_point = None
         else:
             for po in self._points_container.points:
-                if po.valid:
+                if po.valid and po.select == False:
                     po.select = True
-        add_to_undostack(self, 0)
-        self.redraw = True
-        update_orbit_empty(self)
-        status = {"RUNNING_MODAL"}
+                    change = True
+        if change:
+            add_to_undostack(self, 0)
+            self.redraw = True
+            update_orbit_empty(self)
+            status = {"RUNNING_MODAL"}
     
     if event.type == 'I' and event.value == 'PRESS' and event.ctrl:
+        change = False
         for po in self._points_container.points:
             if po.valid and po.hide == False:
                 po.select = not po.select
-        add_to_undostack(self, 0)
-        self.redraw = True
-        update_orbit_empty(self)
-        status = {"RUNNING_MODAL"}
+                change = True
+        
+        if change:
+            add_to_undostack(self, 0)
+            self.redraw = True
+            update_orbit_empty(self)
+            status = {"RUNNING_MODAL"}
     
     if event.type == 'H':
         if event.alt:
@@ -96,6 +104,35 @@ def basic_keymap(self, context, event):
         self.redraw = True
         status = {"RUNNING_MODAL"}
     
+
+    if event.type == 'L' and event.value == 'PRESS':
+        change = False
+        if event.ctrl:
+            sel_pos = self._points_container.get_selected()
+            new_sel = get_linked_geo(self._object_bm, sel_pos)
+
+            for ind in new_sel:
+                if self._points_container.points[ind].select == False:
+                    self._points_container.points[ind].select = True
+                    change = True
+        else:
+            #selection test
+            face_ind = ray_cast_to_mouse(self, context)
+            if face_ind != None:
+                sel_ind = self._object_bm.faces[face_ind].verts[0].index
+                new_sel = get_linked_geo(self._object_bm, [sel_ind])
+
+                for ind in new_sel:
+                    if self._points_container.points[ind].select == False:
+                        self._points_container.points[ind].select = True
+                        change = True
+        
+        if change:
+            add_to_undostack(self, 0)
+            self.redraw = True
+            update_orbit_empty(self)
+            status = {"RUNNING_MODAL"}
+
 
     if event.type == 'B':
         self.box_select_start = True
@@ -430,6 +467,13 @@ def num_sliding_keymap(self, context, event):
         if self._window.num_slide_cache[3] == 57:
             new_value = self._window.slide_number(self._mouse_loc, event.shift, fac=0.06)
             abn_props.smooth_iters = new_value
+        
+        if self._window.num_slide_cache[3] == 91:
+            new_value = self._window.slide_number(self._mouse_loc, event.shift, fac=1)
+            abn_props.gizmo_size = new_value
+            self.rot_gizmo.update_size(new_value)
+            self._window.update_gizmo_pos(self._orbit_ob.matrix_world)
+
     
         if self._window.num_slide_cache[3] == 58:
             self.target_strength = new_value
@@ -467,6 +511,11 @@ def num_sliding_keymap(self, context, event):
 
         if self._window.num_slide_cache[3] == 57:
             abn_props.smooth_iters = og_value
+
+        if self._window.num_slide_cache[3] == 91:
+            abn_props.gizmo_size = og_value
+            self.rot_gizmo.update_size(og_value)
+            self._window.update_gizmo_pos(self._orbit_ob.matrix_world)
     
         if self._window.num_slide_cache[3] == 58:
             self.target_strength = og_value
