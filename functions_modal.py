@@ -86,12 +86,14 @@ def mirror_normals(self, po_inds, axis):
         result = self._object_kd.find(co)
         if result != None:
             o_po = self._points_container.points[result[1]]
-            inds = match_point_loops_index(self, ind, result[1], flip_axis=axis)
+            if o_po.valid:
+                inds = match_point_loops_index(self, result[1], po.index, flip_axis=axis)
 
-            for l, l_norm in enumerate(o_po.loop_normals):
-                o_po.loop_normals[l] = po.loop_normals[inds[l]].copy()
-                o_po.loop_normals[l][axis] *= -1
-        self.redraw = True
+                for l in range(len(o_po.loop_normals)):
+                    o_po.loop_normals[l] = po.loop_normals[inds[l]].copy()
+                    o_po.loop_normals[l][axis] *= -1
+            self.redraw = True
+    
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
@@ -273,7 +275,6 @@ def copy_active_to_selected(self, po_inds):
                 if po.valid:
                     inds = match_point_loops_index(self, po.index, self._active_point)
                     for l in range(len(po.loop_normals)):
-                        print(l, inds, len(self._points_container.points[self._active_point].loop_normals))
                         po.loop_normals[l] = self._points_container.points[self._active_point].loop_normals[inds[l]].copy()
 
         self.redraw = True

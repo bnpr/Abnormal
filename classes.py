@@ -191,7 +191,7 @@ class ABNPoints:
         bgl.glEnable(bgl.GL_BLEND)
         if depth == False:
             bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glLineWidth(2)
+        bgl.glLineWidth(1)
         self.shader.bind()
         self.shader.uniform_float("color", render_color)
         self.batch_sel_normal.draw(self.shader)

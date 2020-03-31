@@ -308,7 +308,6 @@ def get_linked_geo(bm, inds):
                 
                 verts = next_verts.copy()
                 still_going = found
-    print(v_list)
     return v_list
 
 
