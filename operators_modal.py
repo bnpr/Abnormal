@@ -114,7 +114,7 @@ class ABN_OT_normal_editor_modal(Operator):
             return {'CANCELLED'}
         
         if context.active_object.mode != 'OBJECT':
-            context.active_object.mode_set('OBJECT')
+            bpy.ops.object.mode_set(mode='OBJECT')
         
         if context.area.type == 'VIEW_3D':
             for space in context.area.spaces:
