@@ -202,6 +202,7 @@ class ABN_OT_normal_editor_modal(Operator):
             
             ##INITIALIZE OBJECTS
             self._objects_mod_status = []
+            self._objects_sk_vis = []
             ob_bm, ob_kd, ob_bvh = ob_data_structures(self, context.active_object)
             
             
@@ -341,6 +342,8 @@ class ABN_OT_normal_editor_modal(Operator):
             row = subp.add_row()
             row.add_bool_prop(55, 'Display Wireframe', 14, addon_prefs.display_wireframe)
             row = subp.add_row()
+            row.add_num_prop(91, 'Gizmo Size',  round(addon_prefs.gizmo_size,0), 0, 10, 100, 1000)
+            row = subp.add_row()
             row.add_bool_prop(90, 'Left Click Select', 14, addon_prefs.left_select)
             row = subp.add_row()
             row.add_button(34, 'Save Addon Preferences')
@@ -350,14 +353,14 @@ class ABN_OT_normal_editor_modal(Operator):
 
             keymap_initialize(self)
 
-            gizmo = self._window.add_rot_gizmo(self._object.matrix_world, 200, [True, True, True], 0.045)
+            self.rot_gizmo = self._window.add_rot_gizmo(self._object.matrix_world, addon_prefs.gizmo_size, [True, True, True], 0.045)
 
             panel = self._window.add_panel(header_text='Incremental Rotations', hover_highlight=True)
             panel.alignment = 'TL'
             panel.visible_on_hover = False
             panel.visible = False
             panel.add_visible_oh_hov_icon(25)
-            panel.reposition_offset = [gizmo.size/2+25, gizmo.size/2]
+            panel.reposition_offset = [self.rot_gizmo.size/2+25, self.rot_gizmo.size/2]
             subp = panel.add_subpanel(header_text='')
             subp.use_header_box = False
             subp.use_header = False
@@ -404,3 +407,26 @@ class ABN_OT_normal_editor_modal(Operator):
         else:
             self.report({'WARNING'}, "Active space must be a View3d")
             return {'CANCELLED'}
+
+
+
+
+class ABN_OT_copy_basis_sk_normals(Operator):
+    bl_idname = "abnormal.copy_basis_sk_normals"
+    bl_label = "Copy Basis SK Normals to Others"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    
+    def execute(self, context):
+        data = bpy.data
+        scn = context.scene
+        aobj = context.active_object
+
+        aobj.data.calc_normals_split()
+
+        sk_view = []
+        for sk in aobj.data.shape_keys.key_blocks:
+            pass
+        og_loop_norms = [loop.normal.copy() for loop in aobj.data.loops]
+        
+        return {'FINISHED'}
+

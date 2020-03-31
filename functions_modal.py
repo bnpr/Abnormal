@@ -84,15 +84,16 @@ def mirror_normals(self, po_inds, axis):
         co[axis] *= -1
         
         result = self._object_kd.find(co)
-        if result != None:
-            o_po = self._points_container.points[result[1]]
-            if o_po.valid:
-                inds = match_point_loops_index(self, result[1], po.index, flip_axis=axis)
+        if result != None :
+            if result[1] != po.index:
+                o_po = self._points_container.points[result[1]]
+                if o_po.valid:
+                    inds = match_point_loops_index(self, result[1], po.index, flip_axis=axis)
 
-                for l in range(len(o_po.loop_normals)):
-                    o_po.loop_normals[l] = po.loop_normals[inds[l]].copy()
-                    o_po.loop_normals[l][axis] *= -1
-            self.redraw = True
+                    for l in range(len(o_po.loop_normals)):
+                        o_po.loop_normals[l] = po.loop_normals[inds[l]].copy()
+                        o_po.loop_normals[l][axis] *= -1
+                self.redraw = True
     
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -1420,6 +1421,13 @@ def button_pressed(self, event, but_type, but_id):
 
 
 def ob_data_structures(self, ob):
+    for p in ob.data.polygons:
+        p.use_smooth = True
+    
+    if ob.data.shape_keys != None:
+        for sk in ob.data.shape_keys.key_blocks:
+            self._objects_sk_vis.append(sk.mute)
+            sk.mute = True
     
     bm = create_simple_bm(self, ob)
     
@@ -1917,9 +1925,14 @@ def finish_modal(self):
 
 
 def restore_modifiers(self):
+    if self._object.data.shape_keys != None:
+        for s in range(len(self._object.data.shape_keys.key_blocks)):
+            self._object.data.shape_keys.key_blocks[s].mute = self._objects_sk_vis[s]
+    
     #restore modifier status
     for m, mod in enumerate(self._object.modifiers):
         mod.show_viewport = self._objects_mod_status[m][0]
         mod.show_render = self._objects_mod_status[m][1]
     
     return
+
