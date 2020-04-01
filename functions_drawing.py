@@ -105,33 +105,35 @@ def refresh_batches(self, context):
 
 
 def draw_callback_3d(self, context):
-    addon_prefs = bpy.context.preferences.addons[__package__].preferences
+    try:
+        addon_prefs = bpy.context.preferences.addons[__package__].preferences
 
-    self._points_container.draw_po(True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
-    self._points_container.draw_sel_po(True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
-    self._points_container.draw_act_po(True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
-    self._points_container.draw_line(self._x_ray_mode, addon_prefs.line_brightness)
-    self._points_container.draw_sel_line(self._x_ray_mode, addon_prefs.line_brightness)
-    self._points_container.draw_act_line(self._x_ray_mode, addon_prefs.line_brightness)
+        self._points_container.draw_po(True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
+        self._points_container.draw_sel_po(True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
+        self._points_container.draw_act_po(True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
+        self._points_container.draw_line(self._x_ray_mode, addon_prefs.line_brightness)
+        self._points_container.draw_sel_line(self._x_ray_mode, addon_prefs.line_brightness)
+        self._points_container.draw_act_line(self._x_ray_mode, addon_prefs.line_brightness)
 
-    if len(self.translate_draw_line) > 0:
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glLineWidth(2)
-        self.shader_3d.bind()
-        if self.translate_axis == 0:
-            self.shader_3d.uniform_float("color", (1.0,0.0,0.0,1.0))
-        if self.translate_axis == 1:
-            self.shader_3d.uniform_float("color", (0.0,1.0,0.0,1.0))
-        if self.translate_axis == 2:
-            self.shader_3d.uniform_float("color", (0.0,0.0,1.0,1.0))
-        self.batch_translate_line.draw(self.shader_3d)
-        bgl.glDisable(bgl.GL_BLEND)
-        bgl.glDisable(bgl.GL_DEPTH_TEST)
+        if len(self.translate_draw_line) > 0:
+            bgl.glEnable(bgl.GL_BLEND)
+            bgl.glEnable(bgl.GL_DEPTH_TEST)
+            bgl.glLineWidth(2)
+            self.shader_3d.bind()
+            if self.translate_axis == 0:
+                self.shader_3d.uniform_float("color", (1.0,0.0,0.0,1.0))
+            if self.translate_axis == 1:
+                self.shader_3d.uniform_float("color", (0.0,1.0,0.0,1.0))
+            if self.translate_axis == 2:
+                self.shader_3d.uniform_float("color", (0.0,0.0,1.0,1.0))
+            self.batch_translate_line.draw(self.shader_3d)
+            bgl.glDisable(bgl.GL_BLEND)
+            bgl.glDisable(bgl.GL_DEPTH_TEST)
 
-    if addon_prefs.rotate_gizmo_use and self.rotate_gizmo_draw:
-        self._window.gizmo_draw()
-    
+        if addon_prefs.rotate_gizmo_use and self.rotate_gizmo_draw:
+            self._window.gizmo_draw()
+    except:
+        pass
     
     return
 
@@ -139,34 +141,36 @@ def draw_callback_3d(self, context):
 
 def draw_callback_2d(self, context):
 
+    try:
+        bgl.glLineWidth(2)
+        self.shader_2d.bind()
+        self.shader_2d.uniform_float("color", (0.05, 0.05, 0.05, 1))
+        self.batch_rotate_screen_lines.draw(self.shader_2d)
 
-    bgl.glLineWidth(2)
-    self.shader_2d.bind()
-    self.shader_2d.uniform_float("color", (0.05, 0.05, 0.05, 1))
-    self.batch_rotate_screen_lines.draw(self.shader_2d)
+        bgl.glLineWidth(1)
+        self.shader_2d.bind()
+        self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
+        self.batch_boxsel_screen_lines.draw(self.shader_2d)
+        
+        bgl.glLineWidth(1)
+        self.shader_2d.bind()
+        self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
+        self.batch_circlesel_screen_lines.draw(self.shader_2d)
 
-    bgl.glLineWidth(1)
-    self.shader_2d.bind()
-    self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
-    self.batch_boxsel_screen_lines.draw(self.shader_2d)
-    
-    bgl.glLineWidth(1)
-    self.shader_2d.bind()
-    self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
-    self.batch_circlesel_screen_lines.draw(self.shader_2d)
+        bgl.glLineWidth(1)
+        self.shader_2d.bind()
+        self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
+        self.batch_lassosel_screen_lines.draw(self.shader_2d)
 
-    bgl.glLineWidth(1)
-    self.shader_2d.bind()
-    self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
-    self.batch_lassosel_screen_lines.draw(self.shader_2d)
+        self._window.draw()
 
-    self._window.draw()
-
-    bgl.glPointSize(2)
-    self.batch_po = batch_for_shader(self.shader_2d, 'POINTS', { "pos": self._temp_po_draw })
-    self.shader_2d.bind()
-    self.shader_2d.uniform_float("color", (1.0, 0.0, 0.0, 1))
-    self.batch_po.draw(self.shader_2d)
+        bgl.glPointSize(2)
+        self.batch_po = batch_for_shader(self.shader_2d, 'POINTS', { "pos": self._temp_po_draw })
+        self.shader_2d.bind()
+        self.shader_2d.uniform_float("color", (1.0, 0.0, 0.0, 1))
+        self.batch_po.draw(self.shader_2d)
+    except:
+        pass
     return
 
 

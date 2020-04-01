@@ -827,7 +827,8 @@ def relocate_gizmo_panel(self):
     rco = view3d_utils.location_3d_to_region_2d(region, rv3d, self._orbit_ob.location)
 
     panel = self._window.panels[2]
-    self._window.reposition_panel(2, [rco[0]+panel.reposition_offset[0], rco[1]+panel.reposition_offset[1]])
+    if rco != None:
+        self._window.reposition_panel(2, [rco[0]+panel.reposition_offset[0], rco[1]+panel.reposition_offset[1]])
     return
 
 def gizmo_hide(self):
