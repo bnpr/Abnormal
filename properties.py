@@ -19,6 +19,7 @@ class AbnormalAddonPreferences(AddonPreferences):
     normal_size: FloatProperty(default=0.5)
     point_size: FloatProperty(default=1.0)
     line_brightness: FloatProperty(default=1.0)
+    gizmo_size: IntProperty(default=200)
 
     def draw(self, context):
         layout = self.layout
@@ -31,3 +32,4 @@ class AbnormalAddonPreferences(AddonPreferences):
         col.prop(self, "normal_size", text='Default Normal Length')
         col.prop(self, "point_size", text='Default Point Size')
         col.prop(self, "line_brightness", text='Default Line Brightness')
+        col.prop(self, "gizmo_size", text='Default Gizmo')
