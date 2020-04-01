@@ -133,6 +133,9 @@ def draw_callback_3d(self, context):
         if addon_prefs.rotate_gizmo_use and self.rotate_gizmo_draw:
             self._window.gizmo_draw()
     except:
+        dns = bpy.app.driver_namespace
+        dc = dns.get("dh3d")
+        bpy.types.SpaceView3D.draw_handler_remove(dc, 'WINDOW')
         pass
     
     return
@@ -170,6 +173,9 @@ def draw_callback_2d(self, context):
         self.shader_2d.uniform_float("color", (1.0, 0.0, 0.0, 1))
         self.batch_po.draw(self.shader_2d)
     except:
+        dns = bpy.app.driver_namespace
+        dc = dns.get("dh2d")
+        bpy.types.SpaceView3D.draw_handler_remove(dc, 'WINDOW')
         pass
     return
 

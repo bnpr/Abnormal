@@ -399,7 +399,10 @@ class ABN_OT_normal_editor_modal(Operator):
             args = (self, context)
             self._draw_handle_2d = bpy.types.SpaceView3D.draw_handler_add(draw_callback_2d, args, "WINDOW", "POST_PIXEL")
             self._draw_handle_3d = bpy.types.SpaceView3D.draw_handler_add(draw_callback_3d, args, "WINDOW", "POST_VIEW")
-            
+
+            dns = bpy.app.driver_namespace
+            dns["dh2d"] = self._draw_handle_2d
+            dns["dh3d"] = self._draw_handle_3d
             
             #SET MODAL
             context.window_manager.modal_handler_add(self)
@@ -407,26 +410,3 @@ class ABN_OT_normal_editor_modal(Operator):
         else:
             self.report({'WARNING'}, "Active space must be a View3d")
             return {'CANCELLED'}
-
-
-
-
-class ABN_OT_copy_basis_sk_normals(Operator):
-    bl_idname = "abnormal.copy_basis_sk_normals"
-    bl_label = "Copy Basis SK Normals to Others"
-    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
-    
-    def execute(self, context):
-        data = bpy.data
-        scn = context.scene
-        aobj = context.active_object
-
-        aobj.data.calc_normals_split()
-
-        sk_view = []
-        for sk in aobj.data.shape_keys.key_blocks:
-            pass
-        og_loop_norms = [loop.normal.copy() for loop in aobj.data.loops]
-        
-        return {'FINISHED'}
-

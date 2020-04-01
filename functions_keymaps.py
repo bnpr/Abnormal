@@ -1106,10 +1106,10 @@ def circle_select_keymap(self, context, event):
             self._changing_po_cache.clear()
     
     else:
-        if event.type == 'LEFT_BRACKET':
+        if event.type == 'LEFT_BRACKET' and event.value == 'PRESS':
             self.circle_radius -= 10
         
-        if event.type == 'RIGHT_BRACKET':
+        if event.type == 'RIGHT_BRACKET' and event.value == 'PRESS':
             self.circle_radius += 10
         
         if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
