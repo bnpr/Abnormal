@@ -3299,6 +3299,7 @@ class UIRotateGizmo:
                 max_size = self.prev_giz_screen_size
             
             self.prev_giz_screen_size = max_size
+            max_size += 1
             
             scale_fac = self.size/max_size
 
