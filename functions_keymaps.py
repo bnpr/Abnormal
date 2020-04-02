@@ -29,7 +29,6 @@ def basic_keymap(self, context, event):
     if self.waiting and event.value == 'RELEASE':
         update_gizmo = True
 
-    #print(update_gizmo, addon_prefs.rotate_gizmo_use)
     if update_gizmo and addon_prefs.rotate_gizmo_use:
         self._window.update_gizmo_pos(self._orbit_ob.matrix_world)
         relocate_gizmo_panel(self)
@@ -271,6 +270,17 @@ def basic_keymap(self, context, event):
         
         finish_modal(self)
         status = {'CANCELLED'}
+    
+    if event.type in {'TAB'} and event.value == 'PRESS':
+        ob = self._object
+        if self._object.as_pointer() != self._object_pointer:
+            for o_ob in bpy.data.objects:
+                if o_ob.as_pointer() == self._object_pointer:
+                    ob = o_ob
+        
+        
+        finish_modal(self)
+        status = {'FINISHED'}
     
     return status
 

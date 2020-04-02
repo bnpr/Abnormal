@@ -245,12 +245,16 @@ def set_outside_inside(self, po_inds, direction):
     for ind in po_inds:
         po = self._points_container.points[ind]
         if po.valid:
-            for i, l_ind in enumerate(po.loop_inds):
+            poly_norm = mathutils.Vector((0,0,0))
+            for l_ind in po.loop_inds:
                 for loop in self._object_bm.verts[po.index].link_loops:
-                    if loop.index == l_ind:
-                        po.loop_normals[i] = self._object.data.polygons[loop.face.index].normal.copy() * direction
+                    poly_norm += self._object.data.polygons[loop.face.index].normal * direction
+                
+            if poly_norm.length > 0.0:
+                for l, l_ind in enumerate(po.loop_inds):
+                    po.loop_normals[l] = poly_norm/len(po.loop_inds)
 
-            self.redraw = True
+                    self.redraw = True
     
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -1760,6 +1764,7 @@ def keymap_initialize(self):
     subp = self._window.panels[1].subpanels[2]
     subp.clear_rows()
     row = subp.add_text_row('ESC - Cancel Normal Editing', 10)
+    row = subp.add_text_row('Tab - End and Confirm Normal Editing', 10)
     row = subp.add_text_row('R - Rotate Selected Normals', 10)
     row = subp.add_text_row('R + Alt - Reset Gizmo Axis', 10)
     row = subp.add_text_row('L-Click - Select Vertex/Gizmo Axis', 10)
@@ -1788,6 +1793,7 @@ def keymap_refresh_base(self):
     subp.clear_rows()
 
     row = subp.add_text_row('ESC - Cancel Normal Editing', 10)
+    row = subp.add_text_row('Tab - End and Confirm Normal Editing', 10)
     row = subp.add_text_row('R - Rotate Selected Normals', 10)
     if addon_prefs.rotate_gizmo_use:
         row = subp.add_text_row('R + Alt - Reset Gizmo Axis', 10)
