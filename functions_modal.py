@@ -855,38 +855,16 @@ def gizmo_unhide(self):
 def init_nav_list(self):
     self.nav_list = ['LEFTMOUSE', 'MOUSEMOVE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE',]
 
+    names = ['Zoom View', 'Rotate View', 'Pan View', 'Dolly View', 
+    'View Selected', 'View Camera Center', 'View All', 'View Axis', 
+    'View Orbit', 'View Roll', 'View Persp/Ortho',]
+
     for item in bpy.context.window_manager.keyconfigs[0].keymaps['3D View'].keymap_items:
-        if item.name == 'Zoom View':
+        if item.name in names:
             if item.type not in self.nav_list:
                 self.nav_list.append(item.type)
-        if item.name == 'Rotate View':
-            if item.type not in self.nav_list:
-                self.nav_list.append(item.type)
-        if item.name == 'Pan View':
-            if item.type not in self.nav_list:
-                self.nav_list.append(item.type)
-        if item.name == 'Dolly View':
-            if item.type not in self.nav_list:
-                self.nav_list.append(item.type)
-        if item.name == 'View Selected':
-            if item.type not in self.nav_list:
-                self.nav_list.append(item.type)
-        if item.name == 'View Camera Center':
-            if item.type not in self.nav_list:
-                self.nav_list.append(item.type)
-        if item.name == 'View All':
-            if item.type not in self.nav_list:
-                self.nav_list.append(item.type)
-        if item.name == 'View Axis':
-            if item.type not in self.nav_list:
-                self.nav_list.append(item.type)
-        if item.name == 'View Orbit':
-            if item.type not in self.nav_list:
-                self.nav_list.append(item.type)
-        if item.name == 'View Roll':
-            if item.type not in self.nav_list:
-                self.nav_list.append(item.type)
-        if item.name == 'View Persp/Ortho':
+    for item in bpy.context.window_manager.keyconfigs[2].keymaps['3D View'].keymap_items:
+        if item.name in names:
             if item.type not in self.nav_list:
                 self.nav_list.append(item.type)
     
