@@ -332,14 +332,15 @@ class UIWindow:
 
     def check_border_change(self):
         if self.width != bpy.context.region.width or self.height != bpy.context.region.height:
-            perc_w = bpy.context.region.width/self.width
-            perc_h = bpy.context.region.height/self.height
-            for panel in self.panels:
-                self.reposition_panel(panel.index, round_array([panel.position[0]*perc_w, panel.position[1]*perc_h]))
-            
+            if self.width > 0 and self.height > 0:
+                perc_w = bpy.context.region.width/self.width
+                perc_h = bpy.context.region.height/self.height
+                for panel in self.panels:
+                    self.reposition_panel(panel.index, round_array([panel.position[0]*perc_w, panel.position[1]*perc_h]))
+                
             if self.border != None:
                 self.border.create_shape_data()
-            
+                
 
             self.width = bpy.context.region.width
             self.height = bpy.context.region.height
@@ -2537,7 +2538,10 @@ class UINumProp:
         self.init_shape_data()
 
         self.position = [margin, -y_pos]
-        perc = (self.value-self.min)/(self.max-self.min)
+        if self.max-self.min == 0:
+            perc = 1.0
+        else:
+            perc = (self.value-self.min)/(self.max-self.min)
         if self.height*3 < self.width:
             self.box_arrow_size = self.height
             self.box_points, self.box_tris, self.box_lines = calc_box(0, 0, self.width-self.box_arrow_size*2, self.height, [], 0, 0)
@@ -2630,8 +2634,10 @@ class UINumProp:
         x_co = p_pos[0]+self.position[0]
         y_co = p_pos[1]+self.position[1]
 
-
-        perc = (self.value-self.min)/(self.max-self.min)
+        if self.max-self.min == 0:
+            perc = 1.0
+        else:
+            perc = (self.value-self.min)/(self.max-self.min)
         if self.height*3 < self.width:
             self.box_arrow_size = self.height
             self.box_points, self.box_tris, self.box_lines = calc_box(0, 0, self.width-self.box_arrow_size*2, self.height, [], 0, 0)
@@ -3092,6 +3098,7 @@ class UIRotateGizmo:
         for c, co in enumerate(self.mat_points):
             rco = view3d_utils.location_3d_to_region_2d(region, rv3d, co)
             if rco == None:
+                rcos.append(None)
                 continue
             
             if c == 0:
@@ -3118,6 +3125,9 @@ class UIRotateGizmo:
                 co2 = rcos[tri[1]]
                 co3 = rcos[tri[2]]
 
+                if co1 == None or co2 == None or co3 == None:
+                    continue
+
                 vec1 = mouse_co - co1
                 vec2 = mouse_co - co2
                 vec3 = mouse_co - co3
@@ -3143,8 +3153,10 @@ class UIRotateGizmo:
                 else:
                     if m_ang > t_ang or m_ang < 0.0:
                         continue
+                
                 self.hover = True
                 return self.hover
+        
         return self.hover
     
     
@@ -3162,6 +3174,8 @@ class UIRotateGizmo:
 
     def create_shape_data(self):
         self.init_shape_data()
+        if self.resolution <= 12:
+            self.resolution = 12
         ang = 360/self.resolution
         co1 = [0,(1+self.thickness/2)*self.scale]
         co2 = [0,1*self.scale]
@@ -3280,7 +3294,12 @@ class UIRotateGizmo:
                 max_size = height
             else:
                 max_size = width
-
+            
+            if max_size == 0:
+                max_size = self.prev_giz_screen_size
+            
+            self.prev_giz_screen_size = max_size
+            
             scale_fac = self.size/max_size
 
         self.mat_points.clear()
@@ -3299,6 +3318,9 @@ class UIRotateGizmo:
     def update_rot_fan(self, matrix, scale_fac, angle, start_ang=0):
         region = bpy.context.region
         rv3d = bpy.context.region_data
+
+        if self.resolution <= 12:
+            self.resolution = 12
 
         point_per_rot = int(360/(self.resolution/2))
         rotations = int(math.degrees(abs(angle))/360)

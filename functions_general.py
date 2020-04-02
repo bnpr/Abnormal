@@ -263,6 +263,9 @@ def vec_to_dashed(co, vec, segments):
                     
                     nco += co + vec*fac
                 
+                if test_cos == 0:
+                    test_cos += 1
+                
                 nco /= len(test_cos)
                 
                 co_changes.append(nco)

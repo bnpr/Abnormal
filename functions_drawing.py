@@ -105,7 +105,11 @@ def refresh_batches(self, context):
 
 
 def draw_callback_3d(self, context):
+    clear_draw = False
     try:
+        if self._modal_running == False:
+            clear_draw = True
+        
         addon_prefs = bpy.context.preferences.addons[__package__].preferences
 
         self._points_container.draw_po(True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
@@ -133,18 +137,23 @@ def draw_callback_3d(self, context):
         if addon_prefs.rotate_gizmo_use and self.rotate_gizmo_draw:
             self._window.gizmo_draw()
     except:
+        clear_draw = True
+
+    if clear_draw:
+        print('Something is wrong clear out 3D Draw Handler')
         dns = bpy.app.driver_namespace
         dc = dns.get("dh3d")
         bpy.types.SpaceView3D.draw_handler_remove(dc, 'WINDOW')
-        pass
-    
     return
 
 
 
 def draw_callback_2d(self, context):
-
+    clear_draw = False
     try:
+        if self._modal_running == False:
+            clear_draw = True
+        
         bgl.glLineWidth(2)
         self.shader_2d.bind()
         self.shader_2d.uniform_float("color", (0.05, 0.05, 0.05, 1))
@@ -173,10 +182,13 @@ def draw_callback_2d(self, context):
         self.shader_2d.uniform_float("color", (1.0, 0.0, 0.0, 1))
         self.batch_po.draw(self.shader_2d)
     except:
+        clear_draw = True
+    
+    if clear_draw:
+        print('Something is wrong clear out 2D Draw Handler')
         dns = bpy.app.driver_namespace
         dc = dns.get("dh2d")
         bpy.types.SpaceView3D.draw_handler_remove(dc, 'WINDOW')
-        pass
     return
 
 

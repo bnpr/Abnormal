@@ -23,13 +23,13 @@ def basic_keymap(self, context, event):
         gizmo_hide(self)
     
     update_gizmo = False
-    if context.region_data.view_matrix != self.prev_view:
+    if context.region_data.view_matrix != self.prev_view :
         update_gizmo = True
 
     if self.waiting and event.value == 'RELEASE':
         update_gizmo = True
 
-    
+    #print(update_gizmo, addon_prefs.rotate_gizmo_use)
     if update_gizmo and addon_prefs.rotate_gizmo_use:
         self._window.update_gizmo_pos(self._orbit_ob.matrix_world)
         relocate_gizmo_panel(self)

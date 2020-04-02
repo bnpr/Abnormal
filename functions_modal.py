@@ -213,9 +213,10 @@ def smooth_selected_normals(self, po_inds, iterations, fac):
                     smooth_vec += l_norm.lerp(calc_norms[ov.index], fac)
                     cnt += 1
                 
-                smooth_vec = smooth_vec/cnt
-                po.loop_normals[l] = po.loop_normals[l].lerp(smooth_vec, abn_props.smooth_strength)
-                del(smooth_vec)
+                if cnt > 0:
+                    smooth_vec = smooth_vec/cnt
+                    po.loop_normals[l] = po.loop_normals[l].lerp(smooth_vec, abn_props.smooth_strength)
+                    del(smooth_vec)
 
             self.redraw = True
             del(po)

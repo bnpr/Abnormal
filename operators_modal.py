@@ -15,7 +15,7 @@ from .classes import *
 from .ui_classes import *
 
 
-from bpy.types import PropertyGroup, GizmoGroup
+from bpy.types import PropertyGroup
 
 
 
@@ -26,6 +26,7 @@ class ABN_OT_normal_editor_modal(Operator):
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
     def modal(self, context, event):
+        self._modal_running = False
         scn_prop = context.scene.abnormal_props
         
         if bpy.context.area == None:
@@ -42,8 +43,6 @@ class ABN_OT_normal_editor_modal(Operator):
         
         self._mouse_loc = [event.mouse_region_x, event.mouse_region_y]
         self._window.check_border_change()
-
-
 
         if self.pre_moving:
             status = pre_moving_keymap(self, context, event)
@@ -90,6 +89,7 @@ class ABN_OT_normal_editor_modal(Operator):
         else:
             status = basic_keymap(self,context, event)
 
+        self._modal_running = True
         refresh_batches(self, context)
         return status
     
@@ -161,6 +161,9 @@ class ABN_OT_normal_editor_modal(Operator):
             self._rot_increment_five = False
             self._rot_increment_ten = False
             self._rot_increment = 1
+            self._modal_running = True
+            self.prev_giz_screen_size = round(addon_prefs.gizmo_size,0)
+
 
             ##NAVIGATION KEYS LIST
             init_nav_list(self)
