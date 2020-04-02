@@ -162,7 +162,6 @@ class ABN_OT_normal_editor_modal(Operator):
             self._rot_increment_ten = False
             self._rot_increment = 1
             self._modal_running = True
-            self.prev_giz_screen_size = round(addon_prefs.gizmo_size,0)
 
 
             ##NAVIGATION KEYS LIST

@@ -3020,6 +3020,7 @@ class UIGizmoContainer:
         self.matrix = mat
         self.scale_factor = None
         self.size = size
+        
 
         return
     
@@ -3081,6 +3082,7 @@ class UIRotateGizmo:
         self.thickness = thickness
         self.type = giz_type
         self.in_use = False
+        self.prev_screen_size = size
 
         return
     
@@ -3296,9 +3298,9 @@ class UIRotateGizmo:
                 max_size = width
             
             if max_size == 0:
-                max_size = self.prev_giz_screen_size
+                max_size = self.prev_screen_size
             
-            self.prev_giz_screen_size = max_size
+            self.prev_screen_size = max_size
             max_size += 1
             
             scale_fac = self.size/max_size
