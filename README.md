@@ -21,3 +21,16 @@ This add-on is funded by the BNPR community with the BEER dev fund.
 7. scale up selected normals toggle
 8. display only selected normals toggle
 9. Keymap guide
+
+## First Installation:
+1. Download the add-on: https://github.com/BlenderNPR/Abnormal/archive/master.zip
+2. Install Abnormal: Preference > Add-on tab > Install
+3. Activate the add-on
+
+## Reinstallation:
+1. Cleanly remove older Abnormal add-on: preference > Add-on tab, find Abnormal, click remove.
+2. Download the add-on: https://github.com/BlenderNPR/Abnormal/archive/master.zip
+3. Install Abnormal: Preference > Add-on tab > Install
+4. Activate the add-on
+5. Restart Blender
+
