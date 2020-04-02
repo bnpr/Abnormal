@@ -32,4 +32,4 @@ class AbnormalAddonPreferences(AddonPreferences):
         col.prop(self, "normal_size", text='Default Normal Length')
         col.prop(self, "point_size", text='Default Point Size')
         col.prop(self, "line_brightness", text='Default Line Brightness')
-        col.prop(self, "gizmo_size", text='Default Gizmo')
+        col.prop(self, "gizmo_size", text='Default Gizmo Size')
