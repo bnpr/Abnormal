@@ -508,7 +508,7 @@ def start_sphereize_mode(self):
     self.sphereize_mode = True
 
     for i in range(len(bpy.context.selected_objects)):
-        bpy.context.selected_objects[i].select_set(False)
+        bpy.context.selected_objects[0].select_set(False)
 
     sel_cos = self._points_container.get_selected_cos()
     avg_loc = average_vecs(sel_cos)
@@ -613,7 +613,7 @@ def start_point_mode(self):
     self.point_mode = True
 
     for i in range(len(bpy.context.selected_objects)):
-        bpy.context.selected_objects[i].select_set(False)
+        bpy.context.selected_objects[0].select_set(False)
 
     sel_cos = self._points_container.get_selected_cos()
     avg_loc = average_vecs(sel_cos)
@@ -1668,7 +1668,7 @@ def lasso_selection_test(self, context, event):
 
 def add_orbit_empty(self,):
     for i in range(len(bpy.context.selected_objects)):
-        bpy.context.selected_objects[i].select_set(False)
+        bpy.context.selected_objects[0].select_set(False)
 
     self._orbit_ob = bpy.data.objects.new('ABN_Orbit Empty', None)
     self._orbit_ob.empty_display_size = 0.0
