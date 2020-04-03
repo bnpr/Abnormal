@@ -12,6 +12,7 @@ bl_info = {
 
 
 
+
 import bpy
 from bpy.props import *
 from .ui import *
@@ -19,6 +20,21 @@ from .properties import *
 from .operators_modal import *
 from .classes import *
 
+
+if "bpy" in locals():
+    import imp
+    if "__init__" in locals():
+        imp.reload(__init__)
+    if "ui" in locals():
+        imp.reload(ui)
+    if "properties" in locals():
+        imp.reload(properties)
+    if "classes" in locals():
+        imp.reload(classes)
+    if "ui_classes" in locals():
+        imp.reload(ui_classes)
+    if "operators_modal" in locals():
+        imp.reload(operators_modal)
 
 
 classes = [
