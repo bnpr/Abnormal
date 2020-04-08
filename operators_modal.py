@@ -310,6 +310,9 @@ class ABN_OT_normal_editor_modal(Operator):
             row = subp.add_row()
             row.add_num_prop(56, 'Smooth Strength', round(abn_props.smooth_strength, 2), 2, 0.01, 0.01, 1.0)
             row.add_num_prop(57, 'Smooth Iterations', abn_props.smooth_iters, 0, 1, 1, 25)
+            row = subp.add_row()
+            row.add_button(40, 'Set Smooth Shading')
+            row.add_button(41, 'Set Flat Shading')
 
 
             subp = panel.add_subpanel(header_text='Copy/Paste Normals')

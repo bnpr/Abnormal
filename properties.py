@@ -6,6 +6,8 @@ from bpy.types import PropertyGroup, AddonPreferences
 class ABNScnProperties(PropertyGroup):
     smooth_strength: FloatProperty(default=0.25)
     smooth_iters: IntProperty(default=5)
+    object: StringProperty()
+    vertex_group: StringProperty(description='Vertex Group to filter normal changes with')
 
 
 class AbnormalAddonPreferences(AddonPreferences):

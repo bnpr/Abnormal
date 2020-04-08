@@ -108,7 +108,8 @@ def basic_keymap(self, context, event):
         change = False
         if event.ctrl:
             sel_pos = self._points_container.get_selected()
-            new_sel = get_linked_geo(self._object_bm, sel_pos)
+            vis_pos = self._points_container.get_visible()
+            new_sel = get_linked_geo(self._object_bm, sel_pos, vis=vis_pos)
 
             for ind in new_sel:
                 if self._points_container.points[ind].select == False:
@@ -119,7 +120,8 @@ def basic_keymap(self, context, event):
             face_ind = ray_cast_to_mouse(self, context)
             if face_ind != None:
                 sel_ind = self._object_bm.faces[face_ind].verts[0].index
-                new_sel = get_linked_geo(self._object_bm, [sel_ind])
+                vis_pos = self._points_container.get_visible()
+                new_sel = get_linked_geo(self._object_bm, [sel_ind], vis=vis_pos)
 
                 for ind in new_sel:
                     if self._points_container.points[ind].select == False:
@@ -165,6 +167,7 @@ def basic_keymap(self, context, event):
                 self._orbit_ob.matrix_world.translation = loc
                 self._window.update_gizmo_orientation(self._orbit_ob.matrix_world)
         else:
+            update_filter_weights(self)
             sel_pos = self._points_container.get_selected()
 
             if len(sel_pos) > 0:
@@ -214,6 +217,8 @@ def basic_keymap(self, context, event):
             move_undostack(self, 0, 1)
         status = {"RUNNING_MODAL"}
 
+
+
     #test selection of points/roots and hovering of buttons
     if event.type == 'RIGHTMOUSE' and event.value == 'PRESS' and event.ctrl != True and addon_prefs.left_select == False:
         sel_res = selection_test(self, context, event)
@@ -221,8 +226,11 @@ def basic_keymap(self, context, event):
             self.redraw = True
             add_to_undostack(self, 0)
             update_orbit_empty(self)
-            status = {'RUNNING_MODAL'}
+        else:
+            f_ind = ray_cast_to_mouse(self, context)
+            print(f_ind)
         status = {"RUNNING_MODAL"}
+
 
     if event.type == 'LEFTMOUSE' and event.value == 'PRESS' and event.ctrl != True:
         no_gizmo = gizmo_init(self, context, event)
@@ -253,9 +261,14 @@ def basic_keymap(self, context, event):
                         add_to_undostack(self, 0)
                         update_orbit_empty(self)
                         status = {'RUNNING_MODAL'}
+                    else:
+                        f_ind = ray_cast_to_mouse(self, context)
+                        print(f_ind)
             else:
                 status = {'RUNNING_MODAL'}
     
+
+
     #cancel modal
     if event.type in {'ESC'} and event.value == 'PRESS':
         ob = self._object
@@ -575,8 +588,6 @@ def sphereize_keymap(self, context, event):
         else:
             if len(sel_pos) > 0:
                 sel_cos = self._points_container.get_selected_cos()
-                avg_loc = average_vecs(sel_cos)
-
                 cache_norms = []
                 for ind in sel_pos:
                     po = self._points_container.points[ind]
@@ -590,7 +601,7 @@ def sphereize_keymap(self, context, event):
 
                 region = bpy.context.region
                 rv3d = bpy.context.region_data
-                rco = view3d_utils.location_3d_to_region_2d(region, rv3d, avg_loc)
+                rco = view3d_utils.location_3d_to_region_2d(region, rv3d, self.target_emp.location)
 
                 self._changing_po_cache.insert(0, self._mouse_loc)
                 self._changing_po_cache.insert(1, self.target_emp.location.copy())
@@ -736,7 +747,6 @@ def point_keymap(self, context, event):
         else:
             if len(sel_pos) > 0:
                 sel_cos = self._points_container.get_selected_cos()
-                avg_loc = average_vecs(sel_cos)
                 
                 cache_norms = []
                 for ind in sel_pos:
@@ -751,7 +761,7 @@ def point_keymap(self, context, event):
 
                 region = bpy.context.region
                 rv3d = bpy.context.region_data
-                rco = view3d_utils.location_3d_to_region_2d(region, rv3d, avg_loc)
+                rco = view3d_utils.location_3d_to_region_2d(region, rv3d, self.target_emp.location)
 
                 self._changing_po_cache.insert(0, self._mouse_loc)
                 self._changing_po_cache.insert(1, self.target_emp.location.copy())

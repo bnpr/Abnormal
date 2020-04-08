@@ -26,4 +26,15 @@ class ABN_PT_abnormal_panel(Panel):
         row.operator("abnormal.normal_editor_modal")
         row.alignment = 'CENTER'
         row.scale_y = 2
+
+        ob = context.active_object
+        if scn_prop.object != '':
+            if scn_prop.object in data.objects:
+                ob = data.objects[scn_prop.object]
+        
+        if ob != None:
+            row = layout.row(align=True)
+            row.alignment = 'CENTER'
+            row.prop_search(scn_prop, 'vertex_group', ob, 'vertex_groups', text='Filter Vertex Group')
+            row.alignment = 'CENTER'
         

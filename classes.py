@@ -33,6 +33,10 @@ class ABNPoints:
         self.points.append(po)
         return
     
+    def get_visible(self):
+        vis_pos = [po.index for po in self.points if po.valid and po.hide == False]
+        return vis_pos
+
     def get_selected(self):
         sel_pos = [po.index for po in self.points if po.select and po.valid and po.hide == False]
         return sel_pos
@@ -230,3 +234,12 @@ class ABNPoint:
     
     def __str__(self, ):
         return 'Object Vertex Point'
+
+class ABNLoop:
+    def __init__(self, norm, index):
+        self.normal = norm
+        self.select = False
+        self.index = index
+    
+    def __str__(self, ):
+        return 'Object Vertex Loop'

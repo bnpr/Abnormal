@@ -239,12 +239,6 @@ def vec_to_dashed(co, vec, segments):
         co_changes = []
         for c, co in enumerate(new_cos):
             if c in inds:
-                
-            #    if cyclic == False:
-            #        if c == 0 or c == len(new_cos)-1:
-            #            co_changes.append(co)
-            #            continue
-                
                 test_cos = []
                 if c > 0 or cyclic:
                     prev_co = new_cos[c-1]
@@ -283,12 +277,14 @@ def vec_to_dashed(co, vec, segments):
 
 
 
-def get_linked_geo(bm, inds):
-
+def get_linked_geo(bm, inds, vis=None):
+    if vis == None:
+        vis = inds.copy()
+    
     v_list = []
     for ind in inds:
         still_going = True
-        if ind not in v_list:
+        if ind not in v_list and ind in vis:
             verts = [ind]
             v_list.append(ind)
 
@@ -303,7 +299,7 @@ def get_linked_geo(bm, inds):
                     
                     for ed in link_eds:
                         ov = ed.other_vert(vert)
-                        if ov.index not in v_list:
+                        if ov.index not in v_list and ov.index in vis:
                             next_verts.append(ov.index)
                             v_list.append(ov.index)
                             found = True

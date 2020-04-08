@@ -20,6 +20,9 @@ def average_vecs(vecs):
     return None
 
 def set_new_normals(self,):
+    for ed in self._object.data.edges:
+        ed.use_edge_sharp = self.og_sharp_edges[ed.index]
+
     new_l_norms = self.og_loop_norms.copy()
     for po in self._points_container.points:
         for l, l_ind in enumerate(po.loop_inds):
@@ -100,6 +103,7 @@ def mirror_normals(self, po_inds, axis):
     return
 
 def flatten_normals(self, po_inds, axis):
+    update_filter_weights(self)
     for ind in po_inds:
         po = self._points_container.points[ind]
         if po.valid:
@@ -108,7 +112,7 @@ def flatten_normals(self, po_inds, axis):
                 vec[axis] = 0.0
 
                 if vec.length > 0.0:
-                    po.loop_normals[l] = vec.normalized()
+                    loop_norm_set(self, po, l, po.loop_normals[l], vec)
                 del(vec)
             self.redraw = True
     
@@ -117,6 +121,7 @@ def flatten_normals(self, po_inds, axis):
     return
 
 def align_to_axis_normals(self, po_inds, axis, dir):
+    update_filter_weights(self)
     vec = mathutils.Vector((0,0,0))
 
     vec[axis] = 1.0*dir
@@ -124,7 +129,7 @@ def align_to_axis_normals(self, po_inds, axis, dir):
         po = self._points_container.points[ind]
         if po.valid:
             for l in range(len(po.loop_normals)):
-                po.loop_normals[l] = vec.copy()
+                loop_norm_set(self, po, l, po.loop_normals[l], vec.copy())
             self.redraw = True
     
     del(vec)
@@ -134,15 +139,17 @@ def align_to_axis_normals(self, po_inds, axis, dir):
     return
 
 
+                    
 
 def average_vertex_normals(self, po_inds):
+    update_filter_weights(self)
     for ind in po_inds:
         po = self._points_container.points[ind]
         if po.valid:
             vec = average_vecs(po.loop_normals)
 
             for l in range(len(po.loop_normals)):
-                po.loop_normals[l] = vec.copy()
+                loop_norm_set(self, po, l, po.loop_normals[l], vec.copy())
             self.redraw = True
             
             del(vec)
@@ -152,6 +159,7 @@ def average_vertex_normals(self, po_inds):
     return
 
 def average_selected_normals(self, po_inds):
+    update_filter_weights(self)
     avg_vec = mathutils.Vector((0,0,0))
     for ind in po_inds:
         po = self._points_container.points[ind]
@@ -170,7 +178,7 @@ def average_selected_normals(self, po_inds):
             po = self._points_container.points[ind]
             if po.valid:
                 for l in range(len(po.loop_normals)):
-                    po.loop_normals[l] = avg_vec.copy()
+                    loop_norm_set(self, po, l, po.loop_normals[l], avg_vec.copy())
         set_new_normals(self)
         add_to_undostack(self, 1)
 
@@ -179,6 +187,7 @@ def average_selected_normals(self, po_inds):
     return
 
 def smooth_selected_normals(self, po_inds, iterations, fac):
+    update_filter_weights(self)
     abn_props = bpy.context.scene.abnormal_props
     calc_norms = None
     for i in range(iterations):
@@ -215,7 +224,7 @@ def smooth_selected_normals(self, po_inds, iterations, fac):
                 
                 if cnt > 0:
                     smooth_vec = smooth_vec/cnt
-                    po.loop_normals[l] = po.loop_normals[l].lerp(smooth_vec, abn_props.smooth_strength)
+                    loop_norm_set(self, po, l, po.loop_normals[l], po.loop_normals[l].lerp(smooth_vec, abn_props.smooth_strength))
                     del(smooth_vec)
 
             self.redraw = True
@@ -242,19 +251,28 @@ def flip_normals(self, po_inds):
     return
 
 def set_outside_inside(self, po_inds, direction):
+    update_filter_weights(self)
     for ind in po_inds:
         po = self._points_container.points[ind]
         if po.valid:
-            poly_norm = mathutils.Vector((0,0,0))
-            for l_ind in po.loop_inds:
-                for loop in self._object_bm.verts[po.index].link_loops:
-                    poly_norm += self._object.data.polygons[loop.face.index].normal * direction
-                
-            if poly_norm.length > 0.0:
-                for l, l_ind in enumerate(po.loop_inds):
-                    po.loop_normals[l] = poly_norm/len(po.loop_inds)
+            if self._object_smooth:
+                poly_norm = mathutils.Vector((0,0,0))
+                for l_ind in po.loop_inds:
+                    for loop in self._object_bm.verts[po.index].link_loops:
+                        poly_norm += self._object.data.polygons[loop.face.index].normal * direction
+                    
+                if poly_norm.length > 0.0:
+                    for l, l_ind in enumerate(po.loop_inds):
+                        loop_norm_set(self, po, l, po.loop_normals[l], poly_norm/len(po.loop_inds))
 
-                    self.redraw = True
+            else:
+                for i, l_ind in enumerate(po.loop_inds):
+                    for loop in self._object_bm.verts[po.index].link_loops:
+                        if loop.index == l_ind:
+                            po.loop_normals[i] = self._object.data.polygons[loop.face.index].normal.copy() * direction
+
+            self.redraw = True
+
     
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -274,6 +292,7 @@ def reset_normals(self, po_inds):
 
 
 def copy_active_to_selected(self, po_inds):
+    update_filter_weights(self)
     if self._active_point != None:
         for ind in po_inds:
             if ind != self._active_point:
@@ -281,7 +300,7 @@ def copy_active_to_selected(self, po_inds):
                 if po.valid:
                     inds = match_point_loops_index(self, po.index, self._active_point)
                     for l in range(len(po.loop_normals)):
-                        po.loop_normals[l] = self._points_container.points[self._active_point].loop_normals[inds[l]].copy()
+                        loop_norm_set(self, po, l, po.loop_normals[l], self._points_container.points[self._active_point].loop_normals[inds[l]].copy())
 
         self.redraw = True
 
@@ -305,13 +324,14 @@ def copy_active_normal(self):
     return
 
 def paste_normal(self, po_inds):
+    update_filter_weights(self)
     if self._copy_normals != None and self._copy_normals_vecs != None and self._copy_normal_ind != None:
         for ind in po_inds:
             po = self._points_container.points[ind]
             if po.valid:
                 inds = match_point_loops_vecs(self, po.index, self._copy_normals_vecs)
                 for l in range(len(po.loop_normals)):
-                    po.loop_normals[l] = self._copy_normals[inds[l]].copy()
+                    loop_norm_set(self, po, l, po.loop_normals[l], self._copy_normals[inds[l]].copy())
 
                 self.redraw = True
     set_new_normals(self)
@@ -360,7 +380,6 @@ def rotate_vectors(self, angle):
                 mat = self._object.matrix_world.normalized()
                 mat.translation = po.co
         
-
         for l, l_norm in enumerate(po.loop_normals):
             og_norm = self._changing_po_cache[2][p][l]
             vec_local = mat.inverted() @ (self._object.matrix_world @ (self._object.data.vertices[po.index].co+og_norm))
@@ -384,7 +403,7 @@ def rotate_vectors(self, angle):
                 vec_local[1] = rot_vec[1]
             
 
-            po.loop_normals[l] = ( (self._object.matrix_world.inverted() @ (mat @ vec_local)) - self._object.data.vertices[po.index].co ).normalized()
+            loop_norm_set(self, po, l, og_norm, ( (self._object.matrix_world.inverted() @ (mat @ vec_local)) - self._object.data.vertices[po.index].co ).normalized())
         
             del(rot_vec)
             del(og_norm)
@@ -456,6 +475,7 @@ def translate_axis_change(self, text, axis):
 
         for l, l_norm in enumerate(po.loop_normals):
             po.loop_normals[l] = self._changing_po_cache[2][i][l].copy()
+            
     return
 
 def translate_axis_side(self):
@@ -488,7 +508,43 @@ def translate_axis_side(self):
 
 
 
+def loop_norm_set(self, po, l, og_vec, to_vec):
+    weight = None
+    if self._filter_weights != None:
+        weight = self._filter_weights[po.index]
+    if weight == None:
+        po.loop_normals[l] = to_vec.normalized()
+    else:
+        if weight > 0.0:
+            po.loop_normals[l] = og_vec.lerp(to_vec.normalized(), weight)
+    return
+
+def update_filter_weights(self):
+    abn_props = bpy.context.scene.abnormal_props
+    weights = None
+    if abn_props.vertex_group != '':
+        if abn_props.vertex_group in self._object.vertex_groups:
+            weights = []
+
+            for ind in range(len(self._points_container.points)):
+                vg = self._object.vertex_groups[abn_props.vertex_group]
+
+                try:
+                    weights.append(vg.weight(ind))
+
+                except:
+                    weights.append(0.0)
+        
+        else:
+            abn_props.vertex_group = ''
+
+    self._filter_weights = weights
+    return
+
+
+
 def start_sphereize_mode(self):
+    update_filter_weights(self)
     self._window.panels[0].visible = False
     panel = self._window.add_panel(header_text='Sphereize Normals', hover_highlight=True)
     panel.width = 225
@@ -581,8 +637,7 @@ def sphereize_normals(self, po_inds):
         if po.valid:
             vec = (self._object.matrix_world.inverted() @ po.co) - (self._object.matrix_world.inverted() @ self.target_emp.location)
             for l, l_ind in enumerate(po.loop_inds):
-
-                po.loop_normals[l] = self._changing_po_cache[-1][i][l].lerp(vec, self.target_strength)
+                loop_norm_set(self, po, l, self._changing_po_cache[-1][i][l], self._changing_po_cache[-1][i][l].lerp(vec, self.target_strength))
             
             self.redraw = True
     
@@ -593,6 +648,7 @@ def sphereize_normals(self, po_inds):
 
 
 def start_point_mode(self):
+    update_filter_weights(self)
     self._window.panels[0].visible = False
     panel = self._window.add_panel(header_text='Point Normals at Target', hover_highlight=True)
     panel.width = 225
@@ -693,7 +749,7 @@ def point_normals(self, po_inds):
                 vec = (self._object.matrix_world.inverted() @ self.target_emp.location) - (self._object.matrix_world.inverted() @ po.co)
             for l, l_ind in enumerate(po.loop_inds):
 
-                po.loop_normals[l] = self._changing_po_cache[-1][i][l].lerp(vec, self.target_strength)
+                loop_norm_set(self, po, l, self._changing_po_cache[-1][i][l], self._changing_po_cache[-1][i][l].lerp(vec, self.target_strength))
             
             self.redraw = True
     
@@ -853,7 +909,7 @@ def gizmo_unhide(self):
 
 
 def init_nav_list(self):
-    self.nav_list = ['LEFTMOUSE', 'MOUSEMOVE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE',]
+    self.nav_list = ['LEFTMOUSE', 'MOUSEMOVE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE', 'N']
 
     names = ['Zoom View', 'Rotate View', 'Pan View', 'Dolly View', 
     'View Selected', 'View Camera Center', 'View All', 'View Axis', 
@@ -956,6 +1012,9 @@ def button_pressed(self, event, but_type, but_id):
         
         #restore normals
         ob.data.normals_split_custom_set(self.og_loop_norms)
+
+        for ed in self._object.data.edges:
+            ed.use_edge_sharp = self.og_sharp_edges[ed.index]
 
         finish_modal(self)
         status = {'CANCELLED'}
@@ -1093,6 +1152,19 @@ def button_pressed(self, event, but_type, but_id):
                 self._window.boolean_toggle_hover()
                 self.redraw = True
                 point_normals(self, sel_pos)
+
+            
+            if but_id == 40:
+                for p in self._object.data.polygons:
+                    p.use_smooth = True
+                self._object_smooth = True
+                set_new_normals(self)
+            
+            if but_id == 41:
+                for p in self._object.data.polygons:
+                    p.use_smooth = False
+                self._object_smooth = False
+                set_new_normals(self)
             
 
 
@@ -1405,9 +1477,6 @@ def button_pressed(self, event, but_type, but_id):
 
 
 def ob_data_structures(self, ob):
-    for p in ob.data.polygons:
-        p.use_smooth = True
-    
     if ob.data.shape_keys != None:
         for sk in ob.data.shape_keys.key_blocks:
             self._objects_sk_vis.append(sk.mute)
@@ -1426,6 +1495,7 @@ def ob_data_structures(self, ob):
 def cache_point_data(self):
     self._object.data.calc_normals_split()
     self.og_loop_norms = [loop.normal.copy() for loop in self._object.data.loops]
+    self.og_sharp_edges = [ed.use_edge_sharp for ed in self._object.data.edges]
     
     for v in self._object_bm.verts:
         if len(v.link_loops) > 0:
@@ -1444,7 +1514,7 @@ def cache_point_data(self):
 
 
 
-def selection_test(self, context, event, radius=15.0):
+def selection_test(self, context, event, radius=8.0):
     region = context.region
     rv3d = context.region_data
     mouse_co = mathutils.Vector((self._mouse_loc[0], self._mouse_loc[1]))
@@ -1904,6 +1974,8 @@ def finish_modal(self):
         except:
             self.target_emp = None
 
+    abn_props = bpy.context.scene.abnormal_props
+    abn_props.object = ''
 
     self._object.select_set(True)
     bpy.context.view_layer.objects.active = self._object
