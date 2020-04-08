@@ -162,6 +162,13 @@ class ABN_OT_normal_editor_modal(Operator):
             self._rot_increment_ten = False
             self._rot_increment = 1
             self._modal_running = True
+            self._object_smooth = True
+            self._filter_weights = None
+
+            self.area = context.area
+
+
+            abn_props.object = context.active_object.name
 
 
             ##NAVIGATION KEYS LIST
@@ -223,7 +230,6 @@ class ABN_OT_normal_editor_modal(Operator):
                 self._object.data.auto_smooth_angle = 180
             
 
-
             ##INITIALIZE BATCHES AND SHADERS
             self.shader_2d = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
             self.shader_3d = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
@@ -235,6 +241,9 @@ class ABN_OT_normal_editor_modal(Operator):
             ##INITIALIZE POINT DATA
             cache_point_data(self)
             add_orbit_empty(self)
+
+
+            update_filter_weights(self)
             
 
             add_to_undostack(self, 0)
@@ -392,6 +401,8 @@ class ABN_OT_normal_editor_modal(Operator):
 
             ##SETUP BATCHES
             refresh_batches(self, context)
+
+
 
             
             

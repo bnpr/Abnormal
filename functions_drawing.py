@@ -154,33 +154,34 @@ def draw_callback_2d(self, context):
         if self._modal_running == False:
             clear_draw = True
         
-        bgl.glLineWidth(2)
-        self.shader_2d.bind()
-        self.shader_2d.uniform_float("color", (0.05, 0.05, 0.05, 1))
-        self.batch_rotate_screen_lines.draw(self.shader_2d)
+        if context.area == self.area:
+            bgl.glLineWidth(2)
+            self.shader_2d.bind()
+            self.shader_2d.uniform_float("color", (0.05, 0.05, 0.05, 1))
+            self.batch_rotate_screen_lines.draw(self.shader_2d)
 
-        bgl.glLineWidth(1)
-        self.shader_2d.bind()
-        self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
-        self.batch_boxsel_screen_lines.draw(self.shader_2d)
-        
-        bgl.glLineWidth(1)
-        self.shader_2d.bind()
-        self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
-        self.batch_circlesel_screen_lines.draw(self.shader_2d)
+            bgl.glLineWidth(1)
+            self.shader_2d.bind()
+            self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
+            self.batch_boxsel_screen_lines.draw(self.shader_2d)
+            
+            bgl.glLineWidth(1)
+            self.shader_2d.bind()
+            self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
+            self.batch_circlesel_screen_lines.draw(self.shader_2d)
 
-        bgl.glLineWidth(1)
-        self.shader_2d.bind()
-        self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
-        self.batch_lassosel_screen_lines.draw(self.shader_2d)
+            bgl.glLineWidth(1)
+            self.shader_2d.bind()
+            self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
+            self.batch_lassosel_screen_lines.draw(self.shader_2d)
 
-        self._window.draw()
+            self._window.draw()
 
-        bgl.glPointSize(2)
-        self.batch_po = batch_for_shader(self.shader_2d, 'POINTS', { "pos": self._temp_po_draw })
-        self.shader_2d.bind()
-        self.shader_2d.uniform_float("color", (1.0, 0.0, 0.0, 1))
-        self.batch_po.draw(self.shader_2d)
+            bgl.glPointSize(2)
+            self.batch_po = batch_for_shader(self.shader_2d, 'POINTS', { "pos": self._temp_po_draw })
+            self.shader_2d.bind()
+            self.shader_2d.uniform_float("color", (1.0, 0.0, 0.0, 1))
+            self.batch_po.draw(self.shader_2d)
     except:
         clear_draw = True
     
