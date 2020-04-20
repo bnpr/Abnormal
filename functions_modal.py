@@ -1509,6 +1509,8 @@ def cache_point_data(self):
             self._points_container.add_point(v.co, v.normal, loop_norms, loop_inds)
         else:
             self._points_container.add_empty_point(v.co, mathutils.Vector((0,0,1)))
+        self._points_container.points[-1].hide = self._object.data.vertices[v.index].hide
+        self._points_container.points[-1].select = self._object.data.vertices[v.index].select
     
     return
 
