@@ -193,7 +193,7 @@ def smooth_selected_normals(self, po_inds, iterations, fac):
     for i in range(iterations):
         calc_norms = []
         for po in self._points_container.points:
-            if len(po.loop_normals) > 0:
+            if len(po.loop_normals) > 0 and po.valid:
                 loop_norms = po.loop_normals
                 
                 vec = mathutils.Vector((0,0,0))
@@ -205,6 +205,8 @@ def smooth_selected_normals(self, po_inds, iterations, fac):
                 calc_norms.append(vec)
 
                 del(vec)
+            else:
+                calc_norms.append(None)
         
         
         for ind in po_inds:
@@ -219,8 +221,9 @@ def smooth_selected_normals(self, po_inds, iterations, fac):
 
                 cnt = 0
                 for ov in l_vs:
-                    smooth_vec += l_norm.lerp(calc_norms[ov.index], fac)
-                    cnt += 1
+                    if calc_norms[ov.index] != None:
+                        smooth_vec += l_norm.lerp(calc_norms[ov.index], fac)
+                        cnt += 1
                 
                 if cnt > 0:
                     smooth_vec = smooth_vec/cnt
