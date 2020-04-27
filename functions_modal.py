@@ -83,8 +83,10 @@ def match_point_loops_index(self, po_ind, o_ind, flip_axis=None):
 def mirror_normals(self, po_inds, axis):
     for ind in po_inds:
         po = self._points_container.points[ind]
-        co = po.co.copy()
+        co = self._object.matrix_world.inverted() @ po.co
         co[axis] *= -1
+
+        co = self._object.matrix_world @ co
         
         result = self._object_kd.find(co)
         if result != None :
