@@ -191,7 +191,11 @@ def bounding_box_filter(shape_cos, cos):
     min_y_ind, min_y = get_outer_v(1, True, shape_cos)
     max_y_ind, max_y = get_outer_v(1, False, shape_cos)
 
-    in_range_cos = [c for c, co in enumerate(cos) if min_x < co[0] < max_x and min_y < co[1] < max_y]
+    in_range_cos = []
+    for c, co in enumerate(cos):
+        if co != None:
+            if min_x < co[0] < max_x and min_y < co[1] < max_y:
+                in_range_cos.append(c)
 
     return in_range_cos
 

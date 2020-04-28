@@ -228,7 +228,6 @@ def basic_keymap(self, context, event):
             update_orbit_empty(self)
         else:
             f_ind = ray_cast_to_mouse(self, context)
-            print(f_ind)
         status = {"RUNNING_MODAL"}
 
 
@@ -263,7 +262,6 @@ def basic_keymap(self, context, event):
                         status = {'RUNNING_MODAL'}
                     else:
                         f_ind = ray_cast_to_mouse(self, context)
-                        print(f_ind)
             else:
                 status = {'RUNNING_MODAL'}
     
