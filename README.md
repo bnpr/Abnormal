@@ -31,10 +31,10 @@ This add-on is funded by the BNPR community with the BEER dev fund.
 1. Cleanly remove older Abnormal add-on: preference > Add-on tab, find Abnormal, click remove.
 2. Download the add-on: https://github.com/BlenderNPR/Abnormal/archive/master.zip
 3. Install Abnormal: Preference > Add-on tab > Install
-4. Activate the add-on
-5. Restart Blender
+4. Restart Blender
+5. Activate the add-on (reactivate before Blender restart may cause error message to pop up)
 
-## Reporting a bug
+## Reporting a bug:
 1. Download the latest add-on version. Please see **Reinstallation** guide above.
 2. Recreate the bug in the new add-on
 3. Report the bug/issue via this link: https://github.com/BlenderNPR/Abnormal/issues/new
