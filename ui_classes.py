@@ -315,6 +315,7 @@ class UIWindow:
         self.shader_img = shader_img
         self.width = bpy.context.region.width
         self.height = bpy.context.region.height
+        self.scale = round(bpy.context.window.width/1920, 2)
 
         self.num_slide_cache = []
         self.panel_move_cache = []
@@ -410,7 +411,7 @@ class UIWindow:
 
 
     def add_border(self, header_text='', thickness=5, color=(0.3, 0.3, 0.3, 0.5), use_header=True, bevel_size=0.5):
-        self.border = UIBorder(self.shader_2d, header_text, thickness, color, bevel_size, use_header)
+        self.border = UIBorder(self.shader_2d, header_text, thickness, color, round(bevel_size*self.scale), use_header, self.scale)
         return
 
 
@@ -419,9 +420,6 @@ class UIWindow:
         return
 
 
-    def add_popup():
-        return
-
 
     def clear_popup(self):
         self.popup = None
@@ -429,7 +427,7 @@ class UIWindow:
 
 
     def add_panel(self, header_text='', header_text_size=18, position=[200,200], alignment='TL', x_size=250, hover_highlight=False):
-        panel = UIPanel(self.shader_2d, self.shader_img, len(self.panels), header_text, header_text_size, position, alignment, x_size, hover_highlight)
+        panel = UIPanel(self.shader_2d, self.shader_img, len(self.panels), header_text, header_text_size, position, alignment, x_size, hover_highlight, self.scale)
         panel.init_shape_data()
         self.panels.append(panel)
 
@@ -969,12 +967,12 @@ class UIWindow:
 
 
 class UIBorder:
-    def __init__(self, shader, text, thick, color, bevel, header):
-        self.thickness = thick
+    def __init__(self, shader, text, thick, color, bevel, header, scale):
+        self.thickness = round(thick*scale)
         self.color = color
         self.text_color = [1,1,1,1]
         self.shader = shader
-        self.bevel_size = bevel
+        self.bevel_size = round(bevel*scale)
         self.use_header = header
         self.bevel_res = 10
         self.width = 1920
@@ -982,7 +980,9 @@ class UIBorder:
 
         self.text = text
         self.font_id = 0
-        self.font_size = 22
+        self.font_size = round(22*scale)
+
+
         
         #self.create_shape_data(text, self.color)
         return
@@ -1063,7 +1063,7 @@ class UIBorder:
 
 
 class UIPanel:
-    def __init__(self, shader, icon_shader, ind, header_text, header_text_size, position, alignment, x_size, hover_highlight):
+    def __init__(self, shader, icon_shader, ind, header_text, header_text_size, position, alignment, x_size, hover_highlight, scale):
         self.subpanels = []
         self.shader = shader
         self.icon_shader = icon_shader
@@ -1082,11 +1082,11 @@ class UIPanel:
         self.header_bar_offset = [0,0]
         self.header_text = header_text
         self.header_text_render = header_text
-        self.header_text_size = header_text_size
+        self.header_text_size = round(header_text_size*scale)
         self.subp_header_text_size = None
         self.header_text_x = 0
         self.header_text_y = 0
-        self.header_arrow_size = 8
+        self.header_arrow_size = round(8*scale)
         self.header_align = 'Center'
         self.text_align = 'Center'
         self.moveable = True
@@ -1104,26 +1104,26 @@ class UIPanel:
         self.header_icon_pos = []
         self.header_icon_size = 0
         self.icon_margin = 0
-        self.icon_separation = 5
+        self.icon_separation = round(5*scale)
 
 
-        self.width = round(x_size)
-        self.height = 75
-        self.border_size = 4
+        self.width = round(x_size*scale)
+        self.height = round(75*scale)
+        self.border_size = round(4*scale)
         self.draw_border = False
-        self.header_bar_height = 30
+        self.header_bar_height = round(30*scale)
         self.header_bar_width = 0
-        self.subp_header_height = 20
-        self.text_margin = 5
+        self.subp_header_height = round(20*scale)
+        self.text_margin = round(5*scale)
         self.horizontal_margin = 0
         self.vert_margin = 0
-        self.margin = 5
-        self.row_margin = 2
-        self.panel_separation = 6
-        self.subp_row_height = 24
-        self.subp_row_separation = 2
-        self.min_width = 50
-        self.arrow_width = 10
+        self.margin = round(5*scale)
+        self.row_margin = round(2*scale)
+        self.panel_separation = round(6*scale)
+        self.subp_row_height = round(24*scale)
+        self.subp_row_separation = round(2*scale)
+        self.min_width = round(50*scale)
+        self.arrow_width = round(10*scale)
 
         self.visible = True
         self.visible_on_hover = False
@@ -1156,7 +1156,7 @@ class UIPanel:
         self.color_set = [0.6,0.6,0.7,1.0]
 
         self.font_id = 0
-        self.subp_font_size = 12
+        self.subp_font_size = round(12*scale)
 
         self.bevel_size = 0
         self.bevel_res = 0
@@ -1168,6 +1168,7 @@ class UIPanel:
         self.button_bevel_res = 0
 
         self.use_visible_hov_icon = False
+
         return
     
 
@@ -1191,6 +1192,9 @@ class UIPanel:
     ##CREATE DRAWING DATA
     def create_shape_data(self):
         self.init_shape_data()
+
+
+        # self.scale_og_data(scale)
 
 
         #HEADERBAR SIZE CALC
@@ -1616,7 +1620,8 @@ class UIPanel:
 
 
     ##ADD SUBPANEL
-    def add_subpanel(self, header_text='', header_text_size=14):
+    def add_subpanel(self, scale, header_text='', header_text_size=14):
+        header_text_size = round(header_text_size*scale)
         subp = UISubpanel(self.shader, self.icon_shader, len(self.subpanels), self.index, self.width-self.horizontal_margin*2, header_text, header_text_size)
 
         subp.visible = self.visible

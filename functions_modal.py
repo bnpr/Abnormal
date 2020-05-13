@@ -1473,6 +1473,14 @@ def button_pressed(self, event, but_type, but_id):
                 self._window.panels[2].subpanels[0].rows[0].items[2].bool = self._rot_increment_ten
                 self._rot_increment = 10
         
+        if but_id == 101:
+            if but_type == 'NUM_LEFT_ARROW':
+                new_val = self._window.num_change(event.shift)
+                self._window.scale = new_val
+            if but_type == 'NUM_RIGHT_ARROW':
+                new_val = self._window.num_change(event.shift)
+                self._window.scale = new_val
+            self._window.create_all_drawing_data()
 
     
     return status
@@ -1706,7 +1714,7 @@ def lasso_selection_test(self, context, event):
     region = context.region
     rv3d = context.region_data
     mouse_co = mathutils.Vector((self._mouse_loc[0], self._mouse_loc[1]))
-
+    
     if self._x_ray_mode == False:
         bvh = self._object_bvh
     else:
@@ -1739,6 +1747,10 @@ def lasso_selection_test(self, context, event):
                         change = True
     
     return change
+
+
+
+
 
 
 
@@ -1818,27 +1830,28 @@ def img_load(self, img_name):
 def keymap_initialize(self):
     subp = self._window.panels[1].subpanels[2]
     subp.clear_rows()
-    row = subp.add_text_row('ESC - Cancel Normal Editing', 10)
-    row = subp.add_text_row('Tab - End and Confirm Normal Editing', 10)
-    row = subp.add_text_row('R - Rotate Selected Normals', 10)
-    row = subp.add_text_row('R + Alt - Reset Gizmo Axis', 10)
-    row = subp.add_text_row('L-Click - Select Vertex/Gizmo Axis', 10)
-    row = subp.add_text_row('L-Click + Alt - Reorient Gizmo', 10)
-    row = subp.add_text_row('L-Click + Ctrl - Start Lasso Selection', 10)
-    row = subp.add_text_row('C - Start Circle Selection', 10)
-    row = subp.add_text_row('B - Start Box Selection', 10)
-    row = subp.add_text_row('A - Select All', 10)
-    row = subp.add_text_row('A + Alt - Unselect All', 10)
-    row = subp.add_text_row('L - Select Linked Under Mouse', 10)
-    row = subp.add_text_row('L + Ctrl - Select Linked from Selected', 10)
-    row = subp.add_text_row('I + Ctrl - Invert Selection', 10)
-    row = subp.add_text_row('H - Hide Selected Vertices', 10)
-    row = subp.add_text_row('H + Alt - Unhide Vertices', 10)
-    row = subp.add_text_row('Z - Toggle X-Ray', 10)
-    row = subp.add_text_row('Ctrl + Z - Undo Normals Change', 10)
-    row = subp.add_text_row('Ctrl + Shift + Z - Redo Normals Change', 10)
-    row = subp.add_text_row('Ctrl + X - Undo Selection Change', 10)
-    row = subp.add_text_row('Ctrl + Shift + X - Redo Selection Change', 10)
+    txt_size = round(10*self._window.scale)
+    row = subp.add_text_row('ESC - Cancel Normal Editing', txt_size)
+    row = subp.add_text_row('Tab - End and Confirm Normal Editing', txt_size)
+    row = subp.add_text_row('R - Rotate Selected Normals', txt_size)
+    row = subp.add_text_row('R + Alt - Reset Gizmo Axis', txt_size)
+    row = subp.add_text_row('L-Click - Select Vertex/Gizmo Axis', txt_size)
+    row = subp.add_text_row('L-Click + Alt - Reorient Gizmo', txt_size)
+    row = subp.add_text_row('L-Click + Ctrl - Start Lasso Selection', txt_size)
+    row = subp.add_text_row('C - Start Circle Selection', txt_size)
+    row = subp.add_text_row('B - Start Box Selection', txt_size)
+    row = subp.add_text_row('A - Select All', txt_size)
+    row = subp.add_text_row('A + Alt - Unselect All', txt_size)
+    row = subp.add_text_row('L - Select Linked Under Mouse', txt_size)
+    row = subp.add_text_row('L + Ctrl - Select Linked from Selected', txt_size)
+    row = subp.add_text_row('I + Ctrl - Invert Selection', txt_size)
+    row = subp.add_text_row('H - Hide Selected Vertices', txt_size)
+    row = subp.add_text_row('H + Alt - Unhide Vertices', txt_size)
+    row = subp.add_text_row('Z - Toggle X-Ray', txt_size)
+    row = subp.add_text_row('Ctrl + Z - Undo Normals Change', txt_size)
+    row = subp.add_text_row('Ctrl + Shift + Z - Redo Normals Change', txt_size)
+    row = subp.add_text_row('Ctrl + X - Undo Selection Change', txt_size)
+    row = subp.add_text_row('Ctrl + Shift + X - Redo Selection Change', txt_size)
     return
 
 def keymap_refresh_base(self):
@@ -1846,110 +1859,118 @@ def keymap_refresh_base(self):
 
     subp = self._window.panels[1].subpanels[2]
     subp.clear_rows()
+    txt_size = round(10*self._window.scale)
 
-    row = subp.add_text_row('ESC - Cancel Normal Editing', 10)
-    row = subp.add_text_row('Tab - End and Confirm Normal Editing', 10)
-    row = subp.add_text_row('R - Rotate Selected Normals', 10)
+    row = subp.add_text_row('ESC - Cancel Normal Editing', txt_size)
+    row = subp.add_text_row('Tab - End and Confirm Normal Editing', txt_size)
+    row = subp.add_text_row('R - Rotate Selected Normals', txt_size)
     if addon_prefs.rotate_gizmo_use:
-        row = subp.add_text_row('R + Alt - Reset Gizmo Axis', 10)
-        row = subp.add_text_row('L-Click - Select Vertex/Gizmo Axis', 10)
-        row = subp.add_text_row('L-Click + Alt - Reorient Gizmo', 10)
+        row = subp.add_text_row('R + Alt - Reset Gizmo Axis', txt_size)
+        row = subp.add_text_row('L-Click - Select Vertex/Gizmo Axis', txt_size)
+        row = subp.add_text_row('L-Click + Alt - Reorient Gizmo', txt_size)
     else:
-        row = subp.add_text_row('L-Click - Select Vertex', 10)
-    row = subp.add_text_row('L-Click + Ctrl - Start Lasso Selection', 10)
-    row = subp.add_text_row('C - Start Circle Selection', 10)
-    row = subp.add_text_row('B - Start Box Selection', 10)
-    row = subp.add_text_row('A - Select All', 10)
-    row = subp.add_text_row('A + Alt - Unselect All', 10)
-    row = subp.add_text_row('L - Select Linked Under Mouse', 10)
-    row = subp.add_text_row('L + Ctrl - Select Linked from Selected', 10)
-    row = subp.add_text_row('I + Ctrl - Invert Selection', 10)
-    row = subp.add_text_row('H - Hide Selected Vertices', 10)
-    row = subp.add_text_row('H + Alt - Unhide Vertices', 10)
-    row = subp.add_text_row('Z - Toggle X-Ray', 10)
-    row = subp.add_text_row('Ctrl + Z - Undo Normals Change', 10)
-    row = subp.add_text_row('Ctrl + Shift + Z - Redo Normals Change', 10)
-    row = subp.add_text_row('Ctrl + X - Undo Selection Change', 10)
-    row = subp.add_text_row('Ctrl + Shift + X - Redo Selection Change', 10)
+        row = subp.add_text_row('L-Click - Select Vertex', txt_size)
+    row = subp.add_text_row('L-Click + Ctrl - Start Lasso Selection', txt_size)
+    row = subp.add_text_row('C - Start Circle Selection', txt_size)
+    row = subp.add_text_row('B - Start Box Selection', txt_size)
+    row = subp.add_text_row('A - Select All', txt_size)
+    row = subp.add_text_row('A + Alt - Unselect All', txt_size)
+    row = subp.add_text_row('L - Select Linked Under Mouse', txt_size)
+    row = subp.add_text_row('L + Ctrl - Select Linked from Selected', txt_size)
+    row = subp.add_text_row('I + Ctrl - Invert Selection', txt_size)
+    row = subp.add_text_row('H - Hide Selected Vertices', txt_size)
+    row = subp.add_text_row('H + Alt - Unhide Vertices', txt_size)
+    row = subp.add_text_row('Z - Toggle X-Ray', txt_size)
+    row = subp.add_text_row('Ctrl + Z - Undo Normals Change', txt_size)
+    row = subp.add_text_row('Ctrl + Shift + Z - Redo Normals Change', txt_size)
+    row = subp.add_text_row('Ctrl + X - Undo Selection Change', txt_size)
+    row = subp.add_text_row('Ctrl + Shift + X - Redo Selection Change', txt_size)
     self._window.panels[1].create_shape_data()
     return
 
 def keymap_refresh_rotating(self):
     subp = self._window.panels[1].subpanels[2]
     subp.clear_rows()
+    txt_size = round(10*self._window.scale)
 
-    row = subp.add_text_row('X - Rotate on X axis', 10)
-    row = subp.add_text_row('Y - Rotate on Y axis', 10)
-    row = subp.add_text_row('Z - Rotate on Z axis', 10)
-    row = subp.add_text_row('Hold Shift - Rotate 10x Smaller', 10)
-    row = subp.add_text_row('L-Click - Confirm Rotation', 10)
-    row = subp.add_text_row('R-Click - Cancel Rotation', 10)
+    row = subp.add_text_row('X - Rotate on X axis', txt_size)
+    row = subp.add_text_row('Y - Rotate on Y axis', txt_size)
+    row = subp.add_text_row('Z - Rotate on Z axis', txt_size)
+    row = subp.add_text_row('Hold Shift - Rotate txt_sizex Smaller', txt_size)
+    row = subp.add_text_row('L-Click - Confirm Rotation', txt_size)
+    row = subp.add_text_row('R-Click - Cancel Rotation', txt_size)
     self._window.panels[1].create_shape_data()
     return
 
 def keymap_refresh_gizmo(self):
     subp = self._window.panels[1].subpanels[2]
     subp.clear_rows()
+    txt_size = round(10*self._window.scale)
 
-    row = subp.add_text_row('Hold Shift - Rotate 10x Smaller', 10)
-    row = subp.add_text_row('L-Click - Confirm Rotation', 10)
-    row = subp.add_text_row('R-Click - Cancel Rotation', 10)
+    row = subp.add_text_row('Hold Shift - Rotate txt_sizex Smaller', txt_size)
+    row = subp.add_text_row('L-Click - Confirm Rotation', txt_size)
+    row = subp.add_text_row('R-Click - Cancel Rotation', txt_size)
     self._window.panels[1].create_shape_data()
     return
 
 def keymap_refresh_lasso(self):
     subp = self._window.panels[1].subpanels[2]
     subp.clear_rows()
+    txt_size = round(10*self._window.scale)
 
-    row = subp.add_text_row('L-Click Release - Finish Selection', 10)
-    row = subp.add_text_row('L-Ctrl + Shift Release - Remove from Selection', 10)
-    row = subp.add_text_row('R-Click - Cancel Selection Mode', 10)
+    row = subp.add_text_row('L-Click Release - Finish Selection', txt_size)
+    row = subp.add_text_row('L-Ctrl + Shift Release - Remove from Selection', txt_size)
+    row = subp.add_text_row('R-Click - Cancel Selection Mode', txt_size)
     self._window.panels[1].create_shape_data()
     return
 
 def keymap_refresh_circle(self):
     subp = self._window.panels[1].subpanels[2]
     subp.clear_rows()
+    txt_size = round(10*self._window.scale)
 
-    row = subp.add_text_row('L-Click - Add to Selection', 10)
-    row = subp.add_text_row('L-Click + Ctrl - Remove from Selection', 10)
-    row = subp.add_text_row('Hold F - Change Cricle Size', 10)
-    row = subp.add_text_row('[ - Decrease Circle Size', 10)
-    row = subp.add_text_row('] - Increase Circle Size', 10)
-    row = subp.add_text_row('R-Click - Cancel Selection Mode', 10)
+    row = subp.add_text_row('L-Click - Add to Selection', txt_size)
+    row = subp.add_text_row('L-Click + Ctrl - Remove from Selection', txt_size)
+    row = subp.add_text_row('Hold F - Change Cricle Size', txt_size)
+    row = subp.add_text_row('[ - Decrease Circle Size', txt_size)
+    row = subp.add_text_row('] - Increase Circle Size', txt_size)
+    row = subp.add_text_row('R-Click - Cancel Selection Mode', txt_size)
     self._window.panels[1].create_shape_data()
     return
 
 def keymap_refresh_box(self):
     subp = self._window.panels[1].subpanels[2]
     subp.clear_rows()
+    txt_size = round(10*self._window.scale)
 
-    row = subp.add_text_row('L-Click - Start New Selection', 10)
-    row = subp.add_text_row('L-Click + Shift - Add to Selection', 10)
-    row = subp.add_text_row('L-Click + Ctrl - Remove from Selection', 10)
-    row = subp.add_text_row('R-Click - Cancel Selection Mode', 10)
+    row = subp.add_text_row('L-Click - Start New Selection', txt_size)
+    row = subp.add_text_row('L-Click + Shift - Add to Selection', txt_size)
+    row = subp.add_text_row('L-Click + Ctrl - Remove from Selection', txt_size)
+    row = subp.add_text_row('R-Click - Cancel Selection Mode', txt_size)
     self._window.panels[1].create_shape_data()
     return
 
 def keymap_refresh_target(self):
     subp = self._window.panels[1].subpanels[2]
     subp.clear_rows()
+    txt_size = round(10*self._window.scale)
 
-    row = subp.add_text_row('G - Moved Target Center', 10)
-    row = subp.add_text_row('G + Alt - Reset Target Center', 10)
-    row = subp.add_text_row('Z - Toggle X-Ray', 10)
+    row = subp.add_text_row('G - Moved Target Center', txt_size)
+    row = subp.add_text_row('G + Alt - Reset Target Center', txt_size)
+    row = subp.add_text_row('Z - Toggle X-Ray', txt_size)
     self._window.panels[1].create_shape_data()
     return
 
 def keymap_refresh_target_move(self):
     subp = self._window.panels[1].subpanels[2]
     subp.clear_rows()
+    txt_size = round(10*self._window.scale)
 
-    row = subp.add_text_row('X - Translate on X axis', 10)
-    row = subp.add_text_row('Y - Translate on Y axis', 10)
-    row = subp.add_text_row('Z - Translate on Z axis', 10)
-    row = subp.add_text_row('L-Click - Confirm Move', 10)
-    row = subp.add_text_row('R-Click - Cancel Move', 10)
+    row = subp.add_text_row('X - Translate on X axis', txt_size)
+    row = subp.add_text_row('Y - Translate on Y axis', txt_size)
+    row = subp.add_text_row('Z - Translate on Z axis', txt_size)
+    row = subp.add_text_row('L-Click - Confirm Move', txt_size)
+    row = subp.add_text_row('R-Click - Cancel Move', txt_size)
     self._window.panels[1].create_shape_data()
     return
 

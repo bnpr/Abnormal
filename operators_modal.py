@@ -254,12 +254,13 @@ class ABN_OT_normal_editor_modal(Operator):
             self._window = UIWindow(self.shader_2d, self.shader_3d, self.shader_img)
             self._window.add_border(color=(0.423, 0.144, 0.863, 1.0), thickness=2, use_header=False)
 
+            bool_size = round(14*self._window.scale)
+
             r_height = bpy.context.region.height
             r_width = bpy.context.region.width
 
 
             panel = self._window.add_panel(header_text='Abnormal', hover_highlight=True)
-            panel.width = 250
             panel.subp_use_header_box = False
             panel.position = [25, r_height - 25]
             panel.alignment = 'TL'
@@ -267,19 +268,19 @@ class ABN_OT_normal_editor_modal(Operator):
             panel.icon_shader = self.shader_img
             
 
-            subp = panel.add_subpanel(header_text='Mirror Normals')
+            subp = panel.add_subpanel(self._window.scale, header_text='Mirror Normals')
             row = subp.add_row()
             row.add_button(2, 'X')
             row.add_button(3, 'Y')
             row.add_button(4, 'Z')
 
-            subp = panel.add_subpanel(header_text='Axis Alignment')
-            subp.add_text_row('Flatten Normals', 12)
+            subp = panel.add_subpanel(self._window.scale, header_text='Axis Alignment')
+            subp.add_text_row('Flatten Normals', round(12*self._window.scale))
             row = subp.add_row()
             row.add_button(5, 'X')
             row.add_button(6, 'Y')
             row.add_button(7, 'Z')
-            subp.add_text_row('Align to Axis', 12)
+            subp.add_text_row('Align to Axis', round(12*self._window.scale))
             row = subp.add_row()
             row.add_button(8, '+X')
             row.add_button(11, '-X')
@@ -288,7 +289,7 @@ class ABN_OT_normal_editor_modal(Operator):
             row.add_button(10, '+Z')
             row.add_button(13, '-Z')
 
-            subp = panel.add_subpanel(header_text='Normal Direction')
+            subp = panel.add_subpanel(self._window.scale, header_text='Normal Direction')
             row = subp.add_row()
             row.add_button(14, 'Flip Normals')
             row = subp.add_row()
@@ -298,9 +299,9 @@ class ABN_OT_normal_editor_modal(Operator):
             row.add_button(17, 'Reset Normals')
 
 
-            subp = panel.add_subpanel(header_text='Manipulate Normals')
+            subp = panel.add_subpanel(self._window.scale, header_text='Manipulate Normals')
             row = subp.add_row()
-            row.add_bool_prop(59, 'Use Rotation Gizmo', 14, addon_prefs.rotate_gizmo_use)
+            row.add_bool_prop(59, 'Use Rotation Gizmo', bool_size, addon_prefs.rotate_gizmo_use)
             row = subp.add_row()
             row.add_button(18, 'Average Individual Vertex Normals')
             row = subp.add_row()
@@ -315,7 +316,7 @@ class ABN_OT_normal_editor_modal(Operator):
             row.add_button(41, 'Set Flat Shading')
 
 
-            subp = panel.add_subpanel(header_text='Copy/Paste Normals')
+            subp = panel.add_subpanel(self._window.scale, header_text='Copy/Paste Normals')
             row = subp.add_row()
             row.add_button(21, 'Copy Active Normal to Selected')
             row = subp.add_row()
@@ -324,45 +325,46 @@ class ABN_OT_normal_editor_modal(Operator):
             row.add_button(23, 'Paste Normal to Selected')
 
 
-            subp = panel.add_subpanel(header_text='Target Normals')
+            subp = panel.add_subpanel(self._window.scale, header_text='Target Normals')
             row = subp.add_row()
             row.add_button(24, 'Sphereize Normals')
             row = subp.add_row()
             row.add_button(30, 'Point Normals at Target')
 
 
-            panel = self._window.add_panel(header_text='Addon Settings', hover_highlight=True)
-            panel.width = 225
+            panel = self._window.add_panel(header_text='Addon Settings', hover_highlight=True, x_size=225)
             panel.position = [r_width-25, r_height-25]
             panel.alignment = 'TR'
-            subp = panel.add_subpanel(header_text='Finish Modal')
+            subp = panel.add_subpanel(self._window.scale, header_text='Finish Modal')
             row = subp.add_row()
             row.add_button(0, 'Confirm Changes')
             row.add_button(1, 'Cancel Changes')
 
-            subp = panel.add_subpanel(header_text='Viewport Settings')
+            subp = panel.add_subpanel(self._window.scale, header_text='Viewport Settings')
             row = subp.add_row()
-            row.add_bool_prop(50, 'Show Only Selected Normals', 14, addon_prefs.selected_only)
+            row.add_bool_prop(50, 'Show Only Selected Normals', bool_size, addon_prefs.selected_only)
             row = subp.add_row()
-            row.add_bool_prop(70, 'Scale Up Selected Normals', 14, addon_prefs.selected_scale)
+            row.add_bool_prop(70, 'Scale Up Selected Normals', bool_size, addon_prefs.selected_scale)
             row = subp.add_row()
-            row.add_bool_prop(51, 'X-Ray', 14, self._x_ray_mode)
+            row.add_bool_prop(51, 'X-Ray', bool_size, self._x_ray_mode)
             row = subp.add_row()
-            row.add_num_prop(52, 'Normals Length',  round(addon_prefs.normal_size,2), 2, 0.01, 0.01, 10.0)
+            row.add_num_prop(52, 'Normals Length', round(addon_prefs.normal_size,2), 2, 0.01, 0.01, 10.0)
             row = subp.add_row()
-            row.add_num_prop(53, 'Normals Brightness',  round(addon_prefs.line_brightness,2), 2, 0.01, 0.01, 2.0)
+            row.add_num_prop(53, 'Normals Brightness', round(addon_prefs.line_brightness,2), 2, 0.01, 0.01, 2.0)
             row = subp.add_row()
-            row.add_num_prop(54, 'Vertex Point Size',  round(addon_prefs.point_size,1), 1, 0.1, 0.1, 10.0)
+            row.add_num_prop(54, 'Vertex Point Size', round(addon_prefs.point_size,1), 1, 0.1, 0.1, 10.0)
             row = subp.add_row()
-            row.add_bool_prop(55, 'Display Wireframe', 14, addon_prefs.display_wireframe)
+            row.add_bool_prop(55, 'Display Wireframe', bool_size, addon_prefs.display_wireframe)
             row = subp.add_row()
-            row.add_num_prop(91, 'Gizmo Size',  round(addon_prefs.gizmo_size,0), 0, 10, 100, 1000)
+            row.add_num_prop(91, 'Gizmo Size', round(addon_prefs.gizmo_size,0), 0, 10, 100, 1000)
             row = subp.add_row()
-            row.add_bool_prop(90, 'Left Click Select', 14, addon_prefs.left_select)
+            row.add_bool_prop(90, 'Left Click Select', bool_size, addon_prefs.left_select)
+            # row = subp.add_row()
+            # row.add_num_prop(101, 'UI Scale', self._window.scale, 2, .1, 0.1, 5.0)
             row = subp.add_row()
             row.add_button(34, 'Save Addon Preferences')
 
-            subp = panel.add_subpanel(header_text='Keymap')
+            subp = panel.add_subpanel(self._window.scale, header_text='Keymap')
             subp.text_align = 'Left'
 
             keymap_initialize(self)
@@ -375,13 +377,13 @@ class ABN_OT_normal_editor_modal(Operator):
             panel.visible = False
             panel.add_visible_oh_hov_icon(25)
             panel.reposition_offset = [self.rot_gizmo.size/2+25, self.rot_gizmo.size/2]
-            subp = panel.add_subpanel(header_text='')
+            subp = panel.add_subpanel(self._window.scale, header_text='')
             subp.use_header_box = False
             subp.use_header = False
             row = subp.add_row()
-            row.add_bool_prop(80, '+/-1°', 14, self._rot_increment_one)
-            row.add_bool_prop(81, '+/-5°', 14, self._rot_increment_five)
-            row.add_bool_prop(82, '+/-10°', 14, self._rot_increment_ten)
+            row.add_bool_prop(80, '+/-1°', bool_size, self._rot_increment_one)
+            row.add_bool_prop(81, '+/-5°', bool_size, self._rot_increment_five)
+            row.add_bool_prop(82, '+/-10°', bool_size, self._rot_increment_ten)
             row = subp.add_row()
             label = row.add_label('X')
             label.icon = img_load(self, 'XAxis.png')
