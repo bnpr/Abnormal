@@ -555,7 +555,7 @@ def start_sphereize_mode(self):
     panel.width = 225
     panel.position = [self._mouse_loc[0], self._mouse_loc[1]]
     panel.alignment = 'TL'
-    subp = panel.add_subpanel(header_text='')
+    subp = panel.add_subpanel(self._window.scale, header_text='')
     subp.use_header = False
     row = subp.add_row()
     row.add_button(25, 'Confirm Sphereize')
@@ -659,7 +659,7 @@ def start_point_mode(self):
     panel.width = 225
     panel.position = [self._mouse_loc[0], self._mouse_loc[1]]
     panel.alignment = 'TL'
-    subp = panel.add_subpanel(header_text='')
+    subp = panel.add_subpanel(self._window.scale, header_text='')
     subp.use_header = False
     row = subp.add_row()
     row.add_button(31, 'Confirm Point')
