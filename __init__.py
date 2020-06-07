@@ -1,3 +1,9 @@
+from .classes import *
+from .operators_modal import *
+from .properties import *
+from .ui import *
+from bpy.props import *
+import bpy
 bl_info = {
     "name": "Abnormal",
     "author": "Cody Winchester (codywinch)",
@@ -8,17 +14,7 @@ bl_info = {
     "warning": "",
     "wiki_url": "",
     "category": "3D View"
-    }
-
-
-
-
-import bpy
-from bpy.props import *
-from .ui import *
-from .properties import *
-from .operators_modal import *
-from .classes import *
+}
 
 
 if "bpy" in locals():
@@ -48,15 +44,16 @@ classes = [
 def register():
     for c in classes:
         bpy.utils.register_class(c)
-    
+
     bpy.types.Scene.abnormal_props = PointerProperty(type=ABNScnProperties)
 
 
 def unregister():
     for c in reversed(classes):
         bpy.utils.unregister_class(c)
-    
+
     del bpy.types.Scene.abnormal_props
+
 
 if __name__ == "__main__":
     register()

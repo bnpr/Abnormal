@@ -11,7 +11,6 @@ class ABN_PT_abnormal_panel(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'BNPR Abnormal'
-    
 
     def draw(self, context):
         layout = self.layout
@@ -20,7 +19,7 @@ class ABN_PT_abnormal_panel(Panel):
         objs = data.objects
         aobj = context.active_object
         scn_prop = scn.abnormal_props
-        
+
         row = layout.row(align=True)
         row.alignment = 'CENTER'
         row.operator("abnormal.normal_editor_modal")
@@ -31,10 +30,10 @@ class ABN_PT_abnormal_panel(Panel):
         if scn_prop.object != '':
             if scn_prop.object in data.objects:
                 ob = data.objects[scn_prop.object]
-        
+
         if ob != None:
             row = layout.row(align=True)
             row.alignment = 'CENTER'
-            row.prop_search(scn_prop, 'vertex_group', ob, 'vertex_groups', text='Filter Vertex Group')
+            row.prop_search(scn_prop, 'vertex_group', ob,
+                            'vertex_groups', text='Filter Vertex Group')
             row.alignment = 'CENTER'
-        

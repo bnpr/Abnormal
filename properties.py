@@ -7,7 +7,8 @@ class ABNScnProperties(PropertyGroup):
     smooth_strength: FloatProperty(default=0.25)
     smooth_iters: IntProperty(default=5)
     object: StringProperty()
-    vertex_group: StringProperty(description='Vertex Group to filter normal changes with')
+    vertex_group: StringProperty(
+        description='Vertex Group to filter normal changes with')
 
 
 class AbnormalAddonPreferences(AddonPreferences):
@@ -30,7 +31,8 @@ class AbnormalAddonPreferences(AddonPreferences):
         col.prop(self, "selected_only", text='Default Selected Only Status')
         col.prop(self, "selected_scale", text='Default Selected Scale Status')
         col.prop(self, "rotate_gizmo_use", text='Default Rotate Gizmo Status')
-        col.prop(self, "display_wireframe", text='Default Wireframe Display Status')
+        col.prop(self, "display_wireframe",
+                 text='Default Wireframe Display Status')
         col.prop(self, "normal_size", text='Default Normal Length')
         col.prop(self, "point_size", text='Default Point Size')
         col.prop(self, "line_brightness", text='Default Line Brightness')
