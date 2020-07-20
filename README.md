@@ -3,7 +3,7 @@ Blender Abnormal add-on for vertex normal editing
 
 This add-on is funded by the BNPR community with the BEER dev fund.
 
-**Maintenance Donation:** https://gum.co/jeXaoB 
+**Please Donate to Keep the Add-on Updated:** https://gum.co/abnormal
 
 ## Features:
 1. Vertex normal editing "mode"
