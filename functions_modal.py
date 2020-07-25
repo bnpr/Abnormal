@@ -100,13 +100,28 @@ def mirror_normals(self, po_inds, axis):
                         self, result[1], po.index, flip_axis=axis)
 
                     for l in range(len(o_po.loop_normals)):
-                        o_po.loop_normals[l] = po.loop_normals[inds[l]].copy()
-                        o_po.loop_normals[l][axis] *= -1
+                        mir_norm = po.loop_normals[inds[l]].copy()
+                        mir_norm[axis] *= -1
+                        o_po.loop_normals[l] = get_locked_normal(
+                            self, o_po.loop_normals[l], mir_norm)
                 self.redraw = True
 
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
+
+
+def get_locked_normal(self, cur_vec, tar_vec):
+    new_vec = cur_vec.copy()
+
+    if self._lock_x == False:
+        new_vec[0] = tar_vec[0]
+    if self._lock_y == False:
+        new_vec[1] = tar_vec[1]
+    if self._lock_z == False:
+        new_vec[2] = tar_vec[2]
+
+    return new_vec
 
 
 def flatten_normals(self, po_inds, axis):
@@ -544,11 +559,16 @@ def loop_norm_set(self, po, l, og_vec, to_vec):
     weight = None
     if self._filter_weights != None:
         weight = self._filter_weights[po.index]
+
     if weight == None:
-        po.loop_normals[l] = to_vec.normalized()
+        new_vec = get_locked_normal(
+            self, po.loop_normals[l], to_vec).normalized()
     else:
         if weight > 0.0:
-            po.loop_normals[l] = og_vec.lerp(to_vec.normalized(), weight)
+            new_vec = get_locked_normal(
+                self, po.loop_normals[l], og_vec.lerp(to_vec, weight)).normalized()
+
+    po.loop_normals[l] = new_vec
     return
 
 
@@ -959,8 +979,8 @@ def gizmo_unhide(self):
 
 
 def init_nav_list(self):
-    self.nav_list = ['LEFTMOUSE', 'MIDDLEMOUSE',
-                     'MOUSEMOVE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE', 'N']
+    self.nav_list = ['LEFTMOUSE', 'MOUSEMOVE',
+                     'WHEELUPMOUSE', 'WHEELDOWNMOUSE', 'N']
 
     names = ['Zoom View', 'Rotate View', 'Pan View', 'Dolly View',
              'View Selected', 'View Camera Center', 'View All', 'View Axis',
@@ -1516,6 +1536,18 @@ def button_pressed(self, event, but_type, but_id):
                 new_val = self._window.num_change(event.shift)
                 self._window.scale = new_val
             self._window.create_all_drawing_data()
+
+        if but_id == 120:
+            self._lock_x = not self._lock_x
+            self._window.boolean_toggle_hover()
+
+        if but_id == 121:
+            self._lock_y = not self._lock_y
+            self._window.boolean_toggle_hover()
+
+        if but_id == 122:
+            self._lock_z = not self._lock_z
+            self._window.boolean_toggle_hover()
 
     return status
 

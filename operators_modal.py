@@ -158,6 +158,9 @@ class ABN_OT_normal_editor_modal(Operator):
             self._modal_running = True
             self._object_smooth = True
             self._filter_weights = None
+            self._lock_x = False
+            self._lock_y = False
+            self._lock_z = False
 
             self.area = context.area
 
@@ -249,6 +252,16 @@ class ABN_OT_normal_editor_modal(Operator):
             panel.alignment = 'TL'
             panel.header_icon = img_load(self, 'AbLogo.png')
             panel.icon_shader = self.shader_img
+
+            subp = panel.add_subpanel(
+                self._window.scale, header_text='Lock Axis')
+            row = subp.add_row()
+            row.add_bool_prop(120, 'X',
+                              bool_size, self._lock_x)
+            row.add_bool_prop(121, 'Y',
+                              bool_size, self._lock_y)
+            row.add_bool_prop(122, 'Z',
+                              bool_size, self._lock_z)
 
             subp = panel.add_subpanel(
                 self._window.scale, header_text='Mirror Normals')
