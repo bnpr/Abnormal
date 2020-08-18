@@ -564,9 +564,8 @@ def loop_norm_set(self, po, l, og_vec, to_vec):
         new_vec = get_locked_normal(
             self, po.loop_normals[l], to_vec).normalized()
     else:
-        if weight > 0.0:
-            new_vec = get_locked_normal(
-                self, po.loop_normals[l], og_vec.lerp(to_vec, weight)).normalized()
+        new_vec = get_locked_normal(
+            self, po.loop_normals[l], og_vec.lerp(to_vec, weight)).normalized()
 
     po.loop_normals[l] = new_vec
     return

@@ -294,7 +294,7 @@ class ABN_OT_normal_editor_modal(Operator):
             row.add_button(15, 'Set Outside')
             row.add_button(16, 'Set Inside')
             row = subp.add_row()
-            row.add_button(17, 'Reset Normals')
+            row.add_button(17, 'Reset Vectors')
             subp = panel.add_subpanel(
                 self._window.scale, header_text='Manipulate Normals')
             row = subp.add_row()
