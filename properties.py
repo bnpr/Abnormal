@@ -4,6 +4,8 @@ from bpy.types import PropertyGroup, AddonPreferences
 
 
 class ABNScnProperties(PropertyGroup):
+    smooth_strength: FloatProperty(default=0.25)
+    smooth_iters: IntProperty(default=5)
     object: StringProperty()
     vertex_group: StringProperty(
         description='Vertex Group to filter normal changes with')
@@ -21,7 +23,6 @@ class AbnormalAddonPreferences(AddonPreferences):
     point_size: FloatProperty(default=1.0)
     line_brightness: FloatProperty(default=1.0)
     gizmo_size: IntProperty(default=200)
-    ui_scale: FloatProperty(default=0.0, min=0.25)
 
     def draw(self, context):
         layout = self.layout
@@ -36,4 +37,3 @@ class AbnormalAddonPreferences(AddonPreferences):
         col.prop(self, "point_size", text='Default Point Size')
         col.prop(self, "line_brightness", text='Default Line Brightness')
         col.prop(self, "gizmo_size", text='Default Gizmo Size')
-        col.prop(self, "ui_scale", text='Default UI Size')

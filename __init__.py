@@ -1,5 +1,4 @@
 from .classes import *
-from .ui_classes import *
 from .operators_modal import *
 from .properties import *
 from .ui import *
@@ -8,7 +7,7 @@ import bpy
 bl_info = {
     "name": "Abnormal",
     "author": "Cody Winchester (codywinch)",
-    "version": (1, 1),
+    "version": (1, 0),
     "blender": (2, 80, 0),
     "location": "3D View > Object and Properties > Object tab",
     "description": "BNPR Normal Editing Tools",
@@ -16,6 +15,7 @@ bl_info = {
     "wiki_url": "",
     "category": "3D View"
 }
+
 
 if "bpy" in locals():
     import imp

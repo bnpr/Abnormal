@@ -10,100 +10,99 @@ from .functions_general import *
 
 def refresh_batches(self, context):
     # region outline calculation
-    rh = self.act_reg.height
-    rw = self.act_reg.width
+    region = context.region
+    rv3d = context.region_data
+    rh = region.height
+    rw = region.width
 
     center = rw/2
 
-    # ACTIVELY DRAWING DATA LISTS
-    if self.active_drawing:
-        # LASSO SELECTION LINES
-        lassosel_screen_lines = []
-        if self.lasso_selecting:
-            for i in range(len(self._mode_cache)):
-                lassosel_screen_lines.append(self._mode_cache[i-1])
-                lassosel_screen_lines.append(self._mode_cache[i])
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
 
-        # CIRCLE SELECTION LINES
-        circlesel_screen_lines = []
-        if self.circle_selecting or self.circle_select_start or self.circle_resizing:
-            if self.circle_resizing:
-                cur_loc = mathutils.Vector(
-                    (self._mode_cache[0][0], self._mode_cache[0][1]))
-            else:
-                cur_loc = mathutils.Vector(
-                    (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
+    # LASSO SELECTION LINES
+    lassosel_screen_lines = []
+    if self.lasso_selecting:
+        for i in range(len(self._changing_po_cache)):
+            lassosel_screen_lines.append(self._changing_po_cache[i-1])
+            lassosel_screen_lines.append(self._changing_po_cache[i])
 
-            co = cur_loc.copy()
-            co[1] += self.circle_radius
-            angle = math.radians(360/32)
-
-            for i in range(32):
-                circlesel_screen_lines.append(co.copy())
-                co = rotate_2d(cur_loc, co, angle)
-                circlesel_screen_lines.append(co.copy())
-
-        # BOX SELECTION LINES
-        boxsel_screen_lines = []
-        if self.box_selecting:
-
-            init_loc = mathutils.Vector(
-                (self._mode_cache[0][0], self._mode_cache[0][1]))
+    # CIRCLE SELECTION LINES
+    circlesel_screen_lines = []
+    if self.circle_selecting or self.circle_select_start or self.circle_resizing:
+        if self.circle_resizing:
             cur_loc = mathutils.Vector(
-                (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
-
-            top_right = mathutils.Vector(
-                (self._mouse_reg_loc[0], self._mode_cache[0][1]))
-            bot_left = mathutils.Vector(
-                (self._mode_cache[0][0], self._mouse_reg_loc[1]))
-
-            vec = init_loc-top_right
-            start_co = top_right
-            dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
-            boxsel_screen_lines += dashed_lines
-
-            vec = top_right-cur_loc
-            start_co = cur_loc
-            dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
-            boxsel_screen_lines += dashed_lines
-
-            vec = cur_loc-bot_left
-            start_co = bot_left
-            dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
-            boxsel_screen_lines += dashed_lines
-
-            vec = bot_left-init_loc
-            start_co = init_loc
-            dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
-            boxsel_screen_lines += dashed_lines
-
-        rot_screen_lines = []
-        if self.rotating:
-            cent_loc = view3d_utils.location_3d_to_region_2d(
-                self.act_reg, self.act_rv3d, self._mode_cache[1])
+                (self._changing_po_cache[0][0], self._changing_po_cache[0][1]))
+        else:
             cur_loc = mathutils.Vector(
-                (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
+                (self._mouse_loc[0], self._mouse_loc[1]))
 
-            vec = cur_loc-cent_loc
-            start_co = cent_loc
-            dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
-            rot_screen_lines += dashed_lines
+        co = cur_loc.copy()
+        co[1] += self.circle_radius
+        angle = math.radians(360/32)
 
-        # stores 2d batches
-        self.batch_boxsel_screen_lines = batch_for_shader(
-            self.shader_2d, 'LINES', {"pos": boxsel_screen_lines})
-        self.batch_circlesel_screen_lines = batch_for_shader(
-            self.shader_2d, 'LINES', {"pos": circlesel_screen_lines})
-        self.batch_lassosel_screen_lines = batch_for_shader(
-            self.shader_2d, 'LINES', {"pos": lassosel_screen_lines})
-        self.batch_rotate_screen_lines = batch_for_shader(
-            self.shader_2d, 'LINES', {"pos": rot_screen_lines})
+        for i in range(32):
+            circlesel_screen_lines.append(co.copy())
+            co = rotate_2d(cur_loc, co, angle)
+            circlesel_screen_lines.append(co.copy())
+    # BOX SELECTION LINES
+    boxsel_screen_lines = []
+    if self.box_selecting:
+
+        init_loc = mathutils.Vector(
+            (self._changing_po_cache[0][0], self._changing_po_cache[0][1]))
+        cur_loc = mathutils.Vector((self._mouse_loc[0], self._mouse_loc[1]))
+
+        top_right = mathutils.Vector(
+            (self._mouse_loc[0], self._changing_po_cache[0][1]))
+        bot_left = mathutils.Vector(
+            (self._changing_po_cache[0][0], self._mouse_loc[1]))
+
+        vec = init_loc-top_right
+        start_co = top_right
+        dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
+        boxsel_screen_lines += dashed_lines
+
+        vec = top_right-cur_loc
+        start_co = cur_loc
+        dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
+        boxsel_screen_lines += dashed_lines
+
+        vec = cur_loc-bot_left
+        start_co = bot_left
+        dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
+        boxsel_screen_lines += dashed_lines
+
+        vec = bot_left-init_loc
+        start_co = init_loc
+        dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
+        boxsel_screen_lines += dashed_lines
+
+    rot_screen_lines = []
+    if self.rotating:
+        cent_loc = view3d_utils.location_3d_to_region_2d(
+            region, rv3d, self._changing_po_cache[1])
+        cur_loc = mathutils.Vector((self._mouse_loc[0], self._mouse_loc[1]))
+
+        vec = cur_loc-cent_loc
+        start_co = cent_loc
+        dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
+        rot_screen_lines += dashed_lines
+
+    # stores 2d batches
+    self.batch_boxsel_screen_lines = batch_for_shader(
+        self.shader_2d, 'LINES', {"pos": boxsel_screen_lines})
+    self.batch_circlesel_screen_lines = batch_for_shader(
+        self.shader_2d, 'LINES', {"pos": circlesel_screen_lines})
+    self.batch_lassosel_screen_lines = batch_for_shader(
+        self.shader_2d, 'LINES', {"pos": lassosel_screen_lines})
+    self.batch_rotate_screen_lines = batch_for_shader(
+        self.shader_2d, 'LINES', {"pos": rot_screen_lines})
 
     if self.redraw:
-        self._points_container.update()
+        self._points_container.update(
+            addon_prefs.normal_size, self._active_point, addon_prefs.selected_only, addon_prefs.selected_scale)
+        self.redraw = False
 
-    self.redraw = False
-    self.active_drawing = False
     force_scene_update()
     return
 
@@ -114,13 +113,23 @@ def draw_callback_3d(self, context):
         if self._modal_running == False:
             clear_draw = True
 
-        bgl.glEnable(bgl.GL_BLEND)
-        if self._x_ray_mode == False:
-            bgl.glEnable(bgl.GL_DEPTH_TEST)
+        addon_prefs = bpy.context.preferences.addons[__package__].preferences
 
-        self._points_container.draw()
+        self._points_container.draw_po(
+            True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
+        self._points_container.draw_sel_po(
+            True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
+        self._points_container.draw_act_po(
+            True, self._x_ray_mode, addon_prefs.line_brightness, addon_prefs.point_size)
+        self._points_container.draw_line(
+            self._x_ray_mode, addon_prefs.line_brightness)
+        self._points_container.draw_sel_line(
+            self._x_ray_mode, addon_prefs.line_brightness)
+        self._points_container.draw_act_line(
+            self._x_ray_mode, addon_prefs.line_brightness)
 
         if len(self.translate_draw_line) > 0:
+            bgl.glEnable(bgl.GL_BLEND)
             bgl.glEnable(bgl.GL_DEPTH_TEST)
             bgl.glLineWidth(2)
             self.shader_3d.bind()
@@ -131,16 +140,11 @@ def draw_callback_3d(self, context):
             if self.translate_axis == 2:
                 self.shader_3d.uniform_float("color", (0.0, 0.0, 1.0, 1.0))
             self.batch_translate_line.draw(self.shader_3d)
+            bgl.glDisable(bgl.GL_BLEND)
             bgl.glDisable(bgl.GL_DEPTH_TEST)
 
-        if self._x_ray_mode == False:
-            bgl.glDisable(bgl.GL_DEPTH_TEST)
-
-        if self._use_gizmo:
+        if addon_prefs.rotate_gizmo_use and self.rotate_gizmo_draw:
             self._window.gizmo_draw()
-
-        bgl.glDisable(bgl.GL_BLEND)
-
     except:
         clear_draw = True
 
@@ -154,12 +158,11 @@ def draw_callback_3d(self, context):
 
 def draw_callback_2d(self, context):
     clear_draw = False
-
     try:
         if self._modal_running == False:
             clear_draw = True
 
-        if context.area == self._draw_area:
+        if context.area == self.area:
             bgl.glLineWidth(2)
             self.shader_2d.bind()
             self.shader_2d.uniform_float("color", (0.05, 0.05, 0.05, 1))
@@ -206,26 +209,4 @@ def clear_drawing(self):
 
     self._draw_handle_2d = None
     self._draw_handle_3d = None
-    return
-
-
-def viewport_change_cache(self, context):
-    if context.area.type == 'VIEW_3D':
-        for space in context.area.spaces:
-            if space.type == 'VIEW_3D':
-                self._reg_header = space.show_region_toolbar
-                self._reg_ui = space.show_region_ui
-                self._cursor = space.overlay.show_cursor
-                self._wireframe = space.overlay.show_wireframes
-                self._thresh = space.overlay.wireframe_threshold
-                self._text = space.overlay.show_text
-
-                self._use_wireframe_overlay = self._addon_prefs.display_wireframe
-                space.overlay.show_wireframes = self._use_wireframe_overlay
-                space.overlay.wireframe_threshold = 1.0
-
-                space.show_region_toolbar = False
-                space.show_region_ui = False
-                space.overlay.show_cursor = False
-                space.overlay.show_text = False
     return

@@ -5,184 +5,44 @@ from .functions_modal import *
 from .classes import *
 
 
-def basic_ui_hover_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-
-    # test hover panels
-    if event.type == 'MOUSEMOVE' and self.click_hold == False:
-        hov_status = self._window.test_hover(self._mouse_reg_loc)
-        self.ui_hover = hov_status != None
-
-    # click down move
-    if event.type == 'MOUSEMOVE' and self.click_hold:
-        self._window.click_down_move(
-            self._mouse_reg_loc, event.shift, arguments=[event])
-
-    # Panel scrolling
-    if event.type == 'WHEELDOWNMOUSE' and event.value == 'PRESS':
-        scroll_status = self._window.scroll_panel(10)
-        if scroll_status:
-            status = {'RUNNING_MODAL'}
-
-    if event.type == 'WHEELUPMOUSE' and event.value == 'PRESS':
-        scroll_status = self._window.scroll_panel(-10)
-        if scroll_status:
-            status = {'RUNNING_MODAL'}
-
-    # undo
-    if event.type == 'Z' and event.value == 'PRESS' and event.ctrl and event.shift == False:
-        rigged_move_in_undostack(self, 1)
-    # redo
-    if event.type == 'Z' and event.value == 'PRESS' and event.ctrl and event.shift:
-        rigged_move_in_undostack(self, -1)
-
-    # select all bezier points
-    if event.type == 'A' and event.value == 'PRESS':
-        self._window.bezier_box_select_points(not event.alt)
-    # toggle cyclic of bezier lines
-    if event.type == 'F' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-        bezier_hover = self._window.bezier_box_toggle_cyclic()
-
-    # rotate select bezier points
-    if event.type == 'R' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-        if event.alt:
-            bezier_hover = self._window.bezier_box_clear_rotation(arguments=[
-                                                                  self, event])
-
-        else:
-            bezier_hover, bezier_id, self.bezier_changing, mid_co = self._window.bezier_box_rotate_points(
-                0.0, arguments=[event])
-
-            if self.bezier_changing:
-                self._mode_cache.append(mid_co)
-                self._mouse_init = self._mouse_reg_loc
-                self.rotating = True
-                keymap_rotating(self)
-
-    # change sharpness of selected points
-    if event.type == 'S' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-        if event.alt:
-            bezier_hover = self._window.bezier_box_clear_sharpness(arguments=[
-                                                                   self, event])
-
-        else:
-            bezier_hover, bezier_id, self.bezier_changing = self._window.bezier_box_sharpen_points(
-                0.0, arguments=[event])
-
-            if self.bezier_changing:
-                self.sharpness_changing = True
-                self._mouse_init = self._mouse_reg_loc
-                keymap_sharpness_changing(self)
-
-    # deleted selected points and roots
-    if event.type == 'X' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-        bez_hover = self._window.bezier_box_delete_points(
-            arguments=[event])
-
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS' and not event.ctrl:
-        status = {'RUNNING_MODAL'}
-
-        # Test 2d ui selection
-        panel_status = self._window.test_click_down(
-            self._mouse_reg_loc, event.shift, arguments=[event])
-        self.click_hold = True
-        if panel_status:
-            if panel_status[0] == 'GIZMO':
-                gizmo_click_init(self, event, panel_status[1])
-
-            else:
-                if panel_status[0] == {'CANCELLED'}:
-                    status = panel_status[0]
-                if panel_status[0] == {'FINISHED'}:
-                    status = panel_status[0]
-
-    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        status = {'RUNNING_MODAL'}
-
-        panel_status = self._window.test_click_up(
-            self._mouse_reg_loc, event.shift, arguments=[event])
-        self.click_hold = False
-        if panel_status:
-            if panel_status[0] == 'NUMBER_BAR_TYPE':
-                self.typing = True
-            if panel_status[0] == {'CANCELLED'}:
-                status = panel_status[0]
-            if panel_status[0] == {'FINISHED'}:
-                status = panel_status[0]
-
-    # cancel modal
-    if event.type in {'ESC'} and event.value == 'PRESS':
-        ob = self._object
-        if self._object.as_pointer() != self._object_pointer:
-            for o_ob in bpy.data.objects:
-                if o_ob.as_pointer() == self._object_pointer:
-                    ob = o_ob
-
-        # restore normals
-        ob.data.normals_split_custom_set(self.og_loop_norms)
-
-        finish_modal(self, True)
-        status = {'CANCELLED'}
-
-    if event.type in {'TAB'} and event.value == 'PRESS':
-        ob = self._object
-        if self._object.as_pointer() != self._object_pointer:
-            for o_ob in bpy.data.objects:
-                if o_ob.as_pointer() == self._object_pointer:
-                    ob = o_ob
-
-        finish_modal(self, False)
-        status = {'FINISHED'}
-
-    return status
-
-
 def basic_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
-    # allow viewport navigation
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
+
+    region = context.region
+    rv3d = context.region_data
+
     if event.type in self.nav_list:
         # allow navigation
         status = {'PASS_THROUGH'}
 
-    # test hover ui
-    if event.type == 'MOUSEMOVE' and self.click_hold == False:
-        hov_status = self._window.test_hover(self._mouse_reg_loc)
-        self.ui_hover = hov_status != None
-        if self.ui_hover:
-            return status
-
-    # Gizmo stuff
     if event.type == 'MIDDLEMOUSE':
         self.waiting = True
-        gizmo_update_hide(self, False)
+        gizmo_hide(self)
 
-    # view moved so update gizmo
     update_gizmo = False
     if context.region_data.view_matrix != self.prev_view:
         update_gizmo = True
 
-    # middle mouse released so update gizmo
     if self.waiting and event.value == 'RELEASE':
         update_gizmo = True
 
-    if update_gizmo and self._use_gizmo:
+    if update_gizmo and addon_prefs.rotate_gizmo_use:
         self._window.update_gizmo_pos(self._orbit_ob.matrix_world)
         relocate_gizmo_panel(self)
         self.prev_view = context.region_data.view_matrix.copy()
         self.waiting = False
+        if self.rotate_gizmo_draw == False:
+            sel_pos = self._points_container.get_selected()
+            if len(sel_pos) > 0:
+                gizmo_unhide(self)
 
-        sel_pos = self._points_container.get_selected()
-        if len(sel_pos) > 0:
-            gizmo_update_hide(self, True)
-        else:
-            gizmo_update_hide(self, False)
-
-    # select all normals
+    if event.type == 'MOUSEMOVE':
+        if addon_prefs.rotate_gizmo_use and self.rotate_gizmo_draw:
+            giz_hover = self._window.test_gizmo_hover(self._mouse_loc)
+        hov_status = self._window.test_hover(self._mouse_loc)
+    # select all points
     if event.type == 'A' and event.value == 'PRESS':
         change = False
         if event.alt:
@@ -202,7 +62,6 @@ def basic_keymap(self, context, event):
             update_orbit_empty(self)
             status = {"RUNNING_MODAL"}
 
-    # invert selection
     if event.type == 'I' and event.value == 'PRESS' and event.ctrl:
         change = False
         for po in self._points_container.points:
@@ -216,7 +75,6 @@ def basic_keymap(self, context, event):
             update_orbit_empty(self)
             status = {"RUNNING_MODAL"}
 
-    # hide normals
     if event.type == 'H':
         if event.alt:
             for po in self._points_container.points:
@@ -239,7 +97,6 @@ def basic_keymap(self, context, event):
         self.redraw = True
         status = {"RUNNING_MODAL"}
 
-    # select linked normals
     if event.type == 'L' and event.value == 'PRESS':
         change = False
         if event.ctrl:
@@ -271,34 +128,31 @@ def basic_keymap(self, context, event):
             update_orbit_empty(self)
             status = {"RUNNING_MODAL"}
 
-    # box select
     if event.type == 'B' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
         self.box_select_start = True
         bpy.context.window.cursor_modal_set('CROSSHAIR')
-        keymap_box_selecting(self)
-        gizmo_update_hide(self, False)
+        keymap_refresh_box(self)
+        gizmo_hide(self)
+        status = {"RUNNING_MODAL"}
 
-    # circle select
-    if event.type == 'C' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
+    if event.type == 'C':
         self.circle_select_start = True
         bpy.context.window.cursor_modal_set('CROSSHAIR')
-        keymap_circle_selecting(self)
-        gizmo_update_hide(self, False)
-
-    # lasso select
-    if event.type == 'V' and event.value == 'PRESS':
+        keymap_refresh_circle(self)
+        gizmo_hide(self)
         status = {"RUNNING_MODAL"}
-        self.lasso_select_start = True
-        bpy.context.window.cursor_modal_set('CROSSHAIR')
-        keymap_lasso_selecting(self)
-        gizmo_update_hide(self, False)
 
-    # rotation
+    if event.type == 'LEFTMOUSE' and event.ctrl and event.value == 'PRESS':
+        self.lasso_selecting = True
+        self._changing_po_cache.append(self._mouse_loc)
+        bpy.context.window.cursor_modal_set('CROSSHAIR')
+        keymap_refresh_lasso(self)
+        gizmo_hide(self)
+        status = {"RUNNING_MODAL"}
+
     if event.type == 'R' and event.value == 'PRESS':
         if event.alt:
-            if self._use_gizmo:
+            if addon_prefs.rotate_gizmo_use:
                 loc = self._orbit_ob.location.copy()
                 self._orbit_ob.matrix_world = self._object.matrix_world
                 self._orbit_ob.matrix_world.translation = loc
@@ -312,37 +166,49 @@ def basic_keymap(self, context, event):
                 sel_cos = self._points_container.get_selected_cos()
                 avg_loc = average_vecs(sel_cos)
 
-                cache_norms = self._points_container.get_current_normals(
-                    sel_pos)
+                cache_norms = []
+                for ind in sel_pos:
+                    po = self._points_container.points[ind]
+                    norms = []
+                    for l_norm in po.loop_normals:
+                        norms.append(l_norm)
+                    cache_norms.append(norms)
 
                 self._window.set_status('VIEW ROTATION')
 
-                self._mode_cache.clear()
-                self._mode_cache.append(self._mouse_reg_loc)
-                self._mode_cache.append(avg_loc)
-                self._mode_cache.append(cache_norms)
-                self._mode_cache.append(0)
-                self._mode_cache.append(1)
+                self._changing_po_cache.clear()
+                self._changing_po_cache.append(self._mouse_loc)
+                self._changing_po_cache.append(avg_loc)
+                self._changing_po_cache.append(cache_norms)
+                self._changing_po_cache.append(0)
+                self._changing_po_cache.append(1)
                 self.rotating = True
-                keymap_rotating(self)
-                gizmo_update_hide(self, False)
+                del(sel_cos)
+                del(avg_loc)
+                keymap_refresh_rotating(self)
+                gizmo_hide(self)
         status = {"RUNNING_MODAL"}
 
     if event.type == 'Z' and event.value == 'PRESS':
         if event.ctrl:
             if event.shift:
-                move_undostack(self, -1)
+                move_undostack(self, 1, -1)
             else:
-                move_undostack(self, 1)
+                move_undostack(self, 1, 1)
         else:
             self._x_ray_mode = not self._x_ray_mode
-            self._xray_bool.toggle_bool()
+            self._window.boolean_toggle_id(51)
         status = {"RUNNING_MODAL"}
 
-    click = (event.type == 'RIGHTMOUSE' and self._left_select == False) or (
-        event.type == 'LEFTMOUSE' and self._left_select)
-    if click and event.value == 'PRESS' and event.ctrl != True and event.alt != True:
-        sel_res = selection_test(self, event)
+    if event.type == 'X' and event.value == 'PRESS' and event.ctrl:
+        if event.shift:
+            move_undostack(self, 0, -1)
+        else:
+            move_undostack(self, 0, 1)
+        status = {"RUNNING_MODAL"}
+    # test selection of points/roots and hovering of buttons
+    if event.type == 'RIGHTMOUSE' and event.value == 'PRESS' and event.ctrl != True and addon_prefs.left_select == False:
+        sel_res = selection_test(self, context, event)
         if sel_res:
             self.redraw = True
             add_to_undostack(self, 0)
@@ -350,6 +216,39 @@ def basic_keymap(self, context, event):
         else:
             f_ind = ray_cast_to_mouse(self, context)
         status = {"RUNNING_MODAL"}
+
+    if event.type == 'LEFTMOUSE' and event.value == 'PRESS' and event.ctrl != True:
+        no_gizmo = gizmo_init(self, context, event)
+
+        if no_gizmo:
+            hov_status = self._window.test_hover(self._mouse_loc)
+            if hov_status == 'EDGE':
+                self.resizing = True
+                self._window.start_resize(self._mouse_loc)
+            elif hov_status == 'PANEL_HEADER' or hov_status == 'SUBPANEL_HEADER':
+                self.pre_moving = True
+                self.pre_moving_no_coll = False
+                self._window.start_move(self._mouse_loc)
+            elif hov_status == 'PANEL' or hov_status == 'SUBPANEL':
+                self.pre_moving = True
+                self.pre_moving_no_coll = True
+                self._window.start_move(self._mouse_loc)
+            elif hov_status != None:
+                self.pre_item_click = True
+                self._stored_mouse = [self._mouse_loc[0], self._mouse_loc[1]]
+
+            if hov_status == None:
+                if addon_prefs.left_select:
+                    sel_res = selection_test(self, context, event)
+                    if sel_res:
+                        self.redraw = True
+                        add_to_undostack(self, 0)
+                        update_orbit_empty(self)
+                        status = {'RUNNING_MODAL'}
+                    else:
+                        f_ind = ray_cast_to_mouse(self, context)
+            else:
+                status = {'RUNNING_MODAL'}
 
     # cancel modal
     if event.type in {'ESC'} and event.value == 'PRESS':
@@ -362,7 +261,7 @@ def basic_keymap(self, context, event):
         # restore normals
         ob.data.normals_split_custom_set(self.og_loop_norms)
 
-        finish_modal(self, True)
+        finish_modal(self)
         status = {'CANCELLED'}
 
     if event.type in {'TAB'} and event.value == 'PRESS':
@@ -372,130 +271,563 @@ def basic_keymap(self, context, event):
                 if o_ob.as_pointer() == self._object_pointer:
                     ob = o_ob
 
-        finish_modal(self, False)
+        finish_modal(self)
         status = {'FINISHED'}
 
     return status
 
 
-def typing_keymap(self, context, event):
+def pre_moving_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
-    # typing keys
-    if event.type == 'RET' and event.value == 'PRESS':
-        self._window.type_confirm(arguments=[event])
-        self.typing = False
+    if event.type == 'MOUSEMOVE':
+        click_res = self._window.test_click()
+        if click_res != None:
+            if self._window.panels[click_res[1]].moveable:
+                if abs(self._mouse_loc[0] - self._window.panel_move_cache[1][0]) > 5:
+                    self.moving = True
+                    self.pre_moving = False
+                    self.pre_moving_no_coll = False
+                if abs(self._mouse_loc[1] - self._window.panel_move_cache[1][1]) > 5:
+                    self.moving = True
+                    self.pre_moving = False
+                    self.pre_moving_no_coll = False
+
     elif event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        self._window.type_confirm(arguments=[event])
-        self.typing = False
+        if self.pre_moving_no_coll == False:
+            self._window.panel_collapse_test()
 
-    elif event.type == 'ESC' and event.value == 'PRESS':
-        self._window.type_cancel()
-        self.typing = False
-    elif event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
-        self._window.type_cancel()
-        self.typing = False
+        self.pre_moving = False
+        self.pre_moving_no_coll = False
+    return status
 
-    elif event.type == 'LEFT_ARROW' and event.value == 'PRESS':
-        self._window.type_move_pos(-1)
-    elif event.type == 'RIGHT_ARROW' and event.value == 'PRESS':
-        self._window.type_move_pos(1)
 
-    elif event.type == 'BACK_SPACE' and event.value == 'PRESS':
-        self._window.type_backspace_key()
-    elif event.type == 'DEL' and event.value == 'PRESS':
-        self._window.type_delete_key()
+def moving_keymap(self, context, event):
+    status = {'RUNNING_MODAL'}
 
-    else:
-        self._window.type_add_key(event.ascii)
+    if event.type == 'MOUSEMOVE':
+        self._window.move_panel(self._mouse_loc)
+    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+        self._window.move_panel(self._mouse_loc)
+        if self._window.panel_move_cache[0][0] == 2:
+            region = bpy.context.region
+            rv3d = bpy.context.region_data
+            rco = view3d_utils.location_3d_to_region_2d(
+                region, rv3d, self._orbit_ob.location)
 
+            panel = self._window.panels[2]
+            panel.reposition_offset = [
+                panel.position[0]-rco[0], panel.position[1]-rco[1]]
+        self.moving = False
+        self._window.confirm_move()
+    return status
+
+
+def resizing_keymap(self, context, event):
+    status = {'RUNNING_MODAL'}
+
+    if event.type == 'MOUSEMOVE':
+        self._window.resize_panel(self._mouse_loc)
+    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+        self._window.resize_panel(self._mouse_loc)
+        self.resizing = False
+        self._window.confirm_resize()
+    return status
+
+
+def pre_item_click_keymap(self, context, event):
+    status = {'RUNNING_MODAL'}
+
+    if event.type == 'MOUSEMOVE':
+        click_res = self._window.test_click()
+        if click_res != None:
+            if click_res[0] == 'NUM_BAR':
+                if abs(self._mouse_loc[0] - self._stored_mouse[0]) > 5:
+                    self._window.start_num_slide(self._mouse_loc)
+                    self.num_sliding = True
+                    self.pre_item_click = False
+                    self._stored_mouse.clear()
+
+    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+        hov_status = self._window.test_hover(self._mouse_loc)
+        click_res = self._window.test_click()
+
+        if click_res != None:
+            status = button_pressed(self, event, click_res[0], click_res[2])
+
+        self.pre_item_click = False
+        del(click_res)
     return status
 
 
 def rotating_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
-    self.active_drawing = True
 
     if event.type == 'X' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 0)
-        self._mode_cache[4] = translate_axis_side(self)
+        self._changing_po_cache[4] = translate_axis_side(self)
         rotate_vectors(
-            self, self._mode_cache[3]*self._mode_cache[4])
+            self, self._changing_po_cache[3]*self._changing_po_cache[4])
         self.redraw = True
 
     if event.type == 'Y' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 1)
-        self._mode_cache[4] = translate_axis_side(self)
+        self._changing_po_cache[4] = translate_axis_side(self)
         rotate_vectors(
-            self, self._mode_cache[3]*self._mode_cache[4])
+            self, self._changing_po_cache[3]*self._changing_po_cache[4])
         self.redraw = True
 
     if event.type == 'Z' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 2)
-        self._mode_cache[4] = translate_axis_side(self)
+        self._changing_po_cache[4] = translate_axis_side(self)
         rotate_vectors(
-            self, self._mode_cache[3]*self._mode_cache[4])
+            self, self._changing_po_cache[3]*self._changing_po_cache[4])
         self.redraw = True
 
     if event.type == 'R' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 2)
-        self._mode_cache[4] = translate_axis_side(self)
+        self._changing_po_cache[4] = translate_axis_side(self)
         rotate_vectors(
-            self, self._mode_cache[3]*self._mode_cache[4])
+            self, self._changing_po_cache[3]*self._changing_po_cache[4])
         self.redraw = True
 
     if event.type == 'MOUSEMOVE':
+        region = bpy.context.region
+        rv3d = bpy.context.region_data
         center = view3d_utils.location_3d_to_region_2d(
-            self.act_reg, self.act_rv3d, self._mode_cache[1])
+            region, rv3d, self._changing_po_cache[1])
 
         start_vec = mathutils.Vector(
-            (self._mode_cache[0][0]-center[0], self._mode_cache[0][1]-center[1]))
+            (self._changing_po_cache[0][0]-center[0], self._changing_po_cache[0][1]-center[1]))
         mouse_vec = mathutils.Vector(
-            (self._mouse_reg_loc[0]-center[0], self._mouse_reg_loc[1]-center[1]))
+            (self._mouse_loc[0]-center[0], self._mouse_loc[1]-center[1]))
 
         ang = mouse_vec.angle_signed(start_vec)
         if event.shift:
             ang *= 0.1
 
         if ang != 0.0:
-            self._mode_cache[3] = self._mode_cache[3]+ang
+            self._changing_po_cache[3] = self._changing_po_cache[3]+ang
             rotate_vectors(
-                self, self._mode_cache[3]*self._mode_cache[4])
-            self._mode_cache.pop(0)
-            self._mode_cache.insert(0, self._mouse_reg_loc)
+                self, self._changing_po_cache[3]*self._changing_po_cache[4])
+            self._changing_po_cache.pop(0)
+            self._changing_po_cache.insert(0, self._mouse_loc)
 
             self.redraw = True
 
     if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
         add_to_undostack(self, 1)
-        self._mode_cache.clear()
+        self._changing_po_cache.clear()
         self.translate_axis = 2
         self.translate_mode = 0
         clear_translate_axis_draw(self)
         self._window.clear_status()
         self.rotating = False
-        keymap_refresh(self)
-        gizmo_update_hide(self, True)
+        keymap_refresh_base(self)
+        gizmo_unhide(self)
 
     if event.type == 'RIGHTMOUSE' and event.value == 'RELEASE':
         sel_pos = self._points_container.get_selected()
         for i, ind in enumerate(sel_pos):
             po = self._points_container.points[ind]
 
-            for loop in po.loops:
-                loop.normal = self._mode_cache[2][i][l].copy()
+            for l, l_norm in enumerate(po.loop_normals):
+                po.loop_normals[l] = self._changing_po_cache[2][i][l].copy()
 
         set_new_normals(self)
-        self._mode_cache.clear()
+        self._changing_po_cache.clear()
         self.translate_axis = 2
         self.translate_mode = 0
         clear_translate_axis_draw(self)
         self._window.clear_status()
         self.redraw = True
         self.rotating = False
-        keymap_refresh(self)
-        gizmo_update_hide(self, True)
+        keymap_refresh_base(self)
+        gizmo_unhide(self)
 
+    return status
+
+
+def num_sliding_keymap(self, context, event):
+    status = {'RUNNING_MODAL'}
+    abn_props = context.scene.abnormal_props
+    addon_prefs = bpy.context.preferences.addons[__package__].preferences
+
+    if event.type == 'MOUSEMOVE':
+        new_value = self._window.slide_number(self._mouse_loc, event.shift)
+
+        if self._window.num_slide_cache[3] == 52:
+            addon_prefs.normal_size = new_value
+            self.redraw = True
+
+        if self._window.num_slide_cache[3] == 53:
+            addon_prefs.line_brightness = new_value
+            self.redraw = True
+
+        if self._window.num_slide_cache[3] == 54:
+            addon_prefs.point_size = new_value
+            self.redraw = True
+
+        if self._window.num_slide_cache[3] == 56:
+            abn_props.smooth_strength = new_value
+
+        if self._window.num_slide_cache[3] == 57:
+            new_value = self._window.slide_number(
+                self._mouse_loc, event.shift, fac=0.06)
+            abn_props.smooth_iters = new_value
+
+        if self._window.num_slide_cache[3] == 91:
+            new_value = self._window.slide_number(
+                self._mouse_loc, event.shift, fac=1)
+            abn_props.gizmo_size = new_value
+            self.rot_gizmo.update_size(new_value)
+            self._window.update_gizmo_pos(self._orbit_ob.matrix_world)
+
+        if self._window.num_slide_cache[3] == 58:
+            self.target_strength = new_value
+            sel_pos = self._points_container.get_selected()
+            if len(sel_pos) != 0:
+                if self.sphereize_mode:
+                    sphereize_normals(self, sel_pos)
+                if self.point_mode:
+                    point_normals(self, sel_pos)
+
+    # confirm slide change
+    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+        self._window.confirm_num_slide()
+        self.num_sliding = False
+
+    # cancel slide change restore original
+    if event.type == 'RIGHTMOUSE':
+        og_value = self._window.cancel_num_slide()
+
+        if self._window.num_slide_cache[3] == 52:
+            addon_prefs.normal_size = og_value
+            self.redraw = True
+
+        if self._window.num_slide_cache[3] == 53:
+            addon_prefs.line_brightness = og_value
+            self.redraw = True
+
+        if self._window.num_slide_cache[3] == 54:
+            addon_prefs.point_size = og_value
+            self.redraw = True
+
+        if self._window.num_slide_cache[3] == 56:
+            abn_props.smooth_strength = og_value
+
+        if self._window.num_slide_cache[3] == 57:
+            abn_props.smooth_iters = og_value
+
+        if self._window.num_slide_cache[3] == 91:
+            abn_props.gizmo_size = og_value
+            self.rot_gizmo.update_size(og_value)
+            self._window.update_gizmo_pos(self._orbit_ob.matrix_world)
+
+        if self._window.num_slide_cache[3] == 58:
+            self.target_strength = og_value
+            sel_pos = self._points_container.get_selected()
+            if len(sel_pos) != 0:
+                if self.sphereize_mode:
+                    sphereize_normals(self, sel_pos)
+                if self.point_mode:
+                    point_normals(self, sel_pos)
+
+        self.num_sliding = False
+
+    return status
+
+
+def sphereize_keymap(self, context, event):
+    status = {'RUNNING_MODAL'}
+
+    region = context.region
+    rv3d = context.region_data
+
+    if event.type in self.nav_list:
+        # allow navigation
+        status = {'PASS_THROUGH'}
+
+    if event.type == 'MOUSEMOVE':
+        hov_status = self._window.test_hover(self._mouse_loc)
+
+    if event.type == 'N':
+        status = {'PASS_THROUGH'}
+
+    if event.type == 'G' and event.value == 'PRESS':
+        sel_pos = self._points_container.get_selected()
+        if event.alt:
+            if len(sel_pos) > 0:
+                sel_cos = self._points_container.get_selected_cos()
+                avg_loc = average_vecs(sel_cos)
+
+                self.target_emp.location = avg_loc
+                sphereize_normals(self, sel_pos)
+
+        else:
+            if len(sel_pos) > 0:
+                sel_cos = self._points_container.get_selected_cos()
+                cache_norms = []
+                for ind in sel_pos:
+                    po = self._points_container.points[ind]
+                    norms = []
+                    for l_norm in po.loop_normals:
+                        norms.append(l_norm)
+                    cache_norms.append(norms)
+
+                sphereize_normals(self, sel_pos)
+                self._window.set_status('VIEW TRANSLATION')
+
+                region = bpy.context.region
+                rv3d = bpy.context.region_data
+                rco = view3d_utils.location_3d_to_region_2d(
+                    region, rv3d, self.target_emp.location)
+
+                self._changing_po_cache.insert(0, self._mouse_loc)
+                self._changing_po_cache.insert(
+                    1, self.target_emp.location.copy())
+                self._changing_po_cache.insert(2, cache_norms)
+                self._changing_po_cache.insert(3, rco)
+
+                self.sphereize_mode = False
+                self.sphereize_move = True
+                keymap_refresh_target_move(self)
+
+    if event.type == 'Z' and event.value == 'PRESS':
+        self._x_ray_mode = not self._x_ray_mode
+        self._window.boolean_toggle_id(51)
+
+    # test selection of points/roots and hovering of buttons
+    if event.type == 'LEFTMOUSE' and event.value == 'PRESS' and event.ctrl != True:
+        hov_status = self._window.test_hover(self._mouse_loc)
+        if hov_status == 'EDGE':
+            self.resizing = True
+            self._window.start_resize(self._mouse_loc)
+        elif hov_status == 'PANEL_HEADER' or hov_status == 'SUBPANEL_HEADER':
+            self.pre_moving = True
+            self.pre_moving_no_coll = False
+            self._window.start_move(self._mouse_loc)
+        elif hov_status == 'PANEL' or hov_status == 'SUBPANEL':
+            self.pre_moving = True
+            self.pre_moving_no_coll = True
+            self._window.start_move(self._mouse_loc)
+        elif hov_status != None:
+            self.pre_item_click = True
+            self._stored_mouse = [self._mouse_loc[0], self._mouse_loc[1]]
+
+        if hov_status == None:
+            status = {'PASS_THROUGH'}
+
+    return status
+
+
+def sphereize_move_keymap(self, context, event):
+    status = {'RUNNING_MODAL'}
+
+    if event.type == 'X' and event.value == 'PRESS':
+        translate_axis_change(self, 'TRANSLATING', 0)
+        move_target(self, event.shift)
+        self.redraw = True
+
+    if event.type == 'Y' and event.value == 'PRESS':
+        translate_axis_change(self, 'TRANSLATING', 1)
+        move_target(self, event.shift)
+        self.redraw = True
+
+    if event.type == 'Z' and event.value == 'PRESS':
+        translate_axis_change(self, 'TRANSLATING', 2)
+        move_target(self, event.shift)
+        self.redraw = True
+
+    if event.type == 'MOUSEMOVE':
+        sel_pos = self._points_container.get_selected()
+
+        move_target(self, event.shift)
+        sphereize_normals(self, sel_pos)
+
+        self._changing_po_cache.pop(0)
+        self._changing_po_cache.insert(0, self._mouse_loc)
+
+        self.redraw = True
+
+    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+        self.translate_axis = 2
+        self.translate_mode = 0
+        clear_translate_axis_draw(self)
+        self._window.clear_status()
+        self.sphereize_mode = True
+        self.sphereize_move = False
+        keymap_refresh_target(self)
+        while len(self._changing_po_cache) > 1:
+            self._changing_po_cache.pop(0)
+
+    if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
+        sel_pos = self._points_container.get_selected()
+        for i, ind in enumerate(sel_pos):
+            po = self._points_container.points[ind]
+
+            for l, l_norm in enumerate(po.loop_normals):
+                po.loop_normals[l] = self._changing_po_cache[2][i][l].copy()
+
+        set_new_normals(self)
+        self.translate_axis = 2
+        self.translate_mode = 0
+        clear_translate_axis_draw(self)
+        self._window.clear_status()
+        self.redraw = True
+        self.sphereize_mode = True
+        self.sphereize_move = False
+        self.target_emp.location = self._changing_po_cache[1].copy()
+        keymap_refresh_target(self)
+        while len(self._changing_po_cache) > 1:
+            self._changing_po_cache.pop(0)
+    return status
+
+
+
+def point_keymap(self, context, event):
+    status = {'RUNNING_MODAL'}
+
+    region = context.region
+    rv3d = context.region_data
+
+    if event.type in self.nav_list:
+        # allow navigation
+        status = {'PASS_THROUGH'}
+
+    if event.type == 'MOUSEMOVE':
+        hov_status = self._window.test_hover(self._mouse_loc)
+
+    if event.type == 'N':
+        status = {'PASS_THROUGH'}
+
+    if event.type == 'G' and event.value == 'PRESS':
+        sel_pos = self._points_container.get_selected()
+        if event.alt:
+            if len(sel_pos) > 0:
+                sel_cos = self._points_container.get_selected_cos()
+                avg_loc = average_vecs(sel_cos)
+
+                self.target_emp.location = avg_loc
+                point_normals(self, sel_pos)
+
+        else:
+            if len(sel_pos) > 0:
+                sel_cos = self._points_container.get_selected_cos()
+
+                cache_norms = []
+                for ind in sel_pos:
+                    po = self._points_container.points[ind]
+                    norms = []
+                    for l_norm in po.loop_normals:
+                        norms.append(l_norm)
+                    cache_norms.append(norms)
+
+                point_normals(self, sel_pos)
+                self._window.set_status('VIEW TRANSLATION')
+
+                region = bpy.context.region
+                rv3d = bpy.context.region_data
+                rco = view3d_utils.location_3d_to_region_2d(
+                    region, rv3d, self.target_emp.location)
+
+                self._changing_po_cache.insert(0, self._mouse_loc)
+                self._changing_po_cache.insert(
+                    1, self.target_emp.location.copy())
+                self._changing_po_cache.insert(2, cache_norms)
+                self._changing_po_cache.insert(3, rco)
+
+                self.point_mode = False
+                self.point_move = True
+                keymap_refresh_target_move(self)
+
+    if event.type == 'Z' and event.value == 'PRESS':
+        self._x_ray_mode = not self._x_ray_mode
+        self._window.boolean_toggle_id(51)
+
+    # test selection of points/roots and hovering of buttons
+    if event.type == 'LEFTMOUSE' and event.value == 'PRESS' and event.ctrl != True:
+        hov_status = self._window.test_hover(self._mouse_loc)
+        if hov_status == 'EDGE':
+            self.resizing = True
+            self._window.start_resize(self._mouse_loc)
+        elif hov_status == 'PANEL_HEADER' or hov_status == 'SUBPANEL_HEADER':
+            self.pre_moving = True
+            self.pre_moving_no_coll = False
+            self._window.start_move(self._mouse_loc)
+        elif hov_status == 'PANEL' or hov_status == 'SUBPANEL':
+            self.pre_moving = True
+            self.pre_moving_no_coll = True
+            self._window.start_move(self._mouse_loc)
+        elif hov_status != None:
+            self.pre_item_click = True
+            self._stored_mouse = [self._mouse_loc[0], self._mouse_loc[1]]
+
+        status = {'RUNNING_MODAL'}
+
+    return status
+
+
+def point_move_keymap(self, context, event):
+    status = {'RUNNING_MODAL'}
+
+    if event.type == 'X' and event.value == 'PRESS':
+        translate_axis_change(self, 'TRANSLATING', 0)
+        move_target(self, event.shift)
+        self.redraw = True
+
+    if event.type == 'Y' and event.value == 'PRESS':
+        translate_axis_change(self, 'TRANSLATING', 1)
+        move_target(self, event.shift)
+        self.redraw = True
+
+    if event.type == 'Z' and event.value == 'PRESS':
+        translate_axis_change(self, 'TRANSLATING', 2)
+        move_target(self, event.shift)
+        self.redraw = True
+
+    if event.type == 'MOUSEMOVE':
+        sel_pos = self._points_container.get_selected()
+
+        move_target(self, event.shift)
+        point_normals(self, sel_pos)
+
+        self._changing_po_cache.pop(0)
+        self._changing_po_cache.insert(0, self._mouse_loc)
+
+        self.redraw = True
+
+    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+        self.translate_axis = 2
+        self.translate_mode = 0
+        clear_translate_axis_draw(self)
+        self._window.clear_status()
+        self.point_mode = True
+        self.point_move = False
+        keymap_refresh_target(self)
+        while len(self._changing_po_cache) > 1:
+            self._changing_po_cache.pop(0)
+
+    if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
+        sel_pos = self._points_container.get_selected()
+        for i, ind in enumerate(sel_pos):
+            po = self._points_container.points[ind]
+
+            for l, l_norm in enumerate(po.loop_normals):
+                po.loop_normals[l] = self._changing_po_cache[2][i][l].copy()
+
+        set_new_normals(self)
+        self.translate_axis = 2
+        self.translate_mode = 0
+        clear_translate_axis_draw(self)
+        self._window.clear_status()
+        self.redraw = True
+        self.point_mode = True
+        self.point_move = False
+        self.target_emp.location = self._changing_po_cache[1].copy()
+        keymap_refresh_target(self)
+        while len(self._changing_po_cache) > 1:
+            self._changing_po_cache.pop(0)
     return status
 
 
@@ -503,41 +835,44 @@ def gizmo_click_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
     if event.type == 'MOUSEMOVE':
-        start_vec = self._mode_cache[0]
+        region = bpy.context.region
+        rv3d = bpy.context.region_data
+
+        start_vec = self._changing_po_cache[0]
         view_vec = view3d_utils.region_2d_to_vector_3d(
-            self.act_reg, self.act_rv3d, mathutils.Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
+            region, rv3d, mathutils.Vector((self._mouse_loc[0], self._mouse_loc[1])))
         view_orig = view3d_utils.region_2d_to_origin_3d(
-            self.act_reg, self.act_rv3d, mathutils.Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
+            region, rv3d, mathutils.Vector((self._mouse_loc[0], self._mouse_loc[1])))
         line_a = view_orig
         line_b = view_orig + view_vec*10000
-        if self._mode_cache[1][0] == 'ROT_X':
-            x_vec = self._mode_cache[5] @ mathutils.Vector(
-                (1, 0, 0)) - self._mode_cache[5].translation
+        if self._changing_po_cache[1][0] == 'ROT_X':
+            x_vec = self._changing_po_cache[5] @ mathutils.Vector(
+                (1, 0, 0)) - self._changing_po_cache[5].translation
             mouse_co_3d = mathutils.geometry.intersect_line_plane(
-                line_a, line_b, self._mode_cache[5].translation, x_vec)
-        if self._mode_cache[1][0] == 'ROT_Y':
-            y_vec = self._mode_cache[5] @ mathutils.Vector(
-                (0, 1, 0)) - self._mode_cache[5].translation
+                line_a, line_b, self._changing_po_cache[5].translation, x_vec)
+        if self._changing_po_cache[1][0] == 'ROT_Y':
+            y_vec = self._changing_po_cache[5] @ mathutils.Vector(
+                (0, 1, 0)) - self._changing_po_cache[5].translation
             mouse_co_3d = mathutils.geometry.intersect_line_plane(
-                line_a, line_b, self._mode_cache[5].translation, y_vec)
-        if self._mode_cache[1][0] == 'ROT_Z':
-            z_vec = self._mode_cache[5] @ mathutils.Vector(
-                (0, 0, 1)) - self._mode_cache[5].translation
+                line_a, line_b, self._changing_po_cache[5].translation, y_vec)
+        if self._changing_po_cache[1][0] == 'ROT_Z':
+            z_vec = self._changing_po_cache[5] @ mathutils.Vector(
+                (0, 0, 1)) - self._changing_po_cache[5].translation
             mouse_co_3d = mathutils.geometry.intersect_line_plane(
-                line_a, line_b, self._mode_cache[5].translation, z_vec)
+                line_a, line_b, self._changing_po_cache[5].translation, z_vec)
 
-        mouse_co_local = self._mode_cache[5].inverted() @ mouse_co_3d
+        mouse_co_local = self._changing_po_cache[5].inverted() @ mouse_co_3d
 
         self.translate_mode = 2
-        if self._mode_cache[1][0] == 'ROT_X':
+        if self._changing_po_cache[1][0] == 'ROT_X':
             mouse_loc = mouse_co_local.yz
             ang = start_vec.angle_signed(mouse_co_local.yz)*-1
             self.translate_axis = 0
-        if self._mode_cache[1][0] == 'ROT_Y':
+        if self._changing_po_cache[1][0] == 'ROT_Y':
             mouse_loc = mouse_co_local.xz
             ang = start_vec.angle_signed(mouse_co_local.xz)*-1
             self.translate_axis = 1
-        if self._mode_cache[1][0] == 'ROT_Z':
+        if self._changing_po_cache[1][0] == 'ROT_Z':
             mouse_loc = mouse_co_local.xy
             ang = start_vec.angle_signed(mouse_co_local.xy)*-1
             self.translate_axis = 2
@@ -546,14 +881,14 @@ def gizmo_click_keymap(self, context, event):
             ang *= 0.1
 
         if ang != 0.0:
-            self._mode_cache[3] = self._mode_cache[3]+ang
-            self._mode_cache.pop(0)
-            self._mode_cache.insert(0, mouse_loc)
+            self._changing_po_cache[3] = self._changing_po_cache[3]+ang
+            self._changing_po_cache.pop(0)
+            self._changing_po_cache.insert(0, mouse_loc)
 
-            if self._mode_cache[6]:
-                rotate_vectors(self, self._mode_cache[3])
+            if self._changing_po_cache[6]:
+                rotate_vectors(self, self._changing_po_cache[3])
                 self._window.update_gizmo_rot(
-                    self._mode_cache[3], self._mode_cache[4])
+                    self._changing_po_cache[3], self._changing_po_cache[4])
                 self.redraw = True
             else:
                 if self.translate_axis == 0:
@@ -569,539 +904,180 @@ def gizmo_click_keymap(self, context, event):
                     self._orbit_ob.matrix_world)
 
     if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        for gizmo in self._rot_gizmo.gizmos:
+        for gizmo in self._window.gizmo_sets[self._changing_po_cache[1][1][0]].gizmos:
             gizmo.active = True
             gizmo.in_use = False
 
-        if self._mode_cache[6]:
+        if self._changing_po_cache[6]:
             add_to_undostack(self, 1)
 
         self.gizmo_click = False
         self.translate_mode = 0
         self.translate_axis = 2
-        self._mode_cache.clear()
-        self.click_hold = False
+        self._changing_po_cache.clear()
 
     if event.type == 'RIGHTMOUSE' and event.value == 'RELEASE':
-        if self._mode_cache[6]:
+        if self._changing_po_cache[6]:
             sel_pos = self._points_container.get_selected()
             for i, ind in enumerate(sel_pos):
                 po = self._points_container.points[ind]
 
-                for loop in po.loops:
-                    loop.normal = self._mode_cache[2][i][l].copy()
+                for l, l_norm in enumerate(po.loop_normals):
+                    po.loop_normals[l] = self._changing_po_cache[2][i][l].copy()
 
             set_new_normals(self)
         else:
-            self._orbit_ob.matrix_world = self._mode_cache[5].copy()
+            self._orbit_ob.matrix_world = self._changing_po_cache[5].copy()
             self._window.update_gizmo_orientation(self._orbit_ob.matrix_world)
 
-        for gizmo in self._rot_gizmo.gizmos:
+        for gizmo in self._window.gizmo_sets[self._changing_po_cache[1][1][0]].gizmos:
             gizmo.active = True
             gizmo.in_use = False
 
         self.gizmo_click = False
         self.translate_mode = 0
         self.translate_axis = 2
-        self._mode_cache.clear()
+        self._changing_po_cache.clear()
         self.redraw = True
-        self.click_hold = False
     return status
 
-
-#
-#
-
-
-def sphereize_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-
-    if event.type in self.nav_list:
-        # allow navigation
-        status = {'PASS_THROUGH'}
-
-    # test hover panels
-    if event.type == 'MOUSEMOVE' and self.click_hold == False:
-        hov_status = self._window.test_hover(self._mouse_reg_loc)
-        self.ui_hover = hov_status != None
-
-    # click down move
-    if event.type == 'MOUSEMOVE' and self.click_hold:
-        self._window.click_down_move(
-            self._mouse_reg_loc, event.shift, arguments=[event])
-
-    if event.type == 'N':
-        status = {'PASS_THROUGH'}
-
-    if event.type == 'G' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
-        if event.alt:
-            if len(sel_pos) > 0:
-                sel_cos = self._points_container.get_selected_cos()
-                avg_loc = average_vecs(sel_cos)
-
-                self._target_emp.location = avg_loc
-                sphereize_normals(self, sel_pos)
-
-        else:
-            if len(sel_pos) > 0:
-                sel_cos = self._points_container.get_selected_cos()
-                cache_norms = self._points_container.get_current_normals(
-                    sel_pos)
-
-                sphereize_normals(self, sel_pos)
-                self._window.set_status('VIEW TRANSLATION')
-
-                rco = view3d_utils.location_3d_to_region_2d(
-                    self.act_reg, self.act_rv3d, self._target_emp.location)
-
-                self._mode_cache.insert(0, self._mouse_reg_loc)
-                self._mode_cache.insert(
-                    1, self._target_emp.location.copy())
-                self._mode_cache.insert(2, cache_norms)
-                self._mode_cache.insert(3, rco)
-
-                self.sphereize_mode = False
-                self.sphereize_move = True
-                keymap_target_move(self)
-
-    if event.type == 'Z' and event.value == 'PRESS':
-        self._x_ray_mode = not self._x_ray_mode
-        self._xray_bool.toggle_bool()
-
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-
-        panel_status = False
-        # Test 2d ui selection
-        if self._sphere_panel.visible:
-            panel_status = self._sphere_panel.test_click_down(
-                self._mouse_reg_loc, event.shift, arguments=[event])
-            self.click_hold = True
-
-        if panel_status:
-            if panel_status[0] == {'CANCELLED'}:
-                status = panel_status[0]
-            if panel_status[0] == {'FINISHED'}:
-                status = panel_status[0]
-
-    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        status = {'RUNNING_MODAL'}
-        panel_status = None
-
-        if self._sphere_panel.visible:
-            panel_status = self._sphere_panel.test_click_up(
-                self._mouse_reg_loc, event.shift, arguments=[event])
-            self.click_hold = False
-
-        if panel_status:
-            if panel_status[0] == 'NUMBER_BAR_TYPE':
-                self.typing = True
-            if panel_status[0] == {'CANCELLED'}:
-                status = panel_status[0]
-            if panel_status[0] == {'FINISHED'}:
-                status = panel_status[0]
-
-    return status
-
-
-def sphereize_move_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-
-    if event.type == 'X' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
-
-        translate_axis_change(self, 'TRANSLATING', 0)
-        move_target(self, event.shift)
-        sphereize_normals(self, sel_pos)
-
-        self.redraw = True
-
-    if event.type == 'Y' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
-
-        translate_axis_change(self, 'TRANSLATING', 1)
-        move_target(self, event.shift)
-        sphereize_normals(self, sel_pos)
-
-        self.redraw = True
-
-    if event.type == 'Z' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
-
-        translate_axis_change(self, 'TRANSLATING', 2)
-        move_target(self, event.shift)
-        sphereize_normals(self, sel_pos)
-
-        self.redraw = True
-
-    if event.type == 'MOUSEMOVE':
-        sel_pos = self._points_container.get_selected()
-
-        move_target(self, event.shift)
-        sphereize_normals(self, sel_pos)
-
-        self._mode_cache.pop(0)
-        self._mode_cache.insert(0, self._mouse_reg_loc)
-
-        self.redraw = True
-
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-        self.translate_axis = 2
-        self.translate_mode = 0
-        clear_translate_axis_draw(self)
-        self._window.clear_status()
-        self.sphereize_mode = True
-        self.sphereize_move = False
-        keymap_target(self)
-        while len(self._mode_cache) > 1:
-            self._mode_cache.pop(0)
-
-    if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
-        for i, ind in enumerate(sel_pos):
-            po = self._points_container.points[ind]
-
-            for loop in po.loops:
-                loop.normal = self._mode_cache[2][i][l].copy()
-
-        set_new_normals(self)
-        self.translate_axis = 2
-        self.translate_mode = 0
-        clear_translate_axis_draw(self)
-        self._window.clear_status()
-        self.redraw = True
-        self.sphereize_mode = True
-        self.sphereize_move = False
-        self._target_emp.location = self._mode_cache[1].copy()
-        keymap_target(self)
-        while len(self._mode_cache) > 1:
-            self._mode_cache.pop(0)
-    return status
-
-
-def point_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-
-    if event.type in self.nav_list:
-        # allow navigation
-        status = {'PASS_THROUGH'}
-
-    # test hover panels
-    if event.type == 'MOUSEMOVE' and self.click_hold == False:
-        hov_status = self._window.test_hover(self._mouse_reg_loc)
-        self.ui_hover = hov_status != None
-
-    # click down move
-    if event.type == 'MOUSEMOVE' and self.click_hold:
-        self._window.click_down_move(
-            self._mouse_reg_loc, event.shift, arguments=[event])
-
-    if event.type == 'N':
-        status = {'PASS_THROUGH'}
-
-    if event.type == 'G' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
-        if event.alt:
-            if len(sel_pos) > 0:
-                sel_cos = self._points_container.get_selected_cos()
-                avg_loc = average_vecs(sel_cos)
-
-                self._target_emp.location = avg_loc
-                point_normals(self, sel_pos)
-
-        else:
-            if len(sel_pos) > 0:
-                sel_cos = self._points_container.get_selected_cos()
-
-                cache_norms = self._points_container.get_current_normals(
-                    sel_pos)
-
-                point_normals(self, sel_pos)
-                self._window.set_status('VIEW TRANSLATION')
-
-                rco = view3d_utils.location_3d_to_region_2d(
-                    self.act_reg, self.act_rv3d, self._target_emp.location)
-
-                self._mode_cache.insert(0, self._mouse_reg_loc)
-                self._mode_cache.insert(
-                    1, self._target_emp.location.copy())
-                self._mode_cache.insert(2, cache_norms)
-                self._mode_cache.insert(3, rco)
-
-                self.point_mode = False
-                self.point_move = True
-                keymap_target_move(self)
-
-    if event.type == 'Z' and event.value == 'PRESS':
-        self._x_ray_mode = not self._x_ray_mode
-        self._xray_bool.toggle_bool()
-
-        status = {'RUNNING_MODAL'}
-
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-
-        panel_status = False
-        # Test 2d ui selection
-        if self._point_panel.visible:
-            panel_status = self._point_panel.test_click_down(
-                self._mouse_reg_loc, event.shift, arguments=[event])
-            self.click_hold = True
-
-        if panel_status:
-            if panel_status[0] == {'CANCELLED'}:
-                status = panel_status[0]
-            if panel_status[0] == {'FINISHED'}:
-                status = panel_status[0]
-
-    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        status = {'RUNNING_MODAL'}
-        panel_status = None
-
-        if self._point_panel.visible:
-            panel_status = self._point_panel.test_click_up(
-                self._mouse_reg_loc, event.shift, arguments=[event])
-            self.click_hold = False
-
-        if panel_status:
-            if panel_status[0] == 'NUMBER_BAR_TYPE':
-                self.typing = True
-            if panel_status[0] == {'CANCELLED'}:
-                status = panel_status[0]
-            if panel_status[0] == {'FINISHED'}:
-                status = panel_status[0]
-
-    return status
-
-
-def point_move_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-
-    if event.type == 'X' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
-
-        translate_axis_change(self, 'TRANSLATING', 0)
-        move_target(self, event.shift)
-        point_normals(self, sel_pos)
-
-        self.redraw = True
-
-    if event.type == 'Y' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
-
-        translate_axis_change(self, 'TRANSLATING', 1)
-        move_target(self, event.shift)
-        point_normals(self, sel_pos)
-
-        self.redraw = True
-
-    if event.type == 'Z' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
-
-        translate_axis_change(self, 'TRANSLATING', 2)
-        move_target(self, event.shift)
-        point_normals(self, sel_pos)
-
-        self.redraw = True
-
-    if event.type == 'MOUSEMOVE':
-        sel_pos = self._points_container.get_selected()
-
-        move_target(self, event.shift)
-        point_normals(self, sel_pos)
-
-        self._mode_cache.pop(0)
-        self._mode_cache.insert(0, self._mouse_reg_loc)
-
-        self.redraw = True
-
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-        self.translate_axis = 2
-        self.translate_mode = 0
-        clear_translate_axis_draw(self)
-        self._window.clear_status()
-        self.point_mode = True
-        self.point_move = False
-        keymap_target(self)
-        while len(self._mode_cache) > 1:
-            self._mode_cache.pop(0)
-
-    if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
-        for i, ind in enumerate(sel_pos):
-            po = self._points_container.points[ind]
-
-            for loop in po.loops:
-                loop.normal = self._mode_cache[2][i][l].copy()
-
-        set_new_normals(self)
-        self.translate_axis = 2
-        self.translate_mode = 0
-        clear_translate_axis_draw(self)
-        self._window.clear_status()
-        self.redraw = True
-        self.point_mode = True
-        self.point_move = False
-        self._target_emp.location = self._mode_cache[1].copy()
-        keymap_target(self)
-        while len(self._mode_cache) > 1:
-            self._mode_cache.pop(0)
-    return status
-
-
-#
-#
 
 
 def box_select_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
-    self.active_drawing = True
 
     if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-        self._mode_cache.append(self._mouse_reg_loc)
+        self._changing_po_cache.append(self._mouse_loc)
         self.box_select_start = False
         self.box_selecting = True
 
     if event.type == 'MOUSEMOVE' and self.box_selecting:
-        prev_loc = mathutils.Vector(
-            (self._mode_cache[-1][0], self._mode_cache[-1][1]))
-        cur_loc = mathutils.Vector(self._mouse_reg_loc)
-
         if event.alt:
-            if self._mouse_init == None:
-                self._mouse_init = self._mouse_reg_loc
-
+            if len(self._changing_po_cache) == 1:
+                self._changing_po_cache.append(self._mouse_loc)
             else:
-                offset = [self._mouse_reg_loc[0]-self._mouse_init[0],
-                          self._mouse_reg_loc[1]-self._mouse_init[1]]
-                for p in range(len(self._mode_cache)):
-                    self._mode_cache.append(
-                        [self._mode_cache[0][0]+offset[0], self._mode_cache[0][1]+offset[1]])
-                    self._mode_cache.pop(0)
-                self._mouse_init = self._mouse_reg_loc
+                prev_loc = mathutils.Vector(
+                    (self._changing_po_cache[1][0], self._changing_po_cache[1][1]))
+                cur_loc = mathutils.Vector(
+                    (self._mouse_loc[0], self._mouse_loc[1]))
+
+                new_loc = cur_loc - prev_loc
+                new_loc[0] += self._changing_po_cache[0][0]
+                new_loc[1] += self._changing_po_cache[0][1]
+
+                self._changing_po_cache.clear()
+
+                self._changing_po_cache.append([new_loc[0], new_loc[1]])
+                self._changing_po_cache.append(self._mouse_loc)
 
         else:
-            if self._mouse_init:
-                self._mouse_init = None
-
-            if (cur_loc-prev_loc).length > 10.0:
-                self._mode_cache.append(self._mouse_reg_loc)
+            if len(self._changing_po_cache) == 2:
+                self._changing_po_cache.pop(1)
 
     if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        change = box_selection_test(self, event)
-        if change:
+        sel_res = box_selection_test(self, context, event)
+
+        if sel_res:
             add_to_undostack(self, 0)
             self.redraw = True
+            update_orbit_empty(self)
+
+        if self._active_point != None:
+            if self._points_container.points[self._active_point].select == False:
+                self._active_point = None
 
         self.box_select_start = False
         self.box_selecting = False
-        self._mode_cache.clear()
+        self._changing_po_cache.clear()
+        self.redraw = True
         bpy.context.window.cursor_modal_set('DEFAULT')
         update_orbit_empty(self)
-        keymap_refresh(self)
+        keymap_refresh_base(self)
+        gizmo_unhide(self)
 
     if event.type == 'RIGHTMOUSE':
+
         self.box_select_start = False
         self.box_selecting = False
         bpy.context.window.cursor_modal_set('DEFAULT')
-        gizmo_update_hide(self, True)
-        self._mode_cache.clear()
-        keymap_refresh(self)
+        self._changing_po_cache.clear()
+        keymap_refresh_base(self)
+        gizmo_unhide(self)
 
     return status
 
 
 def lasso_select_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
-    self.active_drawing = True
 
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-        self._mode_cache.append(self._mouse_reg_loc)
-        self.lasso_select_start = False
-        self.lasso_selecting = True
-
-    if event.type == 'MOUSEMOVE' and self.lasso_selecting:
-        prev_loc = mathutils.Vector(
-            (self._mode_cache[-1][0], self._mode_cache[-1][1]))
-        cur_loc = mathutils.Vector(self._mouse_reg_loc)
-
-        if event.alt:
-            if self._mouse_init == None:
-                self._mouse_init = self._mouse_reg_loc
-
-            else:
-                offset = cur_loc - prev_loc
-                for p in range(len(self._mode_cache)):
-                    self._mode_cache.append(
-                        [self._mode_cache[0][0]+offset[0], self._mode_cache[0][1]+offset[1]])
-                    self._mode_cache.pop(0)
-                self._mouse_init = self._mouse_reg_loc
-
-        else:
-            if self._mouse_init:
-                self._mouse_init = None
+    if event.type == 'MOUSEMOVE':
+        if len(self._changing_po_cache) > 0:
+            prev_loc = mathutils.Vector(
+                (self._changing_po_cache[-1][0], self._changing_po_cache[-1][1]))
+            cur_loc = mathutils.Vector(
+                (self._mouse_loc[0], self._mouse_loc[1]))
 
             if (cur_loc-prev_loc).length > 10.0:
-                self._mode_cache.append(self._mouse_reg_loc)
+                self._changing_po_cache.append(self._mouse_loc)
 
     if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        change = lasso_selection_test(self, event)
-        if change:
-            add_to_undostack(self, 0)
-            self.redraw = True
+        sel_res = lasso_selection_test(self, context, event)
 
         self.lasso_selecting = False
-        self._mode_cache.clear()
-        bpy.context.window.cursor_modal_set('DEFAULT')
-        keymap_refresh(self)
-        update_orbit_empty(self)
+        self._changing_po_cache.clear()
+        if sel_res:
+            add_to_undostack(self, 0)
+            self.redraw = True
+            update_orbit_empty(self)
+
+        if self._active_point != None:
+            if self._points_container.points[self._active_point].select == False:
+                self._active_point = None
+        keymap_refresh_base(self)
+        gizmo_unhide(self)
 
     if event.type == 'RIGHTMOUSE':
         self.lasso_selecting = False
-        self._mode_cache.clear()
-        bpy.context.window.cursor_modal_set('DEFAULT')
-        keymap_refresh(self)
-        gizmo_update_hide(self, True)
+        self._changing_po_cache.clear()
+        keymap_refresh_base(self)
+        gizmo_unhide(self)
 
     return status
 
 
 def circle_select_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
-    self.active_drawing = True
 
     if event.type in self.nav_list:
         status = {'PASS_THROUGH'}
-        self.navigating = True
 
     if event.type == 'F':
         if event.value == 'PRESS':
             self.circle_resizing = True
-            if self._mouse_reg_loc[0]-self.circle_radius < 0:
-                self._mode_cache.append(
-                    [self._mouse_reg_loc[0]+self.circle_radius, self._mouse_reg_loc[1]])
+            if self._mouse_loc[0]-self.circle_radius < 0:
+                self._changing_po_cache.append(
+                    [self._mouse_loc[0]+self.circle_radius, self._mouse_loc[1]])
             else:
-                self._mode_cache.append(
-                    [self._mouse_reg_loc[0]-self.circle_radius, self._mouse_reg_loc[1]])
-            self._mode_cache.append(self.circle_radius)
+                self._changing_po_cache.append(
+                    [self._mouse_loc[0]-self.circle_radius, self._mouse_loc[1]])
+            self._changing_po_cache.append(self.circle_radius)
 
         elif event.value == 'RELEASE':
             self.circle_resizing = False
-            self._mode_cache.clear()
+            self._changing_po_cache.clear()
 
     if self.circle_resizing:
         prev_loc = mathutils.Vector(
-            (self._mode_cache[0][0], self._mode_cache[0][1]))
-        cur_loc = mathutils.Vector(self._mouse_reg_loc)
+            (self._changing_po_cache[0][0], self._changing_po_cache[0][1]))
+        cur_loc = mathutils.Vector((self._mouse_loc[0], self._mouse_loc[1]))
 
         diff = int((cur_loc-prev_loc).length)
         self.circle_radius = diff
 
         if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
             self.circle_resizing = False
-            self.circle_radius = self._mode_cache[1]
-            self._mode_cache.clear()
+            self.circle_radius = self._changing_po_cache[1]
+            self._changing_po_cache.clear()
 
     else:
         if event.type == 'LEFT_BRACKET' and event.value == 'PRESS':
@@ -1111,27 +1087,37 @@ def circle_select_keymap(self, context, event):
             self.circle_radius += 10
 
         if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-            circle_selection_test(self, event, self.circle_radius)
-            self.redraw = True
+            self.circle_status = event.ctrl
+            sel_res = circle_selection_test(
+                self, context, event, self.circle_radius, self.circle_status)
+            if self._active_point != None:
+                if self._points_container.points[self._active_point].select == False:
+                    self._active_point = None
+            if sel_res:
+                self.redraw = True
 
             self.circle_select_start = False
             self.circle_selecting = True
 
         if event.type == 'MOUSEMOVE' and self.circle_selecting:
-            circle_selection_test(self, event, self.circle_radius)
-            self.redraw = True
+            sel_res = circle_selection_test(
+                self, context, event, self.circle_radius, self.circle_status)
+            if self._active_point != None:
+                if self._points_container.points[self._active_point].select == False:
+                    self._active_point = None
+            if sel_res:
+                self.redraw = True
 
         if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
             self.circle_select_start = True
             self.circle_selecting = False
+            update_orbit_empty(self)
 
         if event.type == 'RIGHTMOUSE':
             add_to_undostack(self, 0)
-
             self.circle_select_start = False
             self.circle_selecting = False
-            bpy.context.window.cursor_modal_set('DEFAULT')
-            keymap_refresh(self)
-            update_orbit_empty(self)
+            keymap_refresh_base(self)
+            gizmo_unhide(self)
 
     return status
