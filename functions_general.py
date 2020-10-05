@@ -123,11 +123,58 @@ def generate_matrix(v1, v2, v3, cross, normalized):
     return matrix
 
 
-def ray_cast_view_occlude_test(co, mouse_co, bvh):
-    region = bpy.context.region
-    rv3d = bpy.context.region_data
+def average_vecs(vecs):
+    if len(vecs) > 0:
+        vec = mathutils.Vector((0, 0, 0))
+        for v in vecs:
+            vec += v
 
-    orig_co = view3d_utils.region_2d_to_origin_3d(region, rv3d, mouse_co)
+        vec = vec/len(vecs)
+
+        return vec
+    return None
+
+
+#
+#
+
+
+def hsv_to_rgb(h, s, v, a=1.0):
+    if s == 0.0:
+        return (v, v, v, a)
+    i = int(h*6.)  # XXX assume int() truncates!
+    f = (h*6.)-i
+    p, q, t = v*(1.-s), v*(1.-s*f), v*(1.-s*(1.-f))
+    i %= 6
+    if i == 0:
+        return (v, t, p, a)
+    if i == 1:
+        return (q, v, p, a)
+    if i == 2:
+        return (p, v, t, a)
+    if i == 3:
+        return (p, q, v, a)
+    if i == 4:
+        return (t, p, v, a)
+    if i == 5:
+        return (v, p, q, a)
+
+
+def hsv_to_rgb_list(hsv):
+    if len(hsv) > 3:
+        rgb = hsv_to_rgb(hsv[0], hsv[1], hsv[2], hsv[3])
+    else:
+        rgb = hsv_to_rgb(hsv[0], hsv[1], hsv[2])
+    return rgb
+
+
+#
+#
+
+
+def ray_cast_view_occlude_test(co, mouse_co, bvh, region, rv3d):
+    orig_co = view3d_utils.region_2d_to_origin_3d(
+        region, rv3d, mouse_co)
     direction_to = (orig_co - co).normalized()
 
     occluded = False
@@ -143,19 +190,21 @@ def ray_cast_view_occlude_test(co, mouse_co, bvh):
 def ray_cast_to_mouse(self, context):
     # get the context arguments
     scn = context.scene
-    region = context.region
-    rv3d = context.region_data
 
     # get the ray from the viewport and mouse
     view_vector = view3d_utils.region_2d_to_vector_3d(
-        region, rv3d, self._mouse_loc)
+        self.act_reg, self.act_rv3d, self._mouse_reg_loc)
     ray_origin = view3d_utils.region_2d_to_origin_3d(
-        region, rv3d, self._mouse_loc)
+        self.act_reg, self.act_rv3d, self._mouse_reg_loc)
 
     hit, norm, ind, dist = self._object_bvh.ray_cast(
         ray_origin, view_vector, 10000)
 
     return ind
+
+
+#
+#
 
 
 def get_outer_v(axis, min, cos, unavail=[]):
@@ -298,3 +347,327 @@ def get_linked_geo(bm, inds, vis=None):
                 verts = next_verts.copy()
                 still_going = found
     return v_list
+
+
+#
+#
+#
+
+
+def click_points_selection_test(coords, sel_status, mouse_co, region, rv3d, shift, x_ray, bvh, active=None, radius=15):
+    mouse_co = mathutils.Vector(mouse_co)
+
+    if x_ray:
+        bvh = None
+
+    change = False
+    nearest_dist = -1
+    nearest_point = None
+    nearest_sel_point = None
+    # Test selection of points
+    for c, co in enumerate(coords):
+        rco = view3d_utils.location_3d_to_region_2d(
+            region, rv3d, co)
+        if rco:
+            status = sel_status[c]
+            dist = (rco - mouse_co).length
+            if (nearest_point == None or dist < nearest_dist) and dist < radius:
+                # make sure co is valid. test occlusion if it is enabled
+                valid_po = True
+                if bvh:
+                    valid_po = not ray_cast_view_occlude_test(
+                        co, mouse_co, bvh, region, rv3d)
+
+                if valid_po:
+                    if status:
+                        nearest_sel_point = c
+                    else:
+                        nearest_dist = dist
+                        nearest_point = c
+
+    # If no points to select then go with nearest already selected point as active
+    if nearest_point == None and nearest_sel_point != None:
+        nearest_point = nearest_sel_point
+
+    # Make selection changes if a point is in range
+    unselect = False
+    new_active = None
+    new_sel = None
+    new_sel_status = False
+    if nearest_point != None:
+        # Unselect all and clear active point if shift not held
+        unselect = not shift
+        new_sel = nearest_point
+        new_active = nearest_point
+        new_sel_status = True
+
+        if active != None and nearest_point == active and shift:
+            new_active = None
+            new_sel_status = False
+
+        change = True
+
+    return change, unselect, new_active, new_sel, new_sel_status
+
+
+def click_tris_selection_test(tris, sel_status, mouse_co, region, rv3d, shift, x_ray, bvh, active=None, radius=15):
+    mouse_co = mathutils.Vector(mouse_co)
+
+    if x_ray:
+        bvh = None
+
+    change = False
+    nearest_dist = -1
+    nearest_tri = None
+    nearest_sel_tri = None
+    # Test selection of tris
+    for t, tri_set in enumerate(tris):
+        status = sel_status[t]
+        if nearest_sel_tri == None and nearest_tri == None:
+            p1 = view3d_utils.location_3d_to_region_2d(
+                region, rv3d, tri_set[0])
+            p2 = view3d_utils.location_3d_to_region_2d(
+                region, rv3d, tri_set[1])
+            p3 = view3d_utils.location_3d_to_region_2d(
+                region, rv3d, tri_set[2])
+
+            if p1 and p2 and p3:
+                intersect = mathutils.geometry.intersect_point_tri_2d(
+                    mouse_co, p1, p2, p3)
+                if intersect != 0:
+                    if bvh:
+                        all_true = True
+                        for co in tri_set:
+                            no_hit = not ray_cast_view_occlude_test(
+                                co, mouse_co, bvh, region, rv3d)
+
+                            if no_hit == False:
+                                all_true = False
+
+                        if all_true:
+                            if status == False:
+                                if nearest_tri == None:
+                                    nearest_tri = t
+                            else:
+                                if nearest_sel_tri == None:
+                                    nearest_sel_tri = t
+                    else:
+                        if status == False:
+                            if nearest_tri == None:
+                                nearest_tri = t
+                        else:
+                            if nearest_sel_tri == None:
+                                nearest_sel_tri = t
+
+    # If no new tris to select then go with nearest already selected tri as active or remove
+    if nearest_tri == None and nearest_sel_tri != None:
+        nearest_tri = nearest_sel_tri
+
+    # Make selection changes if a tri is in range
+    unselect = False
+    new_active = None
+    new_sel = None
+    new_sel_status = False
+    if nearest_tri != None:
+        # Unselect all and clear active tri if shift not held
+        unselect = not shift
+        new_sel = nearest_tri
+        new_active = nearest_tri
+        new_sel_status = True
+
+        if active != None and nearest_tri == active and shift:
+            new_active = None
+            new_sel_status = False
+
+        change = True
+    return change, unselect, new_active, new_sel, new_sel_status
+
+
+def box_points_selection_test(coords, sel_status, mouse_co, corner_co, region, rv3d, add_rem_status, x_ray, bvh, active=None, just_one=False):
+    mouse_co = mathutils.Vector(mouse_co)
+
+    if x_ray:
+        bvh = None
+
+    low_x = corner_co[0]
+    hi_x = mouse_co[0]
+    low_y = corner_co[1]
+    hi_y = mouse_co[1]
+
+    if corner_co[0] > mouse_co[0]:
+        low_x = mouse_co[0]
+        hi_x = corner_co[0]
+
+    if corner_co[1] > mouse_co[1]:
+        low_y = mouse_co[1]
+        hi_y = corner_co[1]
+
+    change = False
+    unselect = add_rem_status == 0
+    new_active = active
+    new_sel_add = []
+    new_sel_remove = []
+    for c, co in enumerate(coords):
+        rco = view3d_utils.location_3d_to_region_2d(
+            region, rv3d, co)
+        if rco:
+            status = sel_status[c]
+            if rco[0] > low_x and rco[0] < hi_x and rco[1] > low_y and rco[1] < hi_y:
+                if bvh:
+                    no_hit = not ray_cast_view_occlude_test(
+                        co, mouse_co, bvh, region, rv3d)
+                    # INSIDE BOX AND IN VIEW
+                    if no_hit:
+                        if add_rem_status == 0:
+                            new_sel_add.append(c)
+                            change = True
+                        elif add_rem_status == 2:
+                            if status:
+                                new_sel_remove.append(c)
+                                change = True
+                        else:
+                            if status != True:
+                                new_sel_add.append(c)
+                                change = True
+
+                # INSIDE BOX NO BVH TEST
+                else:
+                    if add_rem_status == 0:
+                        new_sel_add.append(c)
+                        change = True
+                    elif add_rem_status == 2:
+                        if status:
+                            new_sel_remove.append(c)
+                            change = True
+                    else:
+                        if status != True:
+                            new_sel_add.append(c)
+                            change = True
+                if change and just_one:
+                    break
+
+    if active != None and active in new_sel_remove:
+        new_active = None
+
+    return change, unselect, new_active, new_sel_add, new_sel_remove
+
+
+def circle_points_selection_test(coords, sel_status, mouse_co, radius, region, rv3d, add_rem_status, x_ray, bvh, active=None, just_one=False):
+    mouse_co = mathutils.Vector(mouse_co)
+
+    if x_ray:
+        bvh = None
+
+    change = False
+    unselect = False
+    new_active = active
+    new_sel = []
+    new_sel_status = add_rem_status != 2
+    for c, co in enumerate(coords):
+        rco = view3d_utils.location_3d_to_region_2d(
+            region, rv3d, co)
+        if rco:
+            status = sel_status[c]
+            dist = (rco - mouse_co).length
+            if dist < radius:
+                if bvh:
+                    no_hit = not ray_cast_view_occlude_test(
+                        co, mouse_co, bvh, region, rv3d)
+                    if no_hit:
+                        if add_rem_status == 2:
+                            if status:
+                                new_sel.append(c)
+                                change = True
+                        else:
+                            if status != True:
+                                new_sel.append(c)
+                                change = True
+
+                else:
+                    if add_rem_status == 2:
+                        if status:
+                            new_sel.append(c)
+                            change = True
+                    else:
+                        if status != True:
+                            new_sel.append(c)
+                            change = True
+                if change and just_one:
+                    break
+
+    if active != None and active in new_sel and new_sel_status == False:
+        new_active = None
+
+    return change, unselect, new_active, new_sel, new_sel_status
+
+
+def lasso_points_selection_test(lasso_points, coords, sel_status, mouse_co, region, rv3d, add_rem_status, x_ray, bvh, active=None, just_one=False):
+    mouse_co = mathutils.Vector(mouse_co)
+
+    if x_ray:
+        bvh = None
+
+    change = False
+    unselect = add_rem_status == 0
+    new_active = None
+    new_sel_add = []
+    new_sel_remove = []
+    in_range_inds = bounding_box_filter(lasso_points, [
+                                        view3d_utils.location_3d_to_region_2d(region, rv3d, co) for co in coords])
+    for c, co in enumerate(coords):
+        status = sel_status[c]
+        if c in in_range_inds:
+            rco = view3d_utils.location_3d_to_region_2d(
+                region, rv3d, co)
+            if rco:
+                sel_res = test_point_in_shape(lasso_points, rco)
+                if sel_res:
+                    if bvh:
+                        no_hit = not ray_cast_view_occlude_test(
+                            co, mouse_co, bvh, region, rv3d)
+                        # INSIDE BOX AND IN VIEW
+                        if no_hit:
+                            if add_rem_status == 0:
+                                new_sel_add.append(c)
+                                change = True
+                            elif add_rem_status == 2:
+                                if status:
+                                    new_sel_remove.append(c)
+                                    change = True
+                            else:
+                                if status != True:
+                                    new_sel_add.append(c)
+                                    change = True
+                        # # INSIDE BOX BUT NOT IN VIEW
+                        # else:
+                        #     if add_rem_status == 0:
+                        #         if status:
+                        #             new_sel_remove.append(c)
+                        #             change = True
+
+                    # INSIDE BOX NO BVH TEST
+                    else:
+                        if add_rem_status == 0:
+                            new_sel_add.append(c)
+                            change = True
+                        elif add_rem_status == 2:
+                            if status:
+                                new_sel_remove.append(c)
+                                change = True
+                        else:
+                            if status != True:
+                                new_sel_add.append(c)
+                                change = True
+
+                # else:
+                #     if add_rem_status == 0:
+                #         if status:
+                #             new_sel_remove.append(c)
+                #             change = True
+                    if change and just_one:
+                        break
+
+    if active != None and active in new_sel_remove:
+        new_active = None
+
+    return change, unselect, new_active, new_sel_add, new_sel_remove

@@ -512,6 +512,7 @@ class UIWindow:
                 if gizmo.hover and gizmo.active:
                     return gizmo.type, [giz_set.index, gizmo.index]
         return None
+
     # RESIZING
 
     def start_resize(self, mouse_co):
@@ -612,6 +613,7 @@ class UIWindow:
     def confirm_resize(self):
         self.panel_resize_cache.clear()
         return
+
     # MOVING
 
     def start_move(self, mouse_co):
@@ -670,6 +672,7 @@ class UIWindow:
 
         panel.update_position()
         return
+
     # NUM PROP CHANGING
 
     def num_change(self, shift):
@@ -804,12 +807,9 @@ class UIWindow:
 
                     y_pos += subp.height
                     y_pos += panel.panel_separation
-                    del(collapsed)
 
                 panel.collapse_recreate_bg()
 
-                del(og_height)
-                del(y_pos)
                 break
         return
 
@@ -1276,19 +1276,6 @@ class UIPanel:
 
         self.update_position()
 
-        # DELETE VARIABLES TO CLEAR FROM MEMORY
-        del(border_out_points)
-        del(border_out_tris)
-        del(border_out_lines)
-        del(header_y_offset)
-        del(header_height)
-        del(total_height)
-        del(end_height)
-        del(text_height)
-        del(text_width)
-        del(x_offset)
-        del(y_offset)
-
         return
 
     def update_position(self):
@@ -1353,18 +1340,6 @@ class UIPanel:
             self.batch_visible_hov_icon = batch_for_shader(
                 self.shader, 'TRIS', {"pos": vis_hov_points}, indices=self.visible_icon_tris)
 
-        del(x_co)
-        del(y_co)
-        del(header_x)
-        del(header_y)
-        del(box_points)
-        del(box_lines)
-        del(border_points)
-        del(header_points)
-        del(header_lines)
-        del(subp_box_points)
-        del(subp_box_lines)
-        del(subp_border_points)
         return
 
     def collapse_recreate_bg(self):
@@ -1417,12 +1392,6 @@ class UIPanel:
             self.box_points, border_out_points)
 
         self.update_position()
-
-        # DELETE VARIABLES TO CLEAR FROM MEMORY
-        del(total_height)
-        del(x_offset)
-        del(y_offset)
-
         return
 
     def draw(self):
@@ -1453,8 +1422,6 @@ class UIPanel:
                           self.color_header_text[2], self.color_header_text[3])
                 blf.size(self.font_id, round(self.header_text_size), 72)
                 blf.draw(self.font_id, self.header_render)
-
-                del(header_pos)
 
             if self.header_icon != None:
                 if self.header_icon.gl_load():
@@ -1778,7 +1745,7 @@ class UISubpanel:
                 self.margin+round(self.header_arrow_size/2), -self.header_bar_height+arrow_gap]]
 
             arrow_width = self.margin + self.header_arrow_size
-            del(arrow_gap)
+
             # CHECK TEXT FIT HEADER BAR
             self.header_render = fit_text(self.header_text, self.header_text_size,
                                           self.font_id, self.header_bar_width-arrow_width-self.text_margin)
@@ -1788,10 +1755,6 @@ class UISubpanel:
             # FIND TEXT POSITION INSIDE HEADER
             self.header_text_x, self.header_text_y = place_text_in_box(self.header_align, self.header_bar_height, self.width-self.margin *
                                                                        3-self.header_arrow_size, self.text_margin, text_height, text_width, self.header_render, x_offset=self.header_arrow_size)
-
-            del(text_height)
-            del(text_width)
-            del(arrow_width)
 
             total_height += self.margin
         self.panel_y_pos = total_height
@@ -1832,9 +1795,6 @@ class UISubpanel:
             self.header_points, self.header_tris, self.header_lines = calc_box(
                 0, 0, self.header_bar_width, self.header_bar_height, [], self.header_bevel_size, self.header_bevel_res)
 
-        del(end_height)
-        del(total_height)
-
         return
 
     def update_position(self, p_pos):
@@ -1866,13 +1826,6 @@ class UISubpanel:
 
         for row in self.rows:
             row.update_position([x_co, y_co])
-
-        del(x_co)
-        del(y_co)
-        del(box_points)
-        del(box_lines)
-        del(header_points)
-        del(header_lines)
 
         return
 
@@ -1934,8 +1887,6 @@ class UISubpanel:
                 self.shader.uniform_float("color", self.color_arrows)
                 arrow_batch.draw(self.shader)
                 bgl.glDisable(bgl.GL_BLEND)
-
-                del(pos)
 
         return
 
@@ -2098,8 +2049,6 @@ class UIRow:
         self.box_points, self.box_tris, self.box_lines = calc_box(
             0, 0, self.width, self.height, [], self.bevel_size, self.bevel_res)
 
-        del(x_co)
-
         return
 
     def update_position(self, p_pos):
@@ -2115,11 +2064,6 @@ class UIRow:
             self.shader, 'TRIS', {"pos": box_points}, indices=self.box_tris)
         self.batch_bg_lines = batch_for_shader(
             self.shader, 'LINES', {"pos": box_lines})
-
-        del(x_co)
-        del(y_co)
-        del(box_points)
-        del(box_lines)
 
         return
 
@@ -2144,7 +2088,6 @@ class UIRow:
             pos = [position[0]+self.position[0], position[1]+self.position[1]]
             for item in self.items:
                 item.draw(pos)
-            del(pos)
 
         return
 
@@ -2375,10 +2318,6 @@ class UILabel:
                 [self.text_x-offset+self.icon_size, -self.icon_margin])
             self.icon_pos.append([self.text_x-offset, -self.icon_margin])
 
-        del(label_width)
-        del(text_width)
-        del(text_height)
-
         return
 
     def update_position(self, p_pos):
@@ -2417,7 +2356,6 @@ class UILabel:
                 self.batch_icon.draw(self.icon_shader)
                 bgl.glDisable(bgl.GL_BLEND)
 
-            del(pos)
         return
 
     def __str__(self, ):
@@ -2539,14 +2477,8 @@ class UINumProp:
             self.arrow_right_lines = [[x_gap, -y_gap], [self.box_arrow_size -
                                                         x_gap, round(-self.height/2)], [x_gap, -self.height+y_gap], ]
 
-            del(y_gap)
-            del(x_gap)
         else:
             self.arrow_lines = []
-
-        del(perc)
-        del(text_width)
-        del(text_height)
 
         return
 
@@ -2594,19 +2526,6 @@ class UINumProp:
         self.batch_arrow_right = batch_for_shader(
             self.shader, 'TRIS', {"pos": arrow_right_lines}, indices=[[0, 1, 2]])
 
-        del(x_co)
-        del(y_co)
-        del(box_points)
-        del(box_lines)
-        del(perc_points)
-        del(perc_lines)
-        del(bool_left_points)
-        del(bool_right_points)
-        del(arrow_left_lines)
-        del(arrow_right_lines)
-        del(bool_left_lines)
-        del(bool_right_lines)
-
         return
 
     def update_slider(self, p_pos):
@@ -2645,14 +2564,6 @@ class UINumProp:
 
         self.batch_perc = batch_for_shader(
             self.shader, 'TRIS', {"pos": perc_points}, indices=self.perc_tris)
-
-        del(x_co)
-        del(y_co)
-        del(perc)
-        del(perc_points)
-        del(perc_lines)
-        del(text_width)
-        del(text_height)
 
         return
 
@@ -2719,7 +2630,6 @@ class UINumProp:
                 blf.size(self.font_id, int(self.font_size), 72)
                 blf.draw(self.font_id, self.text_render)
 
-            del(pos)
         return
 
     def __str__(self, ):
@@ -2801,10 +2711,6 @@ class UIBoolProp:
         self.bool_lines = [[2, -2], [self.box_bool_size-2, -self.box_bool_size+2],
                            [2, -self.box_bool_size+2], [self.box_bool_size-2, -2]]
 
-        del(bool_marg)
-        del(text_width)
-        del(text_height)
-
         return
 
     def update_position(self, p_pos):
@@ -2834,14 +2740,6 @@ class UIBoolProp:
                 self.shader, 'TRIS', {"pos": box_bool_points}, indices=self.box_bool_tris)
             self.batch_bool = batch_for_shader(
                 self.shader, 'LINES', {"pos": bool_lines})
-
-        del(x_co)
-        del(y_co)
-        del(box_points)
-        del(box_lines)
-        del(box_bool_points)
-        del(box_bool_lines)
-        del(bool_lines)
 
         return
 
@@ -2883,7 +2781,6 @@ class UIBoolProp:
                 blf.size(self.font_id, int(self.font_size), 72)
                 blf.draw(self.font_id, self.text_render)
 
-            del(pos)
         return
 
     def __str__(self, ):
@@ -2950,9 +2847,6 @@ class UIButton:
         self.box_points, self.box_tris, self.box_lines = calc_box(
             0, 0, self.width, self.height, [], self.bevel_size, self.bevel_res)
 
-        del(text_width)
-        del(text_height)
-
         return
 
     def update_position(self, p_pos):
@@ -2963,11 +2857,6 @@ class UIButton:
         box_lines = draw_cos_offset(x_co, y_co, self.box_lines)
         self.batch = batch_for_shader(
             self.shader, 'TRIS', {"pos": box_points}, indices=self.box_tris)
-
-        del(x_co)
-        del(y_co)
-        del(box_points)
-        del(box_lines)
 
         return
 
@@ -2993,7 +2882,6 @@ class UIButton:
                 blf.size(self.font_id, int(self.font_size), 72)
                 blf.draw(self.font_id, self.text_render)
 
-            del(pos)
         return
 
     def __str__(self, ):
