@@ -1163,7 +1163,7 @@ def move_target(self, shift):
 #
 
 
-def selection_test(self, event, radius=8.0):
+def selection_test(self, event, radius=6.0):
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         0)
 

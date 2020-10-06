@@ -107,6 +107,12 @@ def basic_ui_hover_keymap(self, context, event):
             self._mouse_reg_loc, event.shift, arguments=[event])
         self.click_hold = False
         if panel_status:
+            rco = view3d_utils.location_3d_to_region_2d(
+                self.act_reg, self.act_rv3d, self._orbit_ob.location)
+            if rco != None:
+                self.gizmo_reposition_offset = [
+                    self._gizmo_panel.position[0]-rco[0], self._gizmo_panel.position[1]-rco[1]]
+
             if panel_status[0] == 'NUMBER_BAR_TYPE':
                 self.typing = True
             if panel_status[0] == {'CANCELLED'}:

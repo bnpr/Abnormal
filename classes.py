@@ -22,7 +22,7 @@ class ABNPoints:
         self.draw_unselected = False
         self.scale_selection = True
 
-        self.color_tri = (0.16, 0.55, 0.7, 0.4)
+        self.color_tri = (0.16, 0.55, 0.7, 0.2)
         self.color_tri_sel = (0.16, 0.7, 0.9, 0.5)
         self.color_tri_act = (0.0, 0.0, 1.0, 0.75)
 
