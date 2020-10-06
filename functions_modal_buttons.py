@@ -287,6 +287,11 @@ def init_ui_panels(self, rw, rh, scale):
         box.set_header_font_size(14)
 
         row = box.add_row()
+        bool = row.add_bool(20, 'Edit Individual Loop Normals',
+                            default=self._individual_loops)
+        bool.set_click_up_func(toggle_individual_loops)
+
+        row = box.add_row()
         label = row.add_label(20, 'Lock Axis: ')
         label.set_width_min_max(max=100)
 
@@ -623,6 +628,15 @@ def toggle_align_vectors(self, arguments):
     sel_pos = arguments[0]._points_container.get_selected()
     if len(sel_pos) != 0:
         point_normals(arguments[0], sel_pos)
+    return
+
+
+def toggle_individual_loops(self, arguments):
+    arguments[0]._individual_loops = self.bool_val
+    arguments[0]._points_container.set_draw_tris(
+        arguments[0]._individual_loops)
+
+    arguments[0].redraw = True
     return
 
 

@@ -1,8 +1,6 @@
-from .classes import *
-from .ui_classes import *
-from .operators_modal import *
-from .properties import *
-from .ui import *
+from . import operators_modal
+from . import properties
+from . import ui
 from bpy.props import *
 import bpy
 bl_info = {
@@ -18,41 +16,29 @@ bl_info = {
 }
 
 if "bpy" in locals():
-    import imp
+    import importlib
     if "__init__" in locals():
-        imp.reload(__init__)
+        importlib.reload(__init__)
     if "ui" in locals():
-        imp.reload(ui)
+        importlib.reload(ui)
     if "properties" in locals():
-        imp.reload(properties)
+        importlib.reload(properties)
     if "classes" in locals():
-        imp.reload(classes)
-    if "ui_classes" in locals():
-        imp.reload(ui_classes)
+        importlib.reload(classes)
     if "operators_modal" in locals():
-        imp.reload(operators_modal)
-
-
-classes = [
-    ABN_OT_normal_editor_modal,
-    AbnormalAddonPreferences,
-    ABNScnProperties,
-    ABN_PT_abnormal_panel,
-]
+        importlib.reload(operators_modal)
 
 
 def register():
-    for c in classes:
-        bpy.utils.register_class(c)
-
-    bpy.types.Scene.abnormal_props = PointerProperty(type=ABNScnProperties)
+    ui.register()
+    properties.register()
+    operators_modal.register()
 
 
 def unregister():
-    for c in reversed(classes):
-        bpy.utils.unregister_class(c)
-
-    del bpy.types.Scene.abnormal_props
+    ui.unregister()
+    properties.unregister()
+    operators_modal.unregister()
 
 
 if __name__ == "__main__":

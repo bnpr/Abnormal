@@ -37,3 +37,13 @@ class ABN_PT_abnormal_panel(Panel):
             row.prop_search(scn_prop, 'vertex_group', ob,
                             'vertex_groups', text='Filter Vertex Group')
             row.alignment = 'CENTER'
+
+
+def register():
+    bpy.utils.register_class(ABN_PT_abnormal_panel)
+    return
+
+
+def unregister():
+    bpy.utils.unregister_class(ABN_PT_abnormal_panel)
+    return

@@ -12,6 +12,7 @@ class ABNScnProperties(PropertyGroup):
 class AbnormalAddonPreferences(AddonPreferences):
     bl_idname = __package__
 
+    individual_loops: BoolProperty(default=False)
     left_select: BoolProperty(default=True)
     selected_only: BoolProperty(default=False)
     selected_scale: BoolProperty(default=True)
@@ -37,3 +38,21 @@ class AbnormalAddonPreferences(AddonPreferences):
         col.prop(self, "line_brightness", text='Default Line Brightness')
         col.prop(self, "gizmo_size", text='Default Gizmo Size')
         col.prop(self, "ui_scale", text='Default UI Size')
+        col.prop(self, "individual_loops",
+                 text='Default Edit Individual Loops')
+
+
+def register():
+    bpy.utils.register_class(ABNScnProperties)
+    bpy.utils.register_class(AbnormalAddonPreferences)
+
+    bpy.types.Scene.abnormal_props = PointerProperty(type=ABNScnProperties)
+    return
+
+
+def unregister():
+    bpy.utils.unregister_class(ABNScnProperties)
+    bpy.utils.unregister_class(AbnormalAddonPreferences)
+
+    del bpy.types.Scene.abnormal_props
+    return

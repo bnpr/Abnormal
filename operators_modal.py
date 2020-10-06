@@ -14,8 +14,6 @@ from .functions_keymaps import *
 from .functions_modal_buttons import *
 from .functions_modal_keymap import *
 from .classes import *
-from .ui_classes import *
-
 
 from bpy.types import PropertyGroup
 
@@ -109,7 +107,7 @@ class ABN_OT_normal_editor_modal(Operator):
 
             self._copy_normals = None
             self._copy_normal_ind = None
-            self._copy_normals_vecs = None
+            self._copy_normals_tangs = None
 
             self.target_strength = 1.0
             self._target_emp = None
@@ -153,6 +151,7 @@ class ABN_OT_normal_editor_modal(Operator):
             self._point_size = self._addon_prefs.point_size
             self._selected_only = self._addon_prefs.selected_only
             self._selected_scale = self._addon_prefs.selected_scale
+            self._individual_loops = self._addon_prefs.individual_loops
             if self._addon_prefs.ui_scale == 0.0:
                 self._ui_scale = context.window.width/1920
             else:
@@ -224,6 +223,7 @@ class ABN_OT_normal_editor_modal(Operator):
             self._points_container.set_normal_scale(self._normal_size)
             self._points_container.set_point_size(self._point_size)
             self._points_container.set_draw_unselected(self._selected_only)
+            self._points_container.set_draw_tris(self._individual_loops)
 
             # INITIALIZE POINT DATA
             cache_point_data(self)
@@ -257,3 +257,13 @@ class ABN_OT_normal_editor_modal(Operator):
         else:
             self.report({'WARNING'}, "Active space must be a View3d")
             return {'CANCELLED'}
+
+
+def register():
+    bpy.utils.register_class(ABN_OT_normal_editor_modal)
+    return
+
+
+def unregister():
+    bpy.utils.unregister_class(ABN_OT_normal_editor_modal)
+    return

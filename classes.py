@@ -18,11 +18,16 @@ class ABNPoints:
         self.brightness = 1.0
         self.size = 1.0
 
+        self.draw_tris = False
         self.draw_unselected = False
         self.scale_selection = True
 
-        self.color = (0.16, 0.4, 0.1, 1.0)
-        self.color_sel = (0.16, 0.7, 0.9, 1.0)
+        self.color_tri = (0.16, 0.55, 0.7, 0.4)
+        self.color_tri_sel = (0.16, 0.7, 0.9, 0.5)
+        self.color_tri_act = (0.0, 0.0, 1.0, 0.75)
+
+        self.color = (0.1, 0.4, 0.1, 1.0)
+        self.color_sel = (0.1, 0.7, 0.9, 1.0)
         self.color_act = (0.0, 0.0, 1.0, 1.0)
 
         self.color_normal = (0.83, 0.3, 0.4, 1.0)
@@ -41,6 +46,14 @@ class ABNPoints:
         sel_lines = []
         act_lines = []
 
+        tris = []
+        sel_tris = []
+        act_tris = []
+
+        tri_inds = []
+        sel_tri_inds = []
+        act_tri_inds = []
+
         po_co = None
         line_co = None
         for po in self.points:
@@ -55,6 +68,7 @@ class ABNPoints:
                     points.append(po_co)
 
                 for loop in po.loops:
+
                     fac = 1.0
                     if self.scale_selection and po.active == False:
                         fac = 0.666
@@ -62,18 +76,29 @@ class ABNPoints:
                             fac = 0.333
 
                     world_norm = self.get_world_norm(loop.normal, po_co)
-
                     line_co = po_co + world_norm * self.normal_scale * fac
 
                     if po.active:
                         act_lines.append(po_co)
                         act_lines.append(line_co)
+                        if self.draw_tris:
+                            act_tri_inds.append(
+                                [len(act_tris), len(act_tris)+1, len(act_tris)+2])
+                            act_tris += loop.tri_verts
                     elif po.select:
                         sel_lines.append(po_co)
                         sel_lines.append(line_co)
+                        if self.draw_tris:
+                            sel_tri_inds.append(
+                                [len(sel_tris), len(sel_tris)+1, len(sel_tris)+2])
+                            sel_tris += loop.tri_verts
                     elif not self.draw_unselected:
                         lines.append(po_co)
                         lines.append(line_co)
+                        if self.draw_tris:
+                            tri_inds.append(
+                                [len(tris), len(tris)+1, len(tris)+2])
+                            tris += loop.tri_verts
 
         self.batch_po = batch_for_shader(
             self.shader, 'POINTS', {"pos": points})
@@ -87,9 +112,20 @@ class ABNPoints:
             self.shader, 'LINES', {"pos": sel_lines})
         self.batch_act_normal = batch_for_shader(
             self.shader, 'LINES', {"pos": act_lines})
+
+        self.batch_tri = batch_for_shader(
+            self.shader, 'TRIS', {"pos": tris}, indices=tri_inds)
+        self.batch_sel_tri = batch_for_shader(
+            self.shader, 'TRIS', {"pos": sel_tris}, indices=sel_tri_inds)
+        self.batch_act_tri = batch_for_shader(
+            self.shader, 'TRIS', {"pos": act_tris}, indices=act_tri_inds)
         return
 
     def update_color_render(self):
+        self.color_tri_render = hsv_to_rgb_list(self.color_tri)
+        self.color_tri_sel_render = hsv_to_rgb_list(self.color_tri_sel)
+        self.color_tri_act_render = hsv_to_rgb_list(self.color_tri_act)
+
         self.color_render = hsv_to_rgb_list(self.color)
         self.color_sel_render = hsv_to_rgb_list(self.color_sel)
         self.color_act_render = hsv_to_rgb_list(self.color_act)
@@ -100,6 +136,28 @@ class ABNPoints:
         return
 
     def draw(self):
+        if self.draw_tris:
+            # Unselected tris
+            tri_color = [self.color_tri_render[0]*self.brightness, self.color_tri_render[1] *
+                         self.brightness, self.color_tri_render[2]*self.brightness, self.color_tri_render[3]]
+            self.shader.bind()
+            self.shader.uniform_float("color", tri_color)
+            self.batch_tri.draw(self.shader)
+
+            # Selected tris
+            sel_tri_color = [self.color_tri_sel_render[0]*self.brightness, self.color_tri_sel_render[1] *
+                             self.brightness, self.color_tri_sel_render[2]*self.brightness, self.color_tri_sel_render[3]]
+            self.shader.bind()
+            self.shader.uniform_float("color", sel_tri_color)
+            self.batch_sel_tri.draw(self.shader)
+
+            # Active tris
+            act_tri_color = [self.color_tri_act_render[0]*self.brightness, self.color_tri_act_render[1] *
+                             self.brightness, self.color_tri_act_render[2]*self.brightness, self.color_tri_act_render[3]]
+            self.shader.bind()
+            self.shader.uniform_float("color", act_tri_color)
+            self.batch_act_tri.draw(self.shader)
+
         # Unselected points
         po_color = [self.color_render[0]*self.brightness, self.color_render[1] *
                     self.brightness, self.color_render[2]*self.brightness, self.color_render[3]]
@@ -153,14 +211,15 @@ class ABNPoints:
     #
     #
 
-    def add_point(self, co, norm, loop_norms, loop_inds):
-        po = ABNPoint(len(self.points), co, norm, loop_norms, loop_inds, True)
+    def add_point(self, co, norm, loop_norms, loop_inds, loop_f_inds, loop_tri_cos):
+        po = ABNPoint(len(self.points), co, norm, loop_norms,
+                      loop_inds, loop_f_inds, loop_tri_cos, True)
 
         self.points.append(po)
         return po
 
     def add_empty_point(self, co, norm):
-        po = ABNPoint(len(self.points), co, norm, [], [], False)
+        po = ABNPoint(len(self.points), co, norm, [], [], [], [], False)
 
         self.points.append(po)
         return po
@@ -264,6 +323,10 @@ class ABNPoints:
         self.points[index].set_active(True)
         return
 
+    def set_draw_tris(self, status):
+        self.draw_tris = status
+        return
+
     #
     #
 
@@ -272,7 +335,7 @@ class ABNPoints:
 
 
 class ABNPoint:
-    def __init__(self, index, position, norm, loop_norms, loop_inds, validity):
+    def __init__(self, index, position, norm, loop_norms, loop_inds, loop_f_inds, loop_tri_cos, validity):
         self.index = index
 
         self.loops = []
@@ -281,7 +344,7 @@ class ABNPoint:
         self.normal = norm
 
         for i, ind in enumerate(loop_inds):
-            self.add_loop(loop_norms[i], ind)
+            self.add_loop(loop_norms[i], ind, loop_f_inds[i], loop_tri_cos[i])
 
         self.select = False
         self.hide = False
@@ -292,8 +355,9 @@ class ABNPoint:
     #
     #
 
-    def add_loop(self, loop_norm, loop_ind):
-        loop = ABNLoop(len(self.loops), loop_norm, loop_ind)
+    def add_loop(self, loop_norm, loop_ind, face_ind, vert_cos):
+        loop = ABNLoop(len(self.loops), loop_norm,
+                       loop_ind, face_ind, vert_cos)
 
         self.loops.append(loop)
         return loop
@@ -326,16 +390,26 @@ class ABNPoint:
 
 
 class ABNLoop:
-    def __init__(self, index, norm, loop_ind):
+    def __init__(self, index, norm, loop_ind, face_ind, vert_cos):
         self.index = index
 
         self.normal = norm
         self.og_normal = norm
 
+        self.tri_verts = vert_cos
+
+        center = mathutils.Vector((0, 0, 0))
+        for co in vert_cos:
+            center += co/len(vert_cos)
+
+        self.tri_center = center
+
         self.loop_index = loop_ind
+        self.face_index = face_ind
 
         self.select = False
         self.active = False
+        self.hide = False
         return
 
     #
@@ -347,6 +421,10 @@ class ABNLoop:
 
     #
     #
+
+    def set_hide(self, status):
+        self.hide = status
+        return
 
     def set_select(self, status):
         self.select = status

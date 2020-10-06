@@ -6,24 +6,22 @@ from .functions_general import *
 from .functions_drawing import *
 from .functions_modal_keymap import *
 from .classes import *
-from .ui_classes import *
 
 
-def match_point_loops_vecs(self, po_ind, o_vecs, flip_axis=None):
-    po = self._points_container.points[po_ind]
+def match_point_loops_vecs(self, po, o_tangs, flip_axis=None):
 
     match_inds = []
     for loop in self._object_bm.verts[po.index].link_loops:
-        vec = loop.edge.other_vert(self._object_bm.verts[po_ind]).co - po.co
+        tang = loop.calc_tangent()
 
         small = 0
         small_ind = None
-        for o, o_vec in enumerate(o_vecs):
-            t_vec = o_vec.copy()
+        for o, o_tang in enumerate(o_tangs):
+            t_tang = o_tang.copy()
             if flip_axis != None:
-                t_vec[flip_axis] *= -1
+                t_tang[flip_axis] *= -1
 
-            ang = vec.angle(t_vec)
+            ang = tang.angle(t_tang)
             if ang < small or small_ind == None:
                 small_ind = o
                 small = ang
@@ -33,25 +31,23 @@ def match_point_loops_vecs(self, po_ind, o_vecs, flip_axis=None):
     return match_inds
 
 
-def match_point_loops_index(self, po_ind, o_ind, flip_axis=None):
-    po = self._points_container.points[po_ind]
-    o_po = self._points_container.points[o_ind]
+def match_point_loops_index(self, po, o_po, flip_axis=None):
 
     match_inds = []
-    for loop in self._object_bm.verts[po_ind].link_loops:
-        vec = loop.edge.other_vert(self._object_bm.verts[po_ind]).co - po.co
+    for loop in self._object_bm.verts[po.index].link_loops:
+        tang = loop.calc_tangent()
 
         small = 0
         small_ind = None
         for o, o_loop in enumerate(self._object_bm.verts[o_po.index].link_loops):
-            o_vec = o_loop.edge.other_vert(
-                self._object_bm.verts[o_ind]).co - o_po.co
+            t_tang = o_loop.calc_tangent()
             if flip_axis != None:
-                vec[flip_axis] *= -1
+                t_tang[flip_axis] *= -1
 
-            if vec.angle(o_vec) < small or small_ind == None:
+            ang = tang.angle(t_tang)
+            if ang < small or small_ind == None:
                 small_ind = o
-                small = vec.angle(o_vec)
+                small = ang
 
         match_inds.append(small_ind)
     return match_inds
@@ -118,7 +114,7 @@ def mirror_normals(self, po_inds, axis):
                 o_po = self._points_container.points[result[1]]
                 if o_po.valid:
                     inds = match_point_loops_index(
-                        self, result[1], po.index, flip_axis=axis)
+                        self, o_po, po, flip_axis=axis)
 
                     for o_loop in o_po.loops:
                         loop = po.loops[inds[o_loop.index]]
@@ -431,7 +427,7 @@ def copy_active_to_selected(self, po_inds):
                 po = self._points_container.points[ind]
                 if po.valid:
                     inds = match_point_loops_index(
-                        self, po.index, self._active_point)
+                        self, po, self._points_container.points[self._active_point])
                     for loop in po.loops:
                         loop_norm_set(
                             self, po, loop.index, loop.normal, self._points_container.points[self._active_point].loops[inds[loop.index]].normal.copy())
@@ -448,24 +444,22 @@ def copy_active_normal(self):
         po = self._points_container.points[self._active_point]
         if po.valid:
             self._copy_normals = [loop.normal for loop in po.loops]
-            self._copy_normals_vecs = []
+            self._copy_normals_tangs = []
             self._copy_normal_ind = po.index
 
             for o_loop in self._object_bm.verts[po.index].link_loops:
-                o_vec = o_loop.edge.other_vert(
-                    self._object_bm.verts[po.index]).co - po.co
-                self._copy_normals_vecs.append(o_vec)
+                self._copy_normals_tangs.append(o_loop.calc_tangent())
     return
 
 
 def paste_normal(self, po_inds):
     update_filter_weights(self)
-    if self._copy_normals != None and self._copy_normals_vecs != None and self._copy_normal_ind != None:
+    if self._copy_normals != None and self._copy_normals_tangs != None and self._copy_normal_ind != None:
         for ind in po_inds:
             po = self._points_container.points[ind]
             if po.valid:
                 inds = match_point_loops_vecs(
-                    self, po.index, self._copy_normals_vecs)
+                    self, po, self._copy_normals_tangs)
                 for loop in po.loops:
                     loop_norm_set(
                         self, po, loop.index, loop.normal, self._copy_normals[inds[loop.index]].copy())
@@ -593,13 +587,26 @@ def cache_point_data(self):
     self.og_sharp_edges = [ed.use_edge_sharp for ed in self._object.data.edges]
 
     for v in self._object_bm.verts:
+        ed_inds = [ed.index for ed in v.link_edges]
         if len(v.link_loops) > 0:
             loop_inds = [l.index for l in v.link_loops]
+            loop_f_inds = [l.face.index for l in v.link_loops]
             loop_norms = [
                 self._object.data.loops[l.index].normal for l in v.link_loops]
 
+            loop_tri_cos = []
+            for loop in v.link_loops:
+                loop_cos = [v.co+v.normal*.001]
+                for ed in loop.face.edges:
+                    if ed.index in ed_inds:
+                        ov = ed.other_vert(v)
+                        vec = (ov.co+ov.normal*.001) - (v.co+v.normal*.001)
+
+                        loop_cos.append((v.co+v.normal*.001) + vec * 0.5)
+                loop_tri_cos.append(loop_cos)
+
             po = self._points_container.add_point(
-                v.co, v.normal, loop_norms, loop_inds)
+                v.co, v.normal, loop_norms, loop_inds, loop_f_inds, loop_tri_cos)
         else:
             po = self._points_container.add_empty_point(
                 v.co, mathutils.Vector((0, 0, 1)))
