@@ -261,7 +261,7 @@ class ABNPoints:
             if po.valid and po.hide == False:
                 if po.valid and po.hide == False:
                     for loop in po.loops:
-                        if loop.hide == False and loop.select:
+                        if loop.hide == False:
                             vis_loops.append([po.index, loop.index])
         return vis_loops
 

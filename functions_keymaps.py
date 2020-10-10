@@ -271,6 +271,7 @@ def basic_keymap(self, context, event):
                                               ].set_selection_from_loops()
                 self._points_container.points[ind[0]].set_hidden_from_loops()
 
+        add_to_undostack(self, 0)
         update_orbit_empty(self)
         self.redraw = True
         status = {"RUNNING_MODAL"}
@@ -368,6 +369,7 @@ def basic_keymap(self, context, event):
                 gizmo_update_hide(self, False)
         status = {"RUNNING_MODAL"}
 
+    # undo redo
     if event.type == 'Z' and event.value == 'PRESS':
         if event.ctrl:
             if event.shift:

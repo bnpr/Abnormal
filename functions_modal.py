@@ -189,6 +189,9 @@ def rotate_vectors(self, angle):
         po_w = self._object.matrix_world @ po.co
         loop_w = self._object.matrix_world @ (po.co+loop.cached_normal)
 
+        print(po_w)
+        print(loop_w)
+
         vec_local = mat.inverted() @ loop_w
         if self.translate_axis == 0:
             rot_vec = rotate_2d([0, 0], vec_local.yz, angle)
@@ -733,6 +736,7 @@ def ob_data_structures(self, ob):
 def add_to_undostack(self, stack_type):
     if stack_type == 0:
         sel_status = self._points_container.get_selected_loops()
+        vis_status = self._points_container.get_visible_loops()
 
         if self._history_position > 0:
             while self._history_position > 0:
@@ -741,7 +745,7 @@ def add_to_undostack(self, stack_type):
 
         if len(self._history_stack)+1 > self._history_steps:
             self._history_stack.pop(-1)
-        self._history_stack.insert(0, [stack_type, sel_status])
+        self._history_stack.insert(0, [stack_type, sel_status, vis_status])
 
     else:
         cur_normals = self._points_container.get_current_normals()
@@ -765,6 +769,18 @@ def move_undostack(self, dir):
         state = self._history_stack[self._history_position][1]
 
         if state_type == 0:
+            vis_state = self._history_stack[self._history_position][2]
+            for po in self._points_container.points:
+                po.set_hide(True)
+
+            for ind in vis_state:
+                po = self._points_container.points[ind[0]]
+                if po.valid:
+                    loop = po.loops[ind[1]]
+                    loop.set_hide(False)
+
+                po.set_hidden_from_loops()
+
             for po in self._points_container.points:
                 po.set_select(False)
 
