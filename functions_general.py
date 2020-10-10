@@ -187,10 +187,7 @@ def ray_cast_view_occlude_test(co, mouse_co, bvh, region, rv3d):
     return occluded
 
 
-def ray_cast_to_mouse(self, context):
-    # get the context arguments
-    scn = context.scene
-
+def ray_cast_to_mouse(self):
     # get the ray from the viewport and mouse
     view_vector = view3d_utils.region_2d_to_vector_3d(
         self.act_reg, self.act_rv3d, self._mouse_reg_loc)

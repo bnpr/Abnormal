@@ -106,7 +106,6 @@ class ABN_OT_normal_editor_modal(Operator):
             self._line_drawing_pos = []
 
             self._copy_normals = None
-            self._copy_normal_ind = None
             self._copy_normals_tangs = None
 
             self.target_strength = 1.0
@@ -128,9 +127,15 @@ class ABN_OT_normal_editor_modal(Operator):
             self._smooth_iterations = 5
             self._smooth_strength = 0.25
 
+            self._mirror_range = 0.1
+
             self._lock_x = False
             self._lock_y = False
             self._lock_z = False
+
+            self._mirror_x = False
+            self._mirror_y = False
+            self._mirror_z = False
 
             self._draw_area = context.area
             self._modal_running = True
@@ -222,7 +227,7 @@ class ABN_OT_normal_editor_modal(Operator):
             self._points_container.set_brightess(self._line_brightness)
             self._points_container.set_normal_scale(self._normal_size)
             self._points_container.set_point_size(self._point_size)
-            self._points_container.set_draw_unselected(self._selected_only)
+            self._points_container.set_draw_only_selected(self._selected_only)
             self._points_container.set_draw_tris(self._individual_loops)
 
             # INITIALIZE POINT DATA

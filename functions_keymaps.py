@@ -31,10 +31,10 @@ def basic_ui_hover_keymap(self, context, event):
 
     # undo
     if event.type == 'Z' and event.value == 'PRESS' and event.ctrl and event.shift == False:
-        rigged_move_in_undostack(self, 1)
+        move_undostack(self, 1)
     # redo
     if event.type == 'Z' and event.value == 'PRESS' and event.ctrl and event.shift:
-        rigged_move_in_undostack(self, -1)
+        move_undostack(self, -1)
 
     # select all bezier points
     if event.type == 'A' and event.value == 'PRESS':
@@ -128,9 +128,6 @@ def basic_ui_hover_keymap(self, context, event):
                 if o_ob.as_pointer() == self._object_pointer:
                     ob = o_ob
 
-        # restore normals
-        ob.data.normals_split_custom_set(self.og_loop_norms)
-
         finish_modal(self, True)
         status = {'CANCELLED'}
 
@@ -182,8 +179,8 @@ def basic_keymap(self, context, event):
         self.prev_view = context.region_data.view_matrix.copy()
         self.waiting = False
 
-        sel_pos = self._points_container.get_selected()
-        if len(sel_pos) > 0:
+        sel_inds = self._points_container.get_selected_loops()
+        if len(sel_inds) > 0:
             gizmo_update_hide(self, True)
         else:
             gizmo_update_hide(self, False)
@@ -193,15 +190,28 @@ def basic_keymap(self, context, event):
         change = False
         if event.alt:
             for po in self._points_container.points:
-                if po.valid and po.select == True:
-                    po.select = False
+                if po.select:
+                    po.set_select(False)
                     change = True
+                else:
+                    for loop in po.loops:
+                        if loop.select:
+                            loop.set_select(False)
+                            change = True
+
+            self._points_container.clear_active()
             self._active_point = None
         else:
             for po in self._points_container.points:
-                if po.valid and po.select == False:
-                    po.select = True
+                if po.select == False:
+                    po.set_select(True)
                     change = True
+                else:
+                    for loop in po.loops:
+                        if loop.select:
+                            loop.set_select(True)
+                            change = True
+
         if change:
             add_to_undostack(self, 0)
             self.redraw = True
@@ -212,9 +222,13 @@ def basic_keymap(self, context, event):
     if event.type == 'I' and event.value == 'PRESS' and event.ctrl:
         change = False
         for po in self._points_container.points:
-            if po.valid and po.hide == False:
-                po.select = not po.select
-                change = True
+            if po.hide == False:
+                for loop in po.loops:
+                    if loop.hide == False:
+                        loop.set_select(not loop.select)
+                        change = True
+
+                po.set_selection_from_loops()
 
         if change:
             add_to_undostack(self, 0)
@@ -223,25 +237,41 @@ def basic_keymap(self, context, event):
             status = {"RUNNING_MODAL"}
 
     # hide normals
-    if event.type == 'H':
+    if event.type == 'H' and event.value == 'PRESS':
         if event.alt:
             for po in self._points_container.points:
                 if po.hide:
-                    po.hide = False
-                    po.select = True
+                    po.set_hide(False)
+                    po.set_select(True)
+                else:
+                    for loop in po.loops:
+                        if loop.hide:
+                            loop.set_hide(False)
+                            loop.set_select(True)
 
         elif event.shift:
-            sel_pos = self._points_container.get_unselected()
-            for ind in sel_pos:
-                self._points_container.points[ind].hide = True
-                self._points_container.points[ind].select = False
+            sel_inds = self._points_container.get_unselected_loops()
+            for ind in sel_inds:
+                self._points_container.points[ind[0]
+                                              ].loops[ind[1]].set_hide(True)
+                self._points_container.points[ind[0]
+                                              ].loops[ind[1]].set_select(False)
+                self._points_container.points[ind[0]
+                                              ].set_selection_from_loops()
+                self._points_container.points[ind[0]].set_hidden_from_loops()
 
         else:
-            sel_pos = self._points_container.get_selected()
-            for ind in sel_pos:
-                self._points_container.points[ind].hide = True
-                self._points_container.points[ind].select = False
-        update_orbit_empty(self,)
+            sel_inds = self._points_container.get_selected_loops()
+            for ind in sel_inds:
+                self._points_container.points[ind[0]
+                                              ].loops[ind[1]].set_hide(True)
+                self._points_container.points[ind[0]
+                                              ].loops[ind[1]].set_select(False)
+                self._points_container.points[ind[0]
+                                              ].set_selection_from_loops()
+                self._points_container.points[ind[0]].set_hidden_from_loops()
+
+        update_orbit_empty(self)
         self.redraw = True
         status = {"RUNNING_MODAL"}
 
@@ -249,26 +279,32 @@ def basic_keymap(self, context, event):
     if event.type == 'L' and event.value == 'PRESS':
         change = False
         if event.ctrl:
-            sel_pos = self._points_container.get_selected()
+            sel_inds = self._points_container.get_selected_loops()
+            po_inds = []
+            for ind_set in sel_inds:
+                if ind_set[0] not in po_inds:
+                    po_inds.append(ind_set[0])
+
             vis_pos = self._points_container.get_visible()
-            new_sel = get_linked_geo(self._object_bm, sel_pos, vis=vis_pos)
+            new_sel = get_linked_geo(self._object_bm, po_inds, vis=vis_pos)
 
             for ind in new_sel:
                 if self._points_container.points[ind].select == False:
-                    self._points_container.points[ind].select = True
+                    self._points_container.points[ind].set_select(True)
                     change = True
         else:
             # selection test
-            face_ind = ray_cast_to_mouse(self, context)
+            face_ind = ray_cast_to_mouse(self)
             if face_ind != None:
                 sel_ind = self._object_bm.faces[face_ind].verts[0].index
+
                 vis_pos = self._points_container.get_visible()
                 new_sel = get_linked_geo(
                     self._object_bm, [sel_ind], vis=vis_pos)
 
                 for ind in new_sel:
                     if self._points_container.points[ind].select == False:
-                        self._points_container.points[ind].select = True
+                        self._points_container.points[ind].set_select(True)
                         change = True
 
         if change:
@@ -312,21 +348,19 @@ def basic_keymap(self, context, event):
                     self._orbit_ob.matrix_world)
         else:
             update_filter_weights(self)
-            sel_pos = self._points_container.get_selected()
+            sel_inds = self._points_container.get_selected_loops()
 
-            if len(sel_pos) > 0:
-                sel_cos = self._points_container.get_selected_cos()
+            if len(sel_inds) > 0:
+                sel_cos = self._points_container.get_selected_loop_cos()
                 avg_loc = average_vecs(sel_cos)
 
-                cache_norms = self._points_container.get_current_normals(
-                    sel_pos)
+                self._points_container.cache_current_normals()
 
                 self._window.set_status('VIEW ROTATION')
 
                 self._mode_cache.clear()
                 self._mode_cache.append(self._mouse_reg_loc)
                 self._mode_cache.append(avg_loc)
-                self._mode_cache.append(cache_norms)
                 self._mode_cache.append(0)
                 self._mode_cache.append(1)
                 self.rotating = True
@@ -354,7 +388,7 @@ def basic_keymap(self, context, event):
             add_to_undostack(self, 0)
             update_orbit_empty(self)
         else:
-            f_ind = ray_cast_to_mouse(self, context)
+            f_ind = ray_cast_to_mouse(self)
         status = {"RUNNING_MODAL"}
 
     # cancel modal
@@ -364,9 +398,6 @@ def basic_keymap(self, context, event):
             for o_ob in bpy.data.objects:
                 if o_ob.as_pointer() == self._object_pointer:
                     ob = o_ob
-
-        # restore normals
-        ob.data.normals_split_custom_set(self.og_loop_norms)
 
         finish_modal(self, True)
         status = {'CANCELLED'}
@@ -424,30 +455,30 @@ def rotating_keymap(self, context, event):
 
     if event.type == 'X' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 0)
-        self._mode_cache[4] = translate_axis_side(self)
+        self._mode_cache[3] = translate_axis_side(self)
         rotate_vectors(
-            self, self._mode_cache[3]*self._mode_cache[4])
+            self, self._mode_cache[2]*self._mode_cache[3])
         self.redraw = True
 
     if event.type == 'Y' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 1)
-        self._mode_cache[4] = translate_axis_side(self)
+        self._mode_cache[3] = translate_axis_side(self)
         rotate_vectors(
-            self, self._mode_cache[3]*self._mode_cache[4])
+            self, self._mode_cache[2]*self._mode_cache[3])
         self.redraw = True
 
     if event.type == 'Z' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 2)
-        self._mode_cache[4] = translate_axis_side(self)
+        self._mode_cache[3] = translate_axis_side(self)
         rotate_vectors(
-            self, self._mode_cache[3]*self._mode_cache[4])
+            self, self._mode_cache[2]*self._mode_cache[3])
         self.redraw = True
 
     if event.type == 'R' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 2)
-        self._mode_cache[4] = translate_axis_side(self)
+        self._mode_cache[3] = translate_axis_side(self)
         rotate_vectors(
-            self, self._mode_cache[3]*self._mode_cache[4])
+            self, self._mode_cache[2]*self._mode_cache[3])
         self.redraw = True
 
     if event.type == 'MOUSEMOVE':
@@ -464,15 +495,17 @@ def rotating_keymap(self, context, event):
             ang *= 0.1
 
         if ang != 0.0:
-            self._mode_cache[3] = self._mode_cache[3]+ang
+            self._mode_cache[2] = self._mode_cache[2]+ang
             rotate_vectors(
-                self, self._mode_cache[3]*self._mode_cache[4])
+                self, self._mode_cache[2]*self._mode_cache[3])
             self._mode_cache.pop(0)
             self._mode_cache.insert(0, self._mouse_reg_loc)
 
             self.redraw = True
 
     if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+        self._points_container.clear_cached_normals()
+
         add_to_undostack(self, 1)
         self._mode_cache.clear()
         self.translate_axis = 2
@@ -484,12 +517,7 @@ def rotating_keymap(self, context, event):
         gizmo_update_hide(self, True)
 
     if event.type == 'RIGHTMOUSE' and event.value == 'RELEASE':
-        sel_pos = self._points_container.get_selected()
-        for i, ind in enumerate(sel_pos):
-            po = self._points_container.points[ind]
-
-            for loop in po.loops:
-                loop.normal = self._mode_cache[2][i][l].copy()
+        self._points_container.restore_cached_normals()
 
         set_new_normals(self)
         self._mode_cache.clear()
@@ -517,22 +545,22 @@ def gizmo_click_keymap(self, context, event):
         line_a = view_orig
         line_b = view_orig + view_vec*10000
         if self._mode_cache[1][0] == 'ROT_X':
-            x_vec = self._mode_cache[5] @ mathutils.Vector(
-                (1, 0, 0)) - self._mode_cache[5].translation
+            x_vec = self._mode_cache[4] @ mathutils.Vector(
+                (1, 0, 0)) - self._mode_cache[4].translation
             mouse_co_3d = mathutils.geometry.intersect_line_plane(
-                line_a, line_b, self._mode_cache[5].translation, x_vec)
+                line_a, line_b, self._mode_cache[4].translation, x_vec)
         if self._mode_cache[1][0] == 'ROT_Y':
-            y_vec = self._mode_cache[5] @ mathutils.Vector(
-                (0, 1, 0)) - self._mode_cache[5].translation
+            y_vec = self._mode_cache[4] @ mathutils.Vector(
+                (0, 1, 0)) - self._mode_cache[4].translation
             mouse_co_3d = mathutils.geometry.intersect_line_plane(
-                line_a, line_b, self._mode_cache[5].translation, y_vec)
+                line_a, line_b, self._mode_cache[4].translation, y_vec)
         if self._mode_cache[1][0] == 'ROT_Z':
-            z_vec = self._mode_cache[5] @ mathutils.Vector(
-                (0, 0, 1)) - self._mode_cache[5].translation
+            z_vec = self._mode_cache[4] @ mathutils.Vector(
+                (0, 0, 1)) - self._mode_cache[4].translation
             mouse_co_3d = mathutils.geometry.intersect_line_plane(
-                line_a, line_b, self._mode_cache[5].translation, z_vec)
+                line_a, line_b, self._mode_cache[4].translation, z_vec)
 
-        mouse_co_local = self._mode_cache[5].inverted() @ mouse_co_3d
+        mouse_co_local = self._mode_cache[4].inverted() @ mouse_co_3d
 
         self.translate_mode = 2
         if self._mode_cache[1][0] == 'ROT_X':
@@ -552,14 +580,14 @@ def gizmo_click_keymap(self, context, event):
             ang *= 0.1
 
         if ang != 0.0:
-            self._mode_cache[3] = self._mode_cache[3]+ang
+            self._mode_cache[2] = self._mode_cache[2]+ang
             self._mode_cache.pop(0)
             self._mode_cache.insert(0, mouse_loc)
 
-            if self._mode_cache[6]:
-                rotate_vectors(self, self._mode_cache[3])
+            if self._mode_cache[5]:
+                rotate_vectors(self, self._mode_cache[2])
                 self._window.update_gizmo_rot(
-                    self._mode_cache[3], self._mode_cache[4])
+                    self._mode_cache[2], self._mode_cache[3])
                 self.redraw = True
             else:
                 if self.translate_axis == 0:
@@ -579,7 +607,7 @@ def gizmo_click_keymap(self, context, event):
             gizmo.active = True
             gizmo.in_use = False
 
-        if self._mode_cache[6]:
+        if self._mode_cache[5]:
             add_to_undostack(self, 1)
 
         self.gizmo_click = False
@@ -589,17 +617,12 @@ def gizmo_click_keymap(self, context, event):
         self.click_hold = False
 
     if event.type == 'RIGHTMOUSE' and event.value == 'RELEASE':
-        if self._mode_cache[6]:
-            sel_pos = self._points_container.get_selected()
-            for i, ind in enumerate(sel_pos):
-                po = self._points_container.points[ind]
-
-                for loop in po.loops:
-                    loop.normal = self._mode_cache[2][i][l].copy()
+        if self._mode_cache[5]:
+            self._points_container.restore_cached_normals()
 
             set_new_normals(self)
         else:
-            self._orbit_ob.matrix_world = self._mode_cache[5].copy()
+            self._orbit_ob.matrix_world = self._mode_cache[4].copy()
             self._window.update_gizmo_orientation(self._orbit_ob.matrix_world)
 
         for gizmo in self._rot_gizmo.gizmos:
@@ -640,22 +663,22 @@ def sphereize_keymap(self, context, event):
         status = {'PASS_THROUGH'}
 
     if event.type == 'G' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
+        sel_inds = self._points_container.get_selected_loops()
         if event.alt:
-            if len(sel_pos) > 0:
-                sel_cos = self._points_container.get_selected_cos()
+            if len(sel_inds) > 0:
+                sel_cos = self._points_container.get_selected_loop_cos()
                 avg_loc = average_vecs(sel_cos)
 
                 self._target_emp.location = avg_loc
-                sphereize_normals(self, sel_pos)
+                sphereize_normals(self, sel_inds)
 
         else:
-            if len(sel_pos) > 0:
-                sel_cos = self._points_container.get_selected_cos()
-                cache_norms = self._points_container.get_current_normals(
-                    sel_pos)
+            if len(sel_inds) > 0:
+                sel_cos = self._points_container.get_selected_loop_cos()
 
-                sphereize_normals(self, sel_pos)
+                self._points_container.cache_current_normals()
+
+                sphereize_normals(self, sel_inds)
                 self._window.set_status('VIEW TRANSLATION')
 
                 rco = view3d_utils.location_3d_to_region_2d(
@@ -664,8 +687,7 @@ def sphereize_keymap(self, context, event):
                 self._mode_cache.insert(0, self._mouse_reg_loc)
                 self._mode_cache.insert(
                     1, self._target_emp.location.copy())
-                self._mode_cache.insert(2, cache_norms)
-                self._mode_cache.insert(3, rco)
+                self._mode_cache.insert(2, rco)
 
                 self.sphereize_mode = False
                 self.sphereize_move = True
@@ -715,37 +737,37 @@ def sphereize_move_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
     if event.type == 'X' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
+        sel_inds = self._points_container.get_selected_loops()
 
         translate_axis_change(self, 'TRANSLATING', 0)
         move_target(self, event.shift)
-        sphereize_normals(self, sel_pos)
+        sphereize_normals(self, sel_inds)
 
         self.redraw = True
 
     if event.type == 'Y' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
+        sel_inds = self._points_container.get_selected_loops()
 
         translate_axis_change(self, 'TRANSLATING', 1)
         move_target(self, event.shift)
-        sphereize_normals(self, sel_pos)
+        sphereize_normals(self, sel_inds)
 
         self.redraw = True
 
     if event.type == 'Z' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
+        sel_inds = self._points_container.get_selected_loops()
 
         translate_axis_change(self, 'TRANSLATING', 2)
         move_target(self, event.shift)
-        sphereize_normals(self, sel_pos)
+        sphereize_normals(self, sel_inds)
 
         self.redraw = True
 
     if event.type == 'MOUSEMOVE':
-        sel_pos = self._points_container.get_selected()
+        sel_inds = self._points_container.get_selected_loops()
 
         move_target(self, event.shift)
-        sphereize_normals(self, sel_pos)
+        sphereize_normals(self, sel_inds)
 
         self._mode_cache.pop(0)
         self._mode_cache.insert(0, self._mouse_reg_loc)
@@ -764,8 +786,8 @@ def sphereize_move_keymap(self, context, event):
             self._mode_cache.pop(0)
 
     if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
-        for i, ind in enumerate(sel_pos):
+        sel_inds = self._points_container.get_selected_loops()
+        for i, ind in enumerate(sel_inds):
             po = self._points_container.points[ind]
 
             for loop in po.loops:
@@ -807,23 +829,22 @@ def point_keymap(self, context, event):
         status = {'PASS_THROUGH'}
 
     if event.type == 'G' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
+        sel_inds = self._points_container.get_selected_loops()
         if event.alt:
-            if len(sel_pos) > 0:
-                sel_cos = self._points_container.get_selected_cos()
+            if len(sel_inds) > 0:
+                sel_cos = self._points_container.get_selected_loop_cos()
                 avg_loc = average_vecs(sel_cos)
 
                 self._target_emp.location = avg_loc
-                point_normals(self, sel_pos)
+                point_normals(self, sel_inds)
 
         else:
-            if len(sel_pos) > 0:
-                sel_cos = self._points_container.get_selected_cos()
+            if len(sel_inds) > 0:
+                sel_cos = self._points_container.get_selected_loop_cos()
 
-                cache_norms = self._points_container.get_current_normals(
-                    sel_pos)
+                self._points_container.cache_current_normals()
 
-                point_normals(self, sel_pos)
+                point_normals(self, sel_inds)
                 self._window.set_status('VIEW TRANSLATION')
 
                 rco = view3d_utils.location_3d_to_region_2d(
@@ -832,8 +853,7 @@ def point_keymap(self, context, event):
                 self._mode_cache.insert(0, self._mouse_reg_loc)
                 self._mode_cache.insert(
                     1, self._target_emp.location.copy())
-                self._mode_cache.insert(2, cache_norms)
-                self._mode_cache.insert(3, rco)
+                self._mode_cache.insert(2, rco)
 
                 self.point_mode = False
                 self.point_move = True
@@ -885,37 +905,37 @@ def point_move_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
     if event.type == 'X' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
+        sel_inds = self._points_container.get_selected_loops()
 
         translate_axis_change(self, 'TRANSLATING', 0)
         move_target(self, event.shift)
-        point_normals(self, sel_pos)
+        point_normals(self, sel_inds)
 
         self.redraw = True
 
     if event.type == 'Y' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
+        sel_inds = self._points_container.get_selected_loops()
 
         translate_axis_change(self, 'TRANSLATING', 1)
         move_target(self, event.shift)
-        point_normals(self, sel_pos)
+        point_normals(self, sel_inds)
 
         self.redraw = True
 
     if event.type == 'Z' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
+        sel_inds = self._points_container.get_selected_loops()
 
         translate_axis_change(self, 'TRANSLATING', 2)
         move_target(self, event.shift)
-        point_normals(self, sel_pos)
+        point_normals(self, sel_inds)
 
         self.redraw = True
 
     if event.type == 'MOUSEMOVE':
-        sel_pos = self._points_container.get_selected()
+        sel_inds = self._points_container.get_selected_loops()
 
         move_target(self, event.shift)
-        point_normals(self, sel_pos)
+        point_normals(self, sel_inds)
 
         self._mode_cache.pop(0)
         self._mode_cache.insert(0, self._mouse_reg_loc)
@@ -934,8 +954,8 @@ def point_move_keymap(self, context, event):
             self._mode_cache.pop(0)
 
     if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
-        sel_pos = self._points_container.get_selected()
-        for i, ind in enumerate(sel_pos):
+        sel_inds = self._points_container.get_selected_loops()
+        for i, ind in enumerate(sel_inds):
             po = self._points_container.points[ind]
 
             for loop in po.loops:

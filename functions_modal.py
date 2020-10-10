@@ -8,60 +8,34 @@ from .functions_modal_keymap import *
 from .classes import *
 
 
-def match_point_loops_vecs(self, po, o_tangs, flip_axis=None):
+def match_loops_vecs(self, loop, o_tangs, flip_axis=None):
+    tang = self._object_bm.verts[loop.point.index].link_loops[loop.index].calc_tangent(
+    )
 
-    match_inds = []
-    for loop in self._object_bm.verts[po.index].link_loops:
-        tang = loop.calc_tangent()
+    small = 0
+    small_ind = None
+    for o, o_tang in enumerate(o_tangs):
+        t_tang = o_tang.copy()
+        if flip_axis != None:
+            t_tang[flip_axis] *= -1
 
-        small = 0
-        small_ind = None
-        for o, o_tang in enumerate(o_tangs):
-            t_tang = o_tang.copy()
-            if flip_axis != None:
-                t_tang[flip_axis] *= -1
+        ang = tang.angle(t_tang)
+        if ang < small or small_ind == None:
+            small_ind = o
+            small = ang
 
-            ang = tang.angle(t_tang)
-            if ang < small or small_ind == None:
-                small_ind = o
-                small = ang
-
-        match_inds.append(small_ind)
-
-    return match_inds
-
-
-def match_point_loops_index(self, po, o_po, flip_axis=None):
-
-    match_inds = []
-    for loop in self._object_bm.verts[po.index].link_loops:
-        tang = loop.calc_tangent()
-
-        small = 0
-        small_ind = None
-        for o, o_loop in enumerate(self._object_bm.verts[o_po.index].link_loops):
-            t_tang = o_loop.calc_tangent()
-            if flip_axis != None:
-                t_tang[flip_axis] *= -1
-
-            ang = tang.angle(t_tang)
-            if ang < small or small_ind == None:
-                small_ind = o
-                small = ang
-
-        match_inds.append(small_ind)
-    return match_inds
+    return small_ind
 
 
 #
 #
 
 
-def set_new_normals(self,):
+def set_new_normals(self):
     for ed in self._object.data.edges:
         ed.use_edge_sharp = self.og_sharp_edges[ed.index]
 
-    new_l_norms = self.og_loop_norms.copy()
+    new_l_norms = [None for l in self._object.data.loops]
     for po in self._points_container.points:
         for loop in po.loops:
             new_l_norms[loop.loop_index] = loop.normal.normalized()
@@ -71,19 +45,42 @@ def set_new_normals(self,):
     return
 
 
-def loop_norm_set(self, po, l, og_vec, to_vec):
+def loop_norm_set(self, loop, og_vec, to_vec):
     weight = None
     if self._filter_weights != None:
-        weight = self._filter_weights[po.index]
+        weight = self._filter_weights[loop.point.index]
 
     if weight == None:
         new_vec = get_locked_normal(
-            self, po.loops[l].normal, to_vec).normalized()
+            self, loop.normal, to_vec).normalized()
     else:
         new_vec = get_locked_normal(
-            self, po.loops[l].normal, og_vec.lerp(to_vec, weight)).normalized()
+            self, loop.normal, og_vec.lerp(to_vec, weight)).normalized()
 
-    po.loops[l].normal = new_vec
+    loop.normal = new_vec
+
+    axis = []
+    if self._mirror_x:
+        axis.append(0)
+    if self._mirror_y:
+        axis.append(1)
+    if self._mirror_z:
+        axis.append(2)
+
+    for ind in axis:
+        if ind == 0:
+            mir_loop = loop.x_mirror
+        if ind == 1:
+            mir_loop = loop.y_mirror
+        if ind == 2:
+            mir_loop = loop.z_mirror
+
+        if mir_loop != None:
+            mir_norm = loop.normal.copy()
+            mir_norm[ind] *= -1
+
+            mir_loop.normal = get_locked_normal(
+                self, mir_loop.normal, mir_norm)
     return
 
 
@@ -100,30 +97,27 @@ def get_locked_normal(self, cur_vec, tar_vec):
     return new_vec
 
 
-def mirror_normals(self, po_inds, axis):
-    for ind in po_inds:
-        po = self._points_container.points[ind]
-        co = self._object.matrix_world.inverted() @ po.co
-        co[axis] *= -1
+def mirror_normals(self, sel_inds, axis):
 
-        co = self._object.matrix_world @ co
+    for ind in sel_inds:
+        po = self._points_container.points[ind[0]]
+        if po.valid:
+            loop = po.loops[ind[1]]
 
-        result = self._object_kd.find(co)
-        if result != None:
-            if result[1] != po.index:
-                o_po = self._points_container.points[result[1]]
-                if o_po.valid:
-                    inds = match_point_loops_index(
-                        self, o_po, po, flip_axis=axis)
+            if axis == 0:
+                mir_loop = loop.x_mirror
+            if axis == 1:
+                mir_loop = loop.y_mirror
+            if axis == 2:
+                mir_loop = loop.z_mirror
 
-                    for o_loop in o_po.loops:
-                        loop = po.loops[inds[o_loop.index]]
+            if mir_loop != None:
+                mir_norm = loop.normal.copy()
+                mir_norm[axis] *= -1
 
-                        mir_norm = loop.normal.copy()
-                        mir_norm[axis] *= -1
+                mir_loop.normal = get_locked_normal(
+                    self, mir_loop.normal, mir_norm)
 
-                        o_loop.normal = get_locked_normal(
-                            self, o_loop.normal, mir_norm)
                 self.redraw = True
 
     set_new_normals(self)
@@ -131,16 +125,15 @@ def mirror_normals(self, po_inds, axis):
     return
 
 
-def incremental_rotate_vectors(self, sel_pos, axis, increment):
-    sel_cos = self._points_container.get_selected_cos()
+def incremental_rotate_vectors(self, sel_inds, axis, increment):
+    sel_cos = self._points_container.get_selected_loop_cos()
     avg_loc = average_vecs(sel_cos)
 
-    cache_norms = self._points_container.get_current_normals(sel_pos)
+    self._points_container.cache_current_normals()
 
     self._mode_cache.clear()
     self._mode_cache.append(self._mouse_reg_loc)
     self._mode_cache.append(avg_loc)
-    self._mode_cache.append(cache_norms)
     self._mode_cache.append(0)
 
     self.translate_mode = 2
@@ -149,15 +142,16 @@ def incremental_rotate_vectors(self, sel_pos, axis, increment):
     self.translate_mode = 0
     self.translate_axis = 2
     self._mode_cache.clear()
-    self.redraw = True
     return
 
 
 def rotate_vectors(self, angle):
-    sel_pos = self._points_container.get_selected()
+    sel_inds = self._points_container.get_selected_loops()
 
-    for p, p_ind in enumerate(sel_pos):
-        po = self._points_container.points[p_ind]
+    for i, ind_set in enumerate(sel_inds):
+        po = self._points_container.points[ind_set[0]]
+        loop = po.loops[ind_set[1]]
+
         if self.translate_mode == 0:
             mouse_co = mathutils.Vector(
                 (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
@@ -192,33 +186,37 @@ def rotate_vectors(self, angle):
                 mat = self._object.matrix_world.normalized()
                 mat.translation = po.co
 
-        for loop in po.loops:
-            og_norm = self._mode_cache[2][p][loop.index]
-            vec_local = mat.inverted() @ (self._object.matrix_world @
-                                          (self._object.data.vertices[po.index].co+og_norm))
+        po_w = self._object.matrix_world @ po.co
+        loop_w = self._object.matrix_world @ (po.co+loop.cached_normal)
 
-            if self.translate_axis == 0:
-                rot_vec = rotate_2d([0, 0], vec_local.yz, angle)
+        vec_local = mat.inverted() @ loop_w
+        if self.translate_axis == 0:
+            rot_vec = rotate_2d([0, 0], vec_local.yz, angle)
 
-                vec_local[1] = rot_vec[0]
-                vec_local[2] = rot_vec[1]
+            vec_local[1] = rot_vec[0]
+            vec_local[2] = rot_vec[1]
 
-            if self.translate_axis == 1:
-                rot_vec = rotate_2d([0, 0], vec_local.xz, angle)
+        if self.translate_axis == 1:
+            rot_vec = rotate_2d([0, 0], vec_local.xz, angle)
 
-                vec_local[0] = rot_vec[0]
-                vec_local[2] = rot_vec[1]
+            vec_local[0] = rot_vec[0]
+            vec_local[2] = rot_vec[1]
 
-            if self.translate_axis == 2:
-                rot_vec = rotate_2d([0, 0], vec_local.xy, angle)
+        if self.translate_axis == 2:
+            rot_vec = rotate_2d([0, 0], vec_local.xy, angle)
 
-                vec_local[0] = rot_vec[0]
-                vec_local[1] = rot_vec[1]
+            vec_local[0] = rot_vec[0]
+            vec_local[1] = rot_vec[1]
 
-            loop_norm_set(self, po, loop.index, og_norm, ((self._object.matrix_world.inverted(
-            ) @ (mat @ vec_local)) - self._object.data.vertices[po.index].co).normalized())
+        rot_w = mat @ vec_local
+        po_local = self._object.matrix_world.inverted() @ po.co
+        loop_local = self._object.matrix_world.inverted() @ rot_w
+
+        loop_norm_set(self, loop, loop.cached_normal,
+                      (loop_local-po_local).normalized())
 
     set_new_normals(self)
+    self.redraw = True
     return
 
 
@@ -227,34 +225,37 @@ def rotate_vectors(self, angle):
 #
 
 
-def flatten_normals(self, po_inds, axis):
+def flatten_normals(self, sel_inds, axis):
     update_filter_weights(self)
-    for ind in po_inds:
-        po = self._points_container.points[ind]
+    for ind in sel_inds:
+        po = self._points_container.points[ind[0]]
         if po.valid:
-            for loop in po.loops:
-                vec = loop.normal.copy()
-                vec[axis] = 0.0
+            loop = po.loops[ind[1]]
 
-                if vec.length > 0.0:
-                    loop_norm_set(self, po, loop.index, loop.normal, vec)
-            self.redraw = True
+            vec = loop.normal.copy()
+            vec[axis] = 0.0
+
+            if vec.length > 0.0:
+                loop_norm_set(self, loop, loop.normal, vec)
+        self.redraw = True
 
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
 
 
-def align_to_axis_normals(self, po_inds, axis, dir):
+def align_to_axis_normals(self, sel_inds, axis, dir):
     update_filter_weights(self)
     vec = mathutils.Vector((0, 0, 0))
 
     vec[axis] = 1.0*dir
-    for ind in po_inds:
-        po = self._points_container.points[ind]
+    for ind in sel_inds:
+        po = self._points_container.points[ind[0]]
         if po.valid:
-            for loop in po.loops:
-                loop_norm_set(self, po, loop.index, loop.normal, vec.copy())
+            loop = po.loops[ind[1]]
+
+            loop_norm_set(self, loop, loop.normal, vec.copy())
+
             self.redraw = True
 
     set_new_normals(self)
@@ -267,15 +268,28 @@ def align_to_axis_normals(self, po_inds, axis, dir):
 #
 
 
-def average_vertex_normals(self, po_inds):
+def average_vertex_normals(self, sel_inds):
     update_filter_weights(self)
-    for ind in po_inds:
-        po = self._points_container.points[ind]
-        if po.valid:
-            vec = average_vecs([loop.normal for loop in po.loops])
 
-            for loop in po.loops:
-                loop_norm_set(self, po, loop.index, loop.normal, vec.copy())
+    new_norms = []
+    for ind in sel_inds:
+        po = self._points_container.points[ind[0]]
+        if po.valid:
+            loop = po.loops[ind[1]]
+
+            vec = average_vecs(
+                [loop.normal for loop in po.loops if loop.select])
+
+            new_norms.append(vec)
+        else:
+            new_norms.append(None)
+
+    for i, ind in enumerate(sel_inds):
+        po = self._points_container.points[ind[0]]
+        if po.valid:
+            loop = po.loops[ind[1]]
+            loop_norm_set(self, loop, loop.normal, new_norms[i])
+
             self.redraw = True
 
     set_new_normals(self)
@@ -283,73 +297,64 @@ def average_vertex_normals(self, po_inds):
     return
 
 
-def average_selected_normals(self, po_inds):
+def average_selected_normals(self, sel_inds):
     update_filter_weights(self)
     avg_vec = mathutils.Vector((0, 0, 0))
-    for ind in po_inds:
-        po = self._points_container.points[ind]
+    for ind in sel_inds:
+        po = self._points_container.points[ind[0]]
         if po.valid:
-            vec = average_vecs([loop.normal for loop in po.loops])
+            vec = average_vecs(
+                [loop.normal for loop in po.loops if loop.select])
             avg_vec += vec
 
             self.redraw = True
 
-    avg_vec = (avg_vec/len(po_inds)).normalized()
+    avg_vec = (avg_vec/len(sel_inds)).normalized()
 
     if avg_vec.length > 0.0:
-        for ind in po_inds:
-            po = self._points_container.points[ind]
+        for ind in sel_inds:
+            po = self._points_container.points[ind[0]]
             if po.valid:
-                for loop in po.loops:
-                    loop_norm_set(self, po, loop.index,
-                                  loop.normal, avg_vec.copy())
+                loop = po.loops[ind[1]]
+
+                loop_norm_set(self, loop, loop.normal, avg_vec.copy())
+
         set_new_normals(self)
         add_to_undostack(self, 1)
 
     return
 
 
-def smooth_normals(self, po_inds, fac):
+def smooth_normals(self, sel_inds, fac):
     update_filter_weights(self)
+
     calc_norms = None
     for i in range(self._smooth_iterations):
         calc_norms = []
         for po in self._points_container.points:
-
             if len(po.loops) > 0 and po.valid:
-                vec = mathutils.Vector((0, 0, 0))
-                for loop in po.loops:
-                    vec += loop.normal
-
-                vec = vec/len(po.loops)
-
+                vec = average_vecs([loop.normal for loop in po.loops])
                 calc_norms.append(vec)
-
             else:
                 calc_norms.append(None)
 
-        for ind in po_inds:
-            po = self._points_container.points[ind]
+        for ind in sel_inds:
+            po = self._points_container.points[ind[0]]
+            if po.valid:
+                loop = po.loops[ind[1]]
 
-            l_vs = [ed.other_vert(self._object_bm.verts[ind])
-                    for ed in self._object_bm.verts[ind].link_edges]
+                l_vs = [ed.other_vert(self._object_bm.verts[po.index])
+                        for ed in self._object_bm.verts[po.index].link_edges]
 
-            for loop in po.loops:
                 smooth_vec = mathutils.Vector((0, 0, 0))
+                smooth_vec = average_vecs(
+                    [loop.normal.lerp(calc_norms[ov.index], fac) for ov in l_vs])
 
-                cnt = 0
-                for ov in l_vs:
-                    if calc_norms[ov.index] != None:
-                        smooth_vec += loop.normal.lerp(
-                            calc_norms[ov.index], fac)
-                        cnt += 1
-
-                if cnt > 0:
-                    smooth_vec = smooth_vec/cnt
-                    loop_norm_set(self, po, loop.index, loop.normal, loop.normal.lerp(
+                if smooth_vec.length > 0:
+                    loop_norm_set(self, loop, loop.normal, loop.normal.lerp(
                         smooth_vec, self._smooth_strength))
 
-            self.redraw = True
+                self.redraw = True
 
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -361,12 +366,12 @@ def smooth_normals(self, po_inds, fac):
 #
 
 
-def flip_normals(self, po_inds):
-    for ind in po_inds:
-        po = self._points_container.points[ind]
+def flip_normals(self, sel_inds):
+    for ind in sel_inds:
+        po = self._points_container.points[ind[0]]
         if po.valid:
-            for loop in po.loops:
-                loop.normal *= -1
+            loop = po.loops[ind[1]]
+            loop.normal *= -1
             self.redraw = True
 
     set_new_normals(self)
@@ -374,26 +379,25 @@ def flip_normals(self, po_inds):
     return
 
 
-def set_outside_inside(self, po_inds, direction):
+def set_outside_inside(self, sel_inds, direction):
     update_filter_weights(self)
-    for ind in po_inds:
-        po = self._points_container.points[ind]
+    for ind in sel_inds:
+        po = self._points_container.points[ind[0]]
         if po.valid:
+            loop = po.loops[ind[1]]
+
             if self._object_smooth:
                 poly_norm = mathutils.Vector((0, 0, 0))
-                for loop in po.loops:
-                    for loop in self._object_bm.verts[po.index].link_loops:
-                        poly_norm += self._object.data.polygons[loop.face.index].normal * direction
+                for bm_loop in self._object_bm.verts[po.index].link_loops:
+                    poly_norm += self._object.data.polygons[bm_loop.face.index].normal * direction
 
                 if poly_norm.length > 0.0:
-                    for loop in po.loops:
-                        loop_norm_set(
-                            self, po, loop.index, loop.normal, poly_norm/len(po.loops))
+                    loop_norm_set(self, loop, loop.normal,
+                                  poly_norm/len(po.loops))
 
             else:
-                for loop in po.loops:
-                    loop.normal = self._object_bm.loops[loop.loop_index].face.normal.copy(
-                    ) * direction
+                loop.normal = self._object_bm.loops[loop.loop_index].face.normal.copy(
+                ) * direction
 
             self.redraw = True
 
@@ -402,10 +406,12 @@ def set_outside_inside(self, po_inds, direction):
     return
 
 
-def reset_normals(self, po_inds):
-    for ind in po_inds:
-        po = self._points_container.points[ind]
-        po.reset_loops()
+def reset_normals(self, sel_inds):
+    for ind in sel_inds:
+        po = self._points_container.points[ind[0]]
+        if po.valid:
+            loop = po.loops[ind[1]]
+            loop.reset_normal()
 
         self.redraw = True
 
@@ -419,18 +425,20 @@ def reset_normals(self, po_inds):
 #
 
 
-def copy_active_to_selected(self, po_inds):
+def copy_active_to_selected(self, sel_inds):
     update_filter_weights(self)
     if self._active_point != None:
-        for ind in po_inds:
-            if ind != self._active_point:
-                po = self._points_container.points[ind]
-                if po.valid:
-                    inds = match_point_loops_index(
-                        self, po, self._points_container.points[self._active_point])
-                    for loop in po.loops:
-                        loop_norm_set(
-                            self, po, loop.index, loop.normal, self._points_container.points[self._active_point].loops[inds[loop.index]].normal.copy())
+        norms, tangs = get_po_loop_data(self, self._active_point)
+
+        for ind in sel_inds:
+            po = self._points_container.points[ind[0]]
+            if po.valid:
+                loop = po.loops[ind[1]]
+
+                m_ind = match_loops_vecs(self, loop, tangs)
+
+                loop_norm_set(
+                    self, loop, loop.normal, norms[m_ind].copy())
 
         self.redraw = True
 
@@ -439,30 +447,39 @@ def copy_active_to_selected(self, po_inds):
     return
 
 
-def copy_active_normal(self):
-    if self._active_point != None:
-        po = self._points_container.points[self._active_point]
-        if po.valid:
-            self._copy_normals = [loop.normal for loop in po.loops]
-            self._copy_normals_tangs = []
-            self._copy_normal_ind = po.index
+def get_po_loop_data(self, po_loop):
+    norms = None
+    tangs = None
 
-            for o_loop in self._object_bm.verts[po.index].link_loops:
-                self._copy_normals_tangs.append(o_loop.calc_tangent())
-    return
+    if po_loop != None:
+        if po_loop.type == 'POINT':
+            norms = [loop.normal for loop in po_loop.loops]
+            tangs = []
+
+            for o_loop in self._object_bm.verts[po_loop.index].link_loops:
+                tangs.append(o_loop.calc_tangent())
+
+        elif po_loop.type == 'LOOP':
+            norms = [po_loop.normal]
+            tangs = [
+                self._object_bm.verts[po_loop.point.index].link_loops[po_loop.index].calc_tangent()]
+
+    return norms, tangs
 
 
-def paste_normal(self, po_inds):
+def paste_normal(self, sel_inds):
     update_filter_weights(self)
-    if self._copy_normals != None and self._copy_normals_tangs != None and self._copy_normal_ind != None:
-        for ind in po_inds:
-            po = self._points_container.points[ind]
+    if self._copy_normals != None and self._copy_normals_tangs != None:
+        for ind in sel_inds:
+            po = self._points_container.points[ind[0]]
             if po.valid:
-                inds = match_point_loops_vecs(
-                    self, po, self._copy_normals_tangs)
-                for loop in po.loops:
-                    loop_norm_set(
-                        self, po, loop.index, loop.normal, self._copy_normals[inds[loop.index]].copy())
+                loop = po.loops[ind[1]]
+
+                m_ind = match_loops_vecs(
+                    self, loop, self._copy_normals_tangs)
+
+                loop_norm_set(
+                    self, loop, loop.normal, self._copy_normals[m_ind].copy())
 
                 self.redraw = True
     set_new_normals(self)
@@ -536,13 +553,8 @@ def translate_axis_change(self, text, axis):
 
     translate_axis_draw(self)
 
-    sel_pos = self._points_container.get_selected()
-    for i, ind in enumerate(sel_pos):
-        po = self._points_container.points[ind]
-
-        for loop in po.loops:
-            loop.normal = self._mode_cache[2][i][loop.index].copy()
-
+    self._points_container.restore_cached_normals()
+    self._points_container.cache_current_normals()
     return
 
 
@@ -582,8 +594,6 @@ def translate_axis_side(self):
 def cache_point_data(self):
     self._object.data.calc_normals_split()
 
-    self.og_loop_norms = [loop.normal.copy()
-                          for loop in self._object.data.loops]
     self.og_sharp_edges = [ed.use_edge_sharp for ed in self._object.data.edges]
 
     for v in self._object_bm.verts:
@@ -607,12 +617,52 @@ def cache_point_data(self):
 
             po = self._points_container.add_point(
                 v.co, v.normal, loop_norms, loop_inds, loop_f_inds, loop_tri_cos)
+
         else:
             po = self._points_container.add_empty_point(
                 v.co, mathutils.Vector((0, 0, 1)))
 
         po.set_hide(v.hide)
         po.set_select(v.select)
+
+    cache_mirror_data(self)
+    return
+
+
+def cache_mirror_data(self):
+    for po in self._points_container.points:
+        if po.valid:
+            mir_pos = []
+            for i in range(3):
+                co = self._object.matrix_world.inverted() @ po.co
+                co[i] *= -1
+                co = self._object.matrix_world @ co
+
+                result = self._object_kd.find_range(co, self._mirror_range)
+
+                m_po = None
+                for res in result:
+                    o_po = self._points_container.points[res[1]]
+                    if o_po.valid:
+                        m_po = o_po
+                        break
+
+                mir_pos.append(m_po)
+
+            norms, tangs = get_po_loop_data(self, po)
+
+            for i in range(3):
+                if mir_pos[i] != None:
+                    for m_loop in mir_pos[i].loops:
+                        m_ind = match_loops_vecs(
+                            self, m_loop, tangs, flip_axis=i)
+
+                        if i == 0:
+                            m_loop.x_mirror = po.loops[m_ind]
+                        if i == 1:
+                            m_loop.y_mirror = po.loops[m_ind]
+                        if i == 2:
+                            m_loop.z_mirror = po.loops[m_ind]
 
     return
 
@@ -682,7 +732,7 @@ def ob_data_structures(self, ob):
 
 def add_to_undostack(self, stack_type):
     if stack_type == 0:
-        sel_status = self._points_container.get_selected()
+        sel_status = self._points_container.get_selected_loops()
 
         if self._history_position > 0:
             while self._history_position > 0:
@@ -716,13 +766,20 @@ def move_undostack(self, dir):
 
         if state_type == 0:
             for po in self._points_container.points:
-                if po.index in state:
-                    po.select = True
-                else:
-                    po.select = False
+                po.set_select(False)
+
+            for ind in state:
+                po = self._points_container.points[ind[0]]
+                if po.hide == False and po.valid:
+                    loop = po.loops[ind[1]]
+                    if loop.hide == False:
+                        loop.set_select(True)
+
+                po.set_selection_from_loops()
 
             if self._active_point != None:
-                if self._points_container.points[self._active_point].select == False:
+                if self._active_point.select == False:
+                    self._points_container.clear_active()
                     self._active_point = None
 
             update_orbit_empty(self)
@@ -731,7 +788,7 @@ def move_undostack(self, dir):
         if state_type == 1:
             for po in self._points_container.points:
                 for loop in po.loops:
-                    loop.normal = norms_state[po.index][loop.index].copy()
+                    loop.normal = state[po.index][loop.index].copy()
 
             self.redraw = True
             set_new_normals(self)
@@ -783,16 +840,20 @@ def finish_modal(self, restore):
 
     if restore:
         ob = self._object
-        if self._object.as_pointer() != self._object_pointer:
+        if ob.as_pointer() != self._object_pointer:
             for o_ob in bpy.data.objects:
                 if o_ob.as_pointer() == self._object_pointer:
                     ob = o_ob
 
-        # restore normals
-        ob.data.normals_split_custom_set(self.og_loop_norms)
-
         for ed in self._object.data.edges:
             ed.use_edge_sharp = self.og_sharp_edges[ed.index]
+
+        # restore normals
+        og_norms = [None for l in ob.data.loops]
+        for po in self._points_container.points:
+            for loop in po.loops:
+                og_norms[loop.loop_index] = loop.og_normal.normalized()
+        ob.data.normals_split_custom_set(og_norms)
 
     restore_modifiers(self)
 
@@ -842,14 +903,14 @@ def check_area(self):
 def gizmo_click_init(self, event, giz_status):
     if self._use_gizmo:
         if event.alt == False:
-            sel_pos = self._points_container.get_selected()
-            if len(sel_pos) == 0:
+            sel_inds = self._points_container.get_selected_loops()
+            if len(sel_inds) == 0:
                 return True
 
         self._mode_cache.clear()
 
         if event.alt == False:
-            cache_norms = self._points_container.get_current_normals(sel_pos)
+            self._points_container.cache_current_normals()
 
             for gizmo in self._window.gizmo_sets[giz_status[1]].gizmos:
                 if gizmo.index != giz_status[2]:
@@ -899,7 +960,6 @@ def gizmo_click_init(self, event, giz_status):
         if event.alt == False:
             self._window.update_gizmo_rot(0, -ang_offset)
             self._mode_cache.append(giz_status)
-            self._mode_cache.append(cache_norms)
             self._mode_cache.append(0)
             self._mode_cache.append(-ang_offset)
             self._mode_cache.append(
@@ -907,7 +967,6 @@ def gizmo_click_init(self, event, giz_status):
             self._mode_cache.append(True)
         else:
             self._mode_cache.append(giz_status)
-            self._mode_cache.append([])
             self._mode_cache.append(0)
             self._mode_cache.append(-ang_offset)
             self._mode_cache.append(
@@ -961,17 +1020,17 @@ def start_sphereize_mode(self):
     for i in range(len(bpy.context.selected_objects)):
         bpy.context.selected_objects[0].select_set(False)
 
-    sel_cos = self._points_container.get_selected_cos()
+    sel_cos = self._points_container.get_selected_loop_cos()
     avg_loc = average_vecs(sel_cos)
     self._target_emp.location = avg_loc
     self._target_emp.empty_display_size = 0.5
     self._target_emp.select_set(True)
     bpy.context.view_layer.objects.active = self._target_emp
 
-    sel_pos = self._points_container.get_selected()
-    cache_norms = self._points_container.get_current_normals(sel_pos)
+    sel_inds = self._points_container.get_selected_loops()
 
-    self._mode_cache.append(cache_norms)
+    self._points_container.cache_current_normals()
+
     gizmo_update_hide(self, False)
     self.sphereize_mode = True
     keymap_target(self)
@@ -981,14 +1040,14 @@ def start_sphereize_mode(self):
     self._sphere_panel.set_new_position(
         self._mouse_reg_loc, window_dims=self._window.dimensions)
 
-    sphereize_normals(self, sel_pos)
+    sphereize_normals(self, sel_inds)
     return
 
 
 def end_sphereize_mode(self, keep_normals):
     if keep_normals == False:
-        sel_pos = self._points_container.get_selected()
-        for i, ind in enumerate(sel_pos):
+        sel_inds = self._points_container.get_selected_loops()
+        for i, ind in enumerate(sel_inds):
             po = self._points_container.points[ind]
 
             for loop in po.loops:
@@ -1019,15 +1078,17 @@ def end_sphereize_mode(self, keep_normals):
     return
 
 
-def sphereize_normals(self, po_inds):
-    for i, ind in enumerate(po_inds):
-        po = self._points_container.points[ind]
+def sphereize_normals(self, sel_inds):
+    for i, ind in enumerate(sel_inds):
+        po = self._points_container.points[ind[0]]
+        loop = po.loops[ind[1]]
+
         if po.valid:
             vec = (self._object.matrix_world.inverted() @ po.co) - \
                 (self._object.matrix_world.inverted() @ self._target_emp.location)
-            for loop in po.loops:
-                loop_norm_set(
-                    self, po, loop.index, self._mode_cache[-1][i][loop.index], self._mode_cache[-1][i][loop.index].lerp(vec, self.target_strength))
+
+            loop_norm_set(
+                self, loop, loop.cached_normal, loop.cached_normal.lerp(vec, self.target_strength))
 
             self.redraw = True
 
@@ -1041,17 +1102,17 @@ def start_point_mode(self):
     for i in range(len(bpy.context.selected_objects)):
         bpy.context.selected_objects[0].select_set(False)
 
-    sel_cos = self._points_container.get_selected_cos()
+    sel_cos = self._points_container.get_selected_loop_cos()
     avg_loc = average_vecs(sel_cos)
     self._target_emp.location = avg_loc
     self._target_emp.empty_display_size = 0.5
     self._target_emp.select_set(True)
     bpy.context.view_layer.objects.active = self._target_emp
 
-    sel_pos = self._points_container.get_selected()
-    cache_norms = self._points_container.get_current_normals(sel_pos)
+    sel_inds = self._points_container.get_selected_loops()
 
-    self._mode_cache.append(cache_norms)
+    self._points_container.cache_current_normals()
+
     gizmo_update_hide(self, False)
     self.point_mode = True
     keymap_target(self)
@@ -1061,14 +1122,14 @@ def start_point_mode(self):
     self._point_panel.set_new_position(
         self._mouse_reg_loc, window_dims=self._window.dimensions)
 
-    point_normals(self, sel_pos)
+    point_normals(self, sel_inds)
     return
 
 
 def end_point_mode(self, keep_normals):
     if keep_normals == False:
-        sel_pos = self._points_container.get_selected()
-        for i, ind in enumerate(sel_pos):
+        sel_inds = self._points_container.get_selected_loops()
+        for i, ind in enumerate(sel_inds):
             po = self._points_container.points[ind]
 
             for loop in po.loops:
@@ -1099,22 +1160,24 @@ def end_point_mode(self, keep_normals):
     return
 
 
-def point_normals(self, po_inds):
+def point_normals(self, sel_inds):
     if self.point_align:
-        sel_cos = self._points_container.get_selected_cos()
+        sel_cos = self._points_container.get_selected_loop_cos()
         avg_loc = average_vecs(sel_cos)
         vec = (self._object.matrix_world.inverted() @ self._target_emp.location) - \
             (self._object.matrix_world.inverted() @ avg_loc)
 
-    for i, ind in enumerate(po_inds):
-        po = self._points_container.points[ind]
+    for i, ind in enumerate(sel_inds):
+        po = self._points_container.points[ind[0]]
+        loop = po.loops[ind[1]]
+
         if po.valid:
             if self.point_align == False:
                 vec = (self._object.matrix_world.inverted(
                 ) @ self._target_emp.location) - (self._object.matrix_world.inverted() @ po.co)
-            for loop in po.loops:
-                loop_norm_set(
-                    self, po, loop.index, self._mode_cache[-1][i][loop.index], self._mode_cache[-1][i][loop.index].lerp(vec, self.target_strength))
+
+            loop_norm_set(
+                self, loop, loop.cached_normal, loop.cached_normal.lerp(vec, self.target_strength))
 
             self.redraw = True
 
@@ -1130,11 +1193,11 @@ def move_target(self, shift):
         offset[0] = offset[0]*.1
         offset[1] = offset[1]*.1
 
-    self._mode_cache[3][0] = self._mode_cache[3][0] + offset[0]
-    self._mode_cache[3][1] = self._mode_cache[3][1] + offset[1]
+    self._mode_cache[2][0] = self._mode_cache[2][0] + offset[0]
+    self._mode_cache[2][1] = self._mode_cache[2][1] + offset[1]
 
     new_co = view3d_utils.region_2d_to_location_3d(
-        self.act_reg, self.act_rv3d, self._mode_cache[3], self._mode_cache[1])
+        self.act_reg, self.act_rv3d, self._mode_cache[2], self._mode_cache[1])
     if self.translate_mode == 0:
         self._target_emp.location = new_co
 
@@ -1162,13 +1225,38 @@ def move_target(self, shift):
 # SELECTION
 #
 
+def get_active_point_index(indeces, active):
+    if active == None or active.type != 'POINT':
+        return None
+
+    for i, ind in enumerate(indeces):
+        if active.index == ind:
+            return i
+
+    return None
+
+
+def get_active_loop_index(indeces, active):
+    if active == None or active.type != 'LOOP':
+        return None
+
+    for i, ind_set in enumerate(indeces):
+        if active.point.index == ind_set[0] and active.index == ind_set[1]:
+            return i
+
+    return None
+
 
 def selection_test(self, event, radius=6.0):
+    test_face = False
+
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         0)
 
+    active_ind = get_active_point_index(avail_inds, self._active_point)
+
     change, unselect, new_active, new_sel, new_sel_status = click_points_selection_test(
-        avail_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, event.shift, self._x_ray_mode, self._object_bvh, active=self._active_point)
+        avail_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, event.shift, self._x_ray_mode, self._object_bvh, active=active_ind)
 
     sel_ind = None
     new_act = None
@@ -1177,14 +1265,77 @@ def selection_test(self, event, radius=6.0):
     if new_active != None:
         new_act = avail_inds[new_active]
 
+    # Vertex selection
     if change:
         if unselect:
             for po in self._points_container.points:
-                po.select = False
+                po.set_select(False)
 
-        self._points_container.points[sel_ind].select = new_sel_status
+        self._points_container.points[sel_ind].set_select(new_sel_status)
 
-        self._active_point = new_act
+        if new_act != None:
+            self._points_container.set_active_point(new_act)
+            self._active_point = self._points_container.points[new_act]
+        else:
+            self._points_container.clear_active()
+            self._active_point = None
+
+    # No vertex selection so test loop triangle selection
+    else:
+        if self._individual_loops:
+            avail_tri_cos, avail_sel_status, avail_inds = self._points_container.get_loop_tri_selection_available(
+                0)
+
+            active_ind = get_active_loop_index(avail_inds, self._active_point)
+
+            change, unselect, new_active, new_sel, new_sel_status = click_tris_selection_test(
+                avail_tri_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, event.shift, self._x_ray_mode, self._object_bvh, active=active_ind)
+
+            sel_ind = None
+            new_act = None
+            if new_sel != None:
+                sel_ind = avail_inds[new_sel]
+            if new_active != None:
+                new_act = avail_inds[new_active]
+
+            # If selection change made then do it
+            if change:
+                if unselect:
+                    for po in self._points_container.points:
+                        po.set_select(False)
+
+                self._points_container.points[sel_ind[0]].set_loop_select(
+                    sel_ind[1], new_sel_status)
+
+                if new_act != None:
+                    self._points_container.set_active_loop(
+                        new_act[0], new_act[1])
+                    self._active_point = self._points_container.points[new_act[0]
+                                                                       ].loops[new_act[1]]
+                else:
+                    self._points_container.clear_active()
+                    self._active_point = None
+
+            # No vertex or loop selection so try for selecting a face with ray cast
+            else:
+                test_face = True
+
+        # No vertex selection or loop testing so try for selecting a face with ray cast
+        else:
+            test_face = True
+
+    if test_face:
+        face_ind = ray_cast_to_mouse(self)
+        if face_ind != None:
+            if event.shift == False:
+                for po in self._points_container.points:
+                    po.set_select(False)
+
+            if self._individual_loops:
+                self._points_container.select_face_loops(face_ind)
+            else:
+                self._points_container.select_face_verts(face_ind)
+            change = True
 
     return change
 
@@ -1197,11 +1348,17 @@ def box_selection_test(self, event):
         if event.shift:
             add_rem_status = 1
 
-    avail_cos = []
-    avail_inds = []
-
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         add_rem_status)
+
+    loop_switch_pont = len(avail_inds)
+    # Add in loop selection data if enabled
+    if self._individual_loops:
+        avail_tri_cos, avail_loop_sel_status, avail_loop_inds = self._points_container.get_loop_selection_available(
+            add_rem_status)
+        avail_cos += avail_tri_cos
+        avail_sel_status += avail_loop_sel_status
+        avail_inds += avail_loop_inds
 
     change, unselect, new_active, new_sel_add, new_sel_remove = box_points_selection_test(
         avail_cos, avail_sel_status, self._mouse_reg_loc, self._mode_cache[0], self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
@@ -1209,19 +1366,33 @@ def box_selection_test(self, event):
     if change:
         if unselect:
             for po in self._points_container.points:
-                po.select = False
+                po.set_select(False)
 
         for ind in new_sel_add:
-            po_ind = avail_inds[ind]
-            self._points_container.points[po_ind].select = True
+            if ind < loop_switch_pont:
+                po_ind = avail_inds[ind]
+                self._points_container.points[po_ind].set_select(True)
+            else:
+                sel_ind = avail_inds[ind]
+                self._points_container.points[sel_ind[0]
+                                              ].loops[sel_ind[1]].set_select(True)
 
         for ind in new_sel_remove:
-            po_ind = avail_inds[ind]
-            self._points_container.points[po_ind].select = False
+            if ind < loop_switch_pont:
+                po_ind = avail_inds[ind]
+                self._points_container.points[po_ind].set_select(False)
+            else:
+                sel_ind = avail_inds[ind]
+                self._points_container.points[sel_ind[0]
+                                              ].loops[sel_ind[1]].set_select(False)
 
         if self._active_point != None:
-            if self._points_container.points[self._active_point].select == False:
+            if self._active_point.select == False:
+                self._points_container.clear_active()
                 self._active_point = None
+
+                # if self._points_container.points[self._active_point[0]].select == False:
+                #     self._active_point = None
 
     return change
 
@@ -1237,20 +1408,32 @@ def circle_selection_test(self, event, radius):
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         add_rem_status)
 
+    loop_switch_pont = len(avail_inds)
+    # Add in loop selection data if enabled
+    if self._individual_loops:
+        avail_tri_cos, avail_loop_sel_status, avail_loop_inds = self._points_container.get_loop_selection_available(
+            add_rem_status)
+        avail_cos += avail_tri_cos
+        avail_sel_status += avail_loop_sel_status
+        avail_inds += avail_loop_inds
+
     change, unselect, new_active, new_sel, new_sel_status = circle_points_selection_test(
         avail_cos, avail_sel_status, self._mouse_reg_loc, radius, self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
 
     if change:
-        if unselect:
-            for po in self._points_container.points:
-                po.select = False
-
         for ind in new_sel:
-            po_ind = avail_inds[ind]
-            self._points_container.points[po_ind].select = new_sel_status
+            if ind < loop_switch_pont:
+                po_ind = avail_inds[ind]
+                self._points_container.points[po_ind].set_select(
+                    new_sel_status)
+            else:
+                sel_ind = avail_inds[ind]
+                self._points_container.points[sel_ind[0]
+                                              ].loops[sel_ind[1]].set_select(new_sel_status)
 
         if self._active_point != None:
-            if self._points_container.points[self._active_point].select == False:
+            if self._active_point.select == False:
+                self._points_container.clear_active()
                 self._active_point = None
 
     return change
@@ -1267,24 +1450,44 @@ def lasso_selection_test(self, event):
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         add_rem_status)
 
+    loop_switch_pont = len(avail_inds)
+    # Add in loop selection data if enabled
+    if self._individual_loops:
+        avail_tri_cos, avail_loop_sel_status, avail_loop_inds = self._points_container.get_loop_selection_available(
+            add_rem_status)
+        avail_cos += avail_tri_cos
+        avail_sel_status += avail_loop_sel_status
+        avail_inds += avail_loop_inds
+
     change, unselect, new_active, new_sel_add, new_sel_remove = lasso_points_selection_test(
         self._mode_cache, avail_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
 
     if change:
         if unselect:
             for po in self._points_container.points:
-                po.select = False
+                po.set_select(False)
 
         for ind in new_sel_add:
-            po_ind = avail_inds[ind]
-            self._points_container.points[po_ind].select = True
+            if ind < loop_switch_pont:
+                po_ind = avail_inds[ind]
+                self._points_container.points[po_ind].set_select(True)
+            else:
+                sel_ind = avail_inds[ind]
+                self._points_container.points[sel_ind[0]
+                                              ].loops[sel_ind[1]].set_select(True)
 
         for ind in new_sel_remove:
-            po_ind = avail_inds[ind]
-            self._points_container.points[po_ind].select = False
+            if ind < loop_switch_pont:
+                po_ind = avail_inds[ind]
+                self._points_container.points[po_ind].set_select(False)
+            else:
+                sel_ind = avail_inds[ind]
+                self._points_container.points[sel_ind[0]
+                                              ].loops[sel_ind[1]].set_select(False)
 
         if self._active_point != None:
-            if self._points_container.points[self._active_point].select == False:
+            if self._active_point.select == False:
+                self._points_container.clear_active()
                 self._active_point = None
 
     return change
@@ -1316,7 +1519,7 @@ def add_orbit_empty(ob):
 
 def update_orbit_empty(self):
 
-    sel_cos = self._points_container.get_selected_cos()
+    sel_cos = self._points_container.get_selected_loop_cos()
     avg_loc = average_vecs(sel_cos)
 
     if avg_loc != None:
