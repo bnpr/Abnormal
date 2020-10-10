@@ -353,8 +353,7 @@ def smooth_normals(self, sel_inds, fac):
                     loop_norm_set(self, loop, loop.normal, loop.normal.lerp(
                         smooth_vec, self._smooth_strength))
 
-                self.redraw = True
-
+    self.redraw = True
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
@@ -1358,6 +1357,7 @@ def selection_test(self, event, radius=6.0):
         face_ind = ray_cast_to_mouse(self)
         if face_ind != None:
             if event.shift == False:
+                self._points_container.clear_active()
                 for po in self._points_container.points:
                     po.set_select(False)
 
