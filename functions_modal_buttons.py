@@ -506,6 +506,7 @@ def init_ui_panels(self, rw, rh, scale):
         but = row.add_button(20, 'Point Normals at Target')
         but.set_click_up_func(begin_point_mode)
 
+    self._window.set_scale(self._ui_scale)
     self._window.create_shape_data()
     return
 

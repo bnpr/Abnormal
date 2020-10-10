@@ -819,6 +819,18 @@ def img_load(img_name, path):
 
 
 def finish_modal(self, restore):
+    self._addon_prefs.rotate_gizmo_use = self._use_gizmo
+    self._addon_prefs.gizmo_size = self._gizmo_size
+    self._addon_prefs.left_select = self._left_select
+    self._addon_prefs.normal_size = self._normal_size
+    self._addon_prefs.line_brightness = self._line_brightness
+    self._addon_prefs.point_size = self._point_size
+    self._addon_prefs.selected_only = self._selected_only
+    self._addon_prefs.selected_scale = self._selected_scale
+    self._addon_prefs.individual_loops = self._individual_loops
+    self._addon_prefs.ui_scale = self._ui_scale
+    self._addon_prefs.display_wireframe = self._use_wireframe_overlay
+
     if bpy.context.area != None:
         if bpy.context.area.type == 'VIEW_3D':
             for space in bpy.context.area.spaces:
@@ -829,8 +841,11 @@ def finish_modal(self, restore):
                     space.overlay.show_wireframes = self._wireframe
                     space.overlay.wireframe_threshold = self._thresh
                     space.overlay.show_text = self._text
+
     bpy.context.window.cursor_modal_set('DEFAULT')
+
     clear_drawing(self)
+
     delete_orbit_empty(self)
     if self._target_emp != None:
         try:
