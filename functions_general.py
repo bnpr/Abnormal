@@ -70,7 +70,8 @@ def create_simple_bm(self, ob):
 
     # turn off generative modifiers
     for mod in ob.modifiers:
-        self._objects_mod_status.append([mod.show_viewport, mod.show_render])
+        self._objects_mod_status.append(
+            [mod.show_viewport, mod.show_render, mod.name])
 
         if mod.type != 'MIRROR':
             mod.show_viewport = False

@@ -858,13 +858,6 @@ def finish_modal(self, restore):
 
     clear_drawing(self)
 
-    delete_orbit_empty(self)
-    if self._target_emp != None:
-        try:
-            bpy.data.objects.remove(self._target_emp)
-        except:
-            self._target_emp = None
-
     if restore:
         ob = self._object
         if ob.as_pointer() != self._object_pointer:
@@ -887,6 +880,13 @@ def finish_modal(self, restore):
     abn_props = bpy.context.scene.abnormal_props
     abn_props.object = ''
 
+    delete_orbit_empty(self)
+    if self._target_emp != None:
+        try:
+            bpy.data.objects.remove(self._target_emp)
+        except:
+            self._target_emp = None
+
     self._object.select_set(True)
     bpy.context.view_layer.objects.active = self._object
     return
@@ -898,9 +898,12 @@ def restore_modifiers(self):
             self._object.data.shape_keys.key_blocks[s].mute = self._objects_sk_vis[s]
 
     # restore modifier status
-    for m, mod in enumerate(self._object.modifiers):
-        mod.show_viewport = self._objects_mod_status[m][0]
-        mod.show_render = self._objects_mod_status[m][1]
+    for m, mod_dat in enumerate(self._objects_mod_status):
+        for mod in self._object.modifiers:
+            if mod.name == self._objects_mod_status[m][2]:
+                mod.show_viewport = self._objects_mod_status[m][0]
+                mod.show_render = self._objects_mod_status[m][1]
+                break
 
     return
 
