@@ -157,6 +157,7 @@ class CUIWindowContainer:
 
     def test_hover(self, mouse_co):
         status = None
+        cursor_change = False
 
         giz_status = self.test_gizmo_hover(mouse_co)
         if giz_status == False:
@@ -171,13 +172,15 @@ class CUIWindowContainer:
                 if panel.click_down == False:
                     if panel_status == 'PANEL_EDGE':
                         bpy.context.window.cursor_modal_set('MOVE_X')
+                        cursor_change = True
                     else:
                         if panel_status == 'PANEL_HEADER' or panel_status == 'MINIMIZED':
                             bpy.context.window.cursor_modal_set('HAND')
+                            cursor_change = True
         else:
             status = 'GIZMO'
 
-        if status == None:
+        if status == None or cursor_change == False:
             bpy.context.window.cursor_modal_set('DEFAULT')
         return status
 

@@ -1664,6 +1664,8 @@ class UIRotateGizmo:
 
     def draw(self):
         if self.active:
+            bgl.glDepthRange(0, 0.01)
+
             if self.in_use:
                 self.shader.bind()
                 self.shader.uniform_float(
@@ -1680,6 +1682,8 @@ class UIRotateGizmo:
             else:
                 self.shader.uniform_float("color", self.color)
             self.batch.draw(self.shader)
+
+            bgl.glDepthRange(0, 1.0)
 
         return
 

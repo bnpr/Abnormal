@@ -782,6 +782,11 @@ class CUIRowContainer(CUIContainer):
             if item.height > highest:
                 highest = item.height
 
+        if self.width-self.horizontal_margin > x_pos:
+            for i, item in enumerate(self.items):
+                item.pos_offset[0] += (self.width -
+                                       self.horizontal_margin-x_pos)/2
+
         # check for items that have a smaller size than highest and replace in middle of row vertically
         for i, item in enumerate(self.items):
             if item.height < highest:
