@@ -387,9 +387,7 @@ def basic_keymap(self, context, event):
             self.redraw = True
             add_to_undostack(self, 0)
             update_orbit_empty(self)
-        else:
-            f_ind = ray_cast_to_mouse(self)
-        status = {"RUNNING_MODAL"}
+            status = {"RUNNING_MODAL"}
 
     # cancel modal
     if event.type in {'ESC'} and event.value == 'PRESS':
