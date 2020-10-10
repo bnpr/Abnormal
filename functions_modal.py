@@ -186,11 +186,8 @@ def rotate_vectors(self, angle):
                 mat = self._object.matrix_world.normalized()
                 mat.translation = po.co
 
-        po_w = self._object.matrix_world @ po.co
-        loop_w = self._object.matrix_world @ (po.co+loop.cached_normal)
-
-        print(po_w)
-        print(loop_w)
+        po_local = self._object.matrix_world.inverted() @ po.co
+        loop_w = self._object.matrix_world @ (loop.cached_normal+po_local)
 
         vec_local = mat.inverted() @ loop_w
         if self.translate_axis == 0:
@@ -212,7 +209,6 @@ def rotate_vectors(self, angle):
             vec_local[1] = rot_vec[1]
 
         rot_w = mat @ vec_local
-        po_local = self._object.matrix_world.inverted() @ po.co
         loop_local = self._object.matrix_world.inverted() @ rot_w
 
         loop_norm_set(self, loop, loop.cached_normal,
