@@ -133,7 +133,7 @@ class ABNPoints:
         self.batch_normal = batch_for_shader(
             self.shader, 'LINES', {"pos": norms, "colors": norm_colors})
         self.batch_tri = batch_for_shader(
-            self.shader, 'TRIS', {"pos": tris, "colors": tri_colors}, indices=tri_inds)
+            self.shader, 'TRIS', {"pos": tris, "colors": tri_colors})
         return
 
     def update_color_render(self):

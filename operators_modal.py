@@ -25,7 +25,6 @@ class ABN_OT_normal_editor_modal(Operator):
 
     def modal(self, context, event):
         self._modal_running = False
-
         if bpy.context.area == None:
             finish_modal(self, True)
             self.report({'WARNING'}, "Something went wrong. Cancelling modal")
@@ -72,8 +71,8 @@ class ABN_OT_normal_editor_modal(Operator):
             else:
                 status = basic_keymap(self, context, event)
 
-        self._modal_running = True
         refresh_batches(self, context)
+        self._modal_running = True
         return status
 
     def invoke(self, context, event):

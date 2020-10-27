@@ -110,6 +110,7 @@ def refresh_batches(self, context):
 
 def draw_callback_3d(self, context):
     clear_draw = False
+
     try:
         if self._modal_running == False:
             clear_draw = True
@@ -141,14 +142,18 @@ def draw_callback_3d(self, context):
 
         bgl.glDisable(bgl.GL_BLEND)
 
-    except:
+    except Exception as e:
+        print(e)
         clear_draw = True
 
     if clear_draw:
-        print('Something is wrong clear out 3D Draw Handler')
+        print('Something is wrong, clear out 3D Draw Handler')
         dns = bpy.app.driver_namespace
         dc = dns.get("dh3d")
-        bpy.types.SpaceView3D.draw_handler_remove(dc, 'WINDOW')
+        try:
+            bpy.types.SpaceView3D.draw_handler_remove(dc, 'WINDOW')
+        except:
+            pass
     return
 
 
@@ -184,25 +189,34 @@ def draw_callback_2d(self, context):
 
             bgl.glPointSize(2)
             self.batch_po = batch_for_shader(self.shader_2d, 'POINTS', {
-                                             "pos": self._temp_po_draw})
+                "pos": self._temp_po_draw})
             self.shader_2d.bind()
             self.shader_2d.uniform_float("color", (1.0, 0.0, 0.0, 1))
             self.batch_po.draw(self.shader_2d)
-    except:
+
+    except Exception as e:
+        print(e)
         clear_draw = True
 
     if clear_draw:
-        print('Something is wrong clear out 2D Draw Handler')
+        print('Something is wrong, clear out 2D Draw Handler')
         dns = bpy.app.driver_namespace
         dc = dns.get("dh2d")
-        bpy.types.SpaceView3D.draw_handler_remove(dc, 'WINDOW')
+        try:
+            bpy.types.SpaceView3D.draw_handler_remove(dc, 'WINDOW')
+        except:
+            pass
     return
 
 
 def clear_drawing(self):
-    context = bpy.context
-    bpy.types.SpaceView3D.draw_handler_remove(self._draw_handle_2d, "WINDOW")
-    bpy.types.SpaceView3D.draw_handler_remove(self._draw_handle_3d, "WINDOW")
+    try:
+        bpy.types.SpaceView3D.draw_handler_remove(
+            self._draw_handle_2d, "WINDOW")
+        bpy.types.SpaceView3D.draw_handler_remove(
+            self._draw_handle_3d, "WINDOW")
+    except:
+        pass
 
     self._draw_handle_2d = None
     self._draw_handle_3d = None
