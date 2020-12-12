@@ -690,11 +690,11 @@ def update_filter_weights(self):
 
 def init_nav_list(self):
     self.nav_list = ['LEFTMOUSE', 'MOUSEMOVE',
-                     'WHEELUPMOUSE', 'WHEELDOWNMOUSE', 'N']
+                     'WHEELUPMOUSE', 'WHEELDOWNMOUSE', 'N', 'MIDDLEMOUSE']
 
     names = ['Zoom View', 'Rotate View', 'Pan View', 'Dolly View',
              'View Selected', 'View Camera Center', 'View All', 'View Axis',
-             'View Orbit', 'View Roll', 'View Persp/Ortho', ]
+             'View Orbit', 'View Roll', 'View Persp/Ortho', 'Frame Selected']
 
     config = bpy.context.window_manager.keyconfigs.get('blender')
     if config:

@@ -450,8 +450,6 @@ class CUIWindowContainer:
             self.color_click = color_click
         return
 
-    #
-
     def set_status_color(self, color):
         self.color_status = color
         self.color_status_render = hsv_to_rgb_list(self.color_status)
