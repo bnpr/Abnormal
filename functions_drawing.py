@@ -195,7 +195,14 @@ def draw_callback_2d(self, context):
             self.batch_po.draw(self.shader_2d)
 
     except Exception as e:
+        print()
+        print()
+        print()
+        print('ABNORMAL ERROR! INCLUDE THE NEXT ERROR MESSAGE WITH ANY BUG REPORT')
         print(e)
+        print()
+        print()
+        print()
         clear_draw = True
 
     if clear_draw:
