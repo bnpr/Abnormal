@@ -148,7 +148,14 @@ def draw_callback_3d(self, context):
             self._window.gizmo_draw()
 
     except Exception as e:
+        print()
+        print()
+        print()
+        print('ABNORMAL DRAW 3D ERROR! INCLUDE THE NEXT ERROR MESSAGE WITH ANY BUG REPORT')
         print(e)
+        print()
+        print()
+        print()
         clear_draw = True
 
     if clear_draw:
@@ -203,7 +210,7 @@ def draw_callback_2d(self, context):
         print()
         print()
         print()
-        print('ABNORMAL ERROR! INCLUDE THE NEXT ERROR MESSAGE WITH ANY BUG REPORT')
+        print('ABNORMAL DRAW 2D ERROR! INCLUDE THE NEXT ERROR MESSAGE WITH ANY BUG REPORT')
         print(e)
         print()
         print()
