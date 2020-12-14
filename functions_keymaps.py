@@ -1097,24 +1097,9 @@ def circle_select_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
     self.active_drawing = True
 
+    # allow viewport navigation
     if event.type in self.nav_list:
         status = {'PASS_THROUGH'}
-        self.navigating = True
-
-    if event.type == 'F':
-        if event.value == 'PRESS':
-            self.circle_resizing = True
-            if self._mouse_reg_loc[0]-self.circle_radius < 0:
-                self._mode_cache.append(
-                    [self._mouse_reg_loc[0]+self.circle_radius, self._mouse_reg_loc[1]])
-            else:
-                self._mode_cache.append(
-                    [self._mouse_reg_loc[0]-self.circle_radius, self._mouse_reg_loc[1]])
-            self._mode_cache.append(self.circle_radius)
-
-        elif event.value == 'RELEASE':
-            self.circle_resizing = False
-            self._mode_cache.clear()
 
     if self.circle_resizing:
         prev_loc = mathutils.Vector(
@@ -1129,12 +1114,30 @@ def circle_select_keymap(self, context, event):
             self.circle_radius = self._mode_cache[1]
             self._mode_cache.clear()
 
-    else:
-        if event.type == 'LEFT_BRACKET' and event.value == 'PRESS':
-            self.circle_radius -= 10
+        if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+            self.circle_resizing = False
+            self._mode_cache.clear()
 
-        if event.type == 'RIGHT_BRACKET' and event.value == 'PRESS':
+    else:
+        if event.type == 'F' and event.value == 'PRESS':
+            self.circle_resizing = True
+            if self._mouse_reg_loc[0]-self.circle_radius < 0:
+                self._mode_cache.append(
+                    [self._mouse_reg_loc[0]+self.circle_radius, self._mouse_reg_loc[1]])
+            else:
+                self._mode_cache.append(
+                    [self._mouse_reg_loc[0]-self.circle_radius, self._mouse_reg_loc[1]])
+            self._mode_cache.append(self.circle_radius)
+
+        if (event.type == 'LEFT_BRACKET' or (event.type == 'WHEELDOWNMOUSE' and event.alt)) and event.value == 'PRESS':
+            self.circle_radius -= 10
+            if self.circle_radius < 10:
+                self.circle_radius = 10
+            status = {'RUNNING_MODAL'}
+
+        if (event.type == 'RIGHT_BRACKET' or (event.type == 'WHEELUPMOUSE' and event.alt)) and event.value == 'PRESS':
             self.circle_radius += 10
+            status = {'RUNNING_MODAL'}
 
         if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
             circle_selection_test(self, event, self.circle_radius)
@@ -1151,7 +1154,7 @@ def circle_select_keymap(self, context, event):
             self.circle_select_start = True
             self.circle_selecting = False
 
-        if event.type == 'RIGHTMOUSE':
+        if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
             add_to_undostack(self, 0)
 
             self.circle_select_start = False

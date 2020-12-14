@@ -163,7 +163,8 @@ def keymap_circle_selecting(self):
 
     kt.add_text_row(text_height, 'L-Click - Add to Selection')
     kt.add_text_row(text_height, 'L-Click + Ctrl - Remove from Selection')
-    kt.add_text_row(text_height, 'Hold F - Change Cricle Size')
+    kt.add_text_row(text_height, 'F - Enter Circle Resize Mode')
+    kt.add_text_row(text_height, 'Alt + Scrollwheel - Change Circle Size')
     kt.add_text_row(text_height, '[ - Decrease Circle Size')
     kt.add_text_row(text_height, '] - Increase Circle Size')
     kt.add_text_row(text_height, 'R-Click - Cancel Selection Mode')

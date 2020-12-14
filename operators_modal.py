@@ -43,7 +43,6 @@ class ABN_OT_normal_editor_modal(Operator):
                                self.act_reg.x, self._mouse_abs_loc[1]-self.act_reg.y]
 
         self._window.check_dimensions(context)
-
         status = {"RUNNING_MODAL"}
         if self.typing:
             status = typing_keymap(self, context, event)
@@ -141,7 +140,6 @@ class ABN_OT_normal_editor_modal(Operator):
             self.redraw = True
             self.circle_radius = 50
             self.circle_status = False
-            self.navigating = False
 
             context.scene.abnormal_props.object = context.active_object.name
 
