@@ -295,9 +295,9 @@ def basic_keymap(self, context, event):
                     change = True
         else:
             # selection test
-            face_ind = ray_cast_to_mouse(self)
-            if face_ind != None:
-                sel_ind = self._object_bm.faces[face_ind].verts[0].index
+            face_res = ray_cast_to_mouse(self)
+            if face_res != None:
+                sel_ind = self._object_bm.faces[face_res[1]].verts[0].index
 
                 vis_pos = self._points_container.get_visible()
                 new_sel = get_linked_geo(
@@ -383,13 +383,56 @@ def basic_keymap(self, context, event):
 
     click = (event.type == 'RIGHTMOUSE' and self._left_select == False) or (
         event.type == 'LEFTMOUSE' and self._left_select)
-    if click and event.value == 'PRESS' and event.ctrl != True and event.alt != True:
-        sel_res = selection_test(self, event)
-        if sel_res:
-            self.redraw = True
-            add_to_undostack(self, 0)
-            update_orbit_empty(self)
-            status = {"RUNNING_MODAL"}
+    if click and event.value == 'PRESS' and event.ctrl != True:
+        # Vertex/Loop selection
+        if event.alt != True:
+            sel_res = selection_test(self, event)
+            if sel_res:
+                self.redraw = True
+                add_to_undostack(self, 0)
+                update_orbit_empty(self)
+                status = {"RUNNING_MODAL"}
+
+        # Edge loop selection
+        else:
+            if event.shift == False:
+                for po in self._points_container.points:
+                    po.set_select(False)
+
+            face_res = ray_cast_to_mouse(self)
+            if face_res != None:
+                sel_ed = None
+                small_dist = 0.0
+                for ed in self._object_bm.faces[face_res[1]].edges:
+                    # then find nearest point on those edges that are in range
+                    nearest_point_co, nearest_point_dist = nearest_co_on_line(
+                        face_res[0], ed.verts[0].co, ed.verts[1].co)
+
+                    if nearest_point_dist < small_dist or sel_ed == None:
+                        sel_ed = ed
+                        small_dist = nearest_point_dist
+
+                if sel_ed != None:
+                    sel_loop = get_edge_loop(
+                        self._object_bm, sel_ed)
+                    v_inds = []
+                    for ed_ind in sel_loop:
+                        for v in self._object_bm.edges[ed_ind].verts:
+                            if v.index not in v_inds:
+                                v_inds.append(v.index)
+
+                    cur_sel = [
+                        self._points_container.points[ind].select for ind in v_inds]
+
+                    loop_status = False in cur_sel
+                    for ind in v_inds:
+                        self._points_container.points[ind].set_select(
+                            loop_status)
+
+                    self.redraw = True
+                    add_to_undostack(self, 0)
+                    update_orbit_empty(self)
+                    status = {"RUNNING_MODAL"}
 
     # cancel modal
     if event.type in {'ESC'} and event.value == 'PRESS':
@@ -426,10 +469,7 @@ def typing_keymap(self, context, event):
         self._window.type_confirm(arguments=[event])
         self.typing = False
 
-    elif event.type == 'ESC' and event.value == 'PRESS':
-        self._window.type_cancel()
-        self.typing = False
-    elif event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
+    elif (event.type == 'ESC' or event.type == 'RIGHTMOUSE') and event.value == 'PRESS':
         self._window.type_cancel()
         self.typing = False
 
@@ -516,7 +556,7 @@ def rotating_keymap(self, context, event):
         keymap_refresh(self)
         gizmo_update_hide(self, True)
 
-    if event.type == 'RIGHTMOUSE' and event.value == 'RELEASE':
+    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'RELEASE':
         self._points_container.restore_cached_normals()
 
         set_new_normals(self)
@@ -616,7 +656,7 @@ def gizmo_click_keymap(self, context, event):
         self._mode_cache.clear()
         self.click_hold = False
 
-    if event.type == 'RIGHTMOUSE' and event.value == 'RELEASE':
+    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'RELEASE':
         if self._mode_cache[5]:
             self._points_container.restore_cached_normals()
 
@@ -785,7 +825,7 @@ def sphereize_move_keymap(self, context, event):
         while len(self._mode_cache) > 1:
             self._mode_cache.pop(0)
 
-    if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
+    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
         sel_inds = self._points_container.get_selected_loops()
         for i, ind in enumerate(sel_inds):
             po = self._points_container.points[ind]
@@ -953,7 +993,7 @@ def point_move_keymap(self, context, event):
         while len(self._mode_cache) > 1:
             self._mode_cache.pop(0)
 
-    if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
+    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
         sel_inds = self._points_container.get_selected_loops()
         for i, ind in enumerate(sel_inds):
             po = self._points_container.points[ind]
@@ -1027,7 +1067,7 @@ def box_select_keymap(self, context, event):
         update_orbit_empty(self)
         keymap_refresh(self)
 
-    if event.type == 'RIGHTMOUSE':
+    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
         self.box_select_start = False
         self.box_selecting = False
         bpy.context.window.cursor_modal_set('DEFAULT')
@@ -1083,7 +1123,7 @@ def lasso_select_keymap(self, context, event):
         keymap_refresh(self)
         update_orbit_empty(self)
 
-    if event.type == 'RIGHTMOUSE':
+    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and evnet.value == 'PRESS':
         self.lasso_selecting = False
         self._mode_cache.clear()
         bpy.context.window.cursor_modal_set('DEFAULT')
@@ -1109,7 +1149,7 @@ def circle_select_keymap(self, context, event):
         diff = int((cur_loc-prev_loc).length)
         self.circle_radius = diff
 
-        if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
+        if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
             self.circle_resizing = False
             self.circle_radius = self._mode_cache[1]
             self._mode_cache.clear()
@@ -1154,7 +1194,7 @@ def circle_select_keymap(self, context, event):
             self.circle_select_start = True
             self.circle_selecting = False
 
-        if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
+        if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
             add_to_undostack(self, 0)
 
             self.circle_select_start = False

@@ -1354,17 +1354,17 @@ def selection_test(self, event, radius=6.0):
             test_face = True
 
     if test_face:
-        face_ind = ray_cast_to_mouse(self)
-        if face_ind != None:
+        face_res = ray_cast_to_mouse(self)
+        if face_res != None:
             if event.shift == False:
                 self._points_container.clear_active()
                 for po in self._points_container.points:
                     po.set_select(False)
 
             if self._individual_loops:
-                self._points_container.select_face_loops(face_ind)
+                self._points_container.select_face_loops(face_res[1])
             else:
-                self._points_container.select_face_verts(face_ind)
+                self._points_container.select_face_verts(face_res[1])
             change = True
 
     return change

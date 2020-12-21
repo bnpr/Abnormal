@@ -14,8 +14,29 @@ def keymap_initialize(self):
     kt.add_text_row(text_height, 'R - Rotate Selected Normals')
     kt.add_text_row(text_height, 'R + Alt - Reset Gizmo Axis')
     kt.add_text_row(sep_height, '')
-    kt.add_text_row(text_height, 'L-Click - Select Vertex/Gizmo Axis')
-    kt.add_text_row(text_height, 'L-Click + Alt - Reorient Gizmo')
+
+    if self._use_gizmo:
+        kt.add_text_row(text_height, 'R + Alt - Reset Gizmo Axis')
+
+        if self._left_select:
+            kt.add_text_row(text_height, 'L-Click - Select Vertex/Gizmo Axis')
+            kt.add_text_row(text_height, 'L-Click + Alt - Select Edge Loop')
+        else:
+            kt.add_text_row(text_height, 'R-Click - Select Vertex')
+            kt.add_text_row(text_height, 'R-Click + Alt - Select Edge Loop')
+            kt.add_text_row(text_height, 'L-Click - Select Gizmo Axis')
+
+        kt.add_text_row(text_height, 'L-Click + Alt - Reorient Gizmo')
+        # kt.add_text_row(text_height, 'L-Click + Ctrl - Align Gizmo to Surface')
+
+    else:
+        if self._left_select:
+            kt.add_text_row(text_height, 'L-Click - Select Vertex')
+            kt.add_text_row(text_height, 'L-Click + Alt - Select Edge Loop')
+        else:
+            kt.add_text_row(text_height, 'R-Click - Select Vertex')
+            kt.add_text_row(text_height, 'R-Click + Alt - Select Edge Loop')
+
     kt.add_text_row(text_height, 'C - Start Circle Selection')
     kt.add_text_row(text_height, 'V - Start Lasso Selection')
     kt.add_text_row(text_height, 'B - Start Box Selection')
@@ -52,11 +73,25 @@ def keymap_refresh(self):
 
     if self._use_gizmo:
         kt.add_text_row(text_height, 'R + Alt - Reset Gizmo Axis')
-        kt.add_text_row(text_height, 'L-Click - Select Vertex/Gizmo Axis')
+
+        if self._left_select:
+            kt.add_text_row(text_height, 'L-Click - Select Vertex/Gizmo Axis')
+            kt.add_text_row(text_height, 'L-Click + Alt - Select Edge Loop')
+        else:
+            kt.add_text_row(text_height, 'R-Click - Select Vertex')
+            kt.add_text_row(text_height, 'R-Click + Alt - Select Edge Loop')
+            kt.add_text_row(text_height, 'L-Click - Select Gizmo Axis')
+
         kt.add_text_row(text_height, 'L-Click + Alt - Reorient Gizmo')
-        kt.add_text_row(text_height, 'L-Click + Ctrl - Align Gizmo to Surface')
+        # kt.add_text_row(text_height, 'L-Click + Ctrl - Align Gizmo to Surface')
+
     else:
-        kt.add_text_row(text_height, 'L-Click - Select Vertex')
+        if self._left_select:
+            kt.add_text_row(text_height, 'L-Click - Select Vertex')
+            kt.add_text_row(text_height, 'L-Click + Alt - Select Edge Loop')
+        else:
+            kt.add_text_row(text_height, 'R-Click - Select Vertex')
+            kt.add_text_row(text_height, 'R-Click + Alt - Select Edge Loop')
 
     kt.add_text_row(text_height, 'C - Start Circle Selection')
     kt.add_text_row(text_height, 'V - Start Lasso Selection')

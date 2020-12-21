@@ -136,6 +136,110 @@ def average_vecs(vecs):
     return None
 
 
+def get_edge_loop(bm, ed, direction=0, skip_verts=[], skip_eds=[], cross_eds=[]):
+    #
+    # Get edge loop from a single edge
+    # Goes along verts with 4 connected edge otherwise it stops
+    # Direction controls which vertice to test first
+    #
+    if direction == 0:
+        v1 = ed.verts[0]
+        v2 = ed.verts[1]
+    else:
+        v1 = ed.verts[1]
+        v2 = ed.verts[0]
+    verts = [v1, v2]
+
+    used_eds = [ed.index]
+    used_eds += skip_eds
+    loop = [ed.index]
+    backwards = False
+    for v, vert in enumerate(verts):
+        cur_vert = vert
+        cur_ed = ed
+
+        searching = True
+        while searching:
+            next_ed = None
+            next_vert = None
+            found = False
+
+            ed_faces = [lf.index for lf in cur_ed.link_faces]
+
+            if len(cur_vert.link_edges) == 4:
+                got_ed = True
+                for o_ed in cur_vert.link_edges:
+                    if o_ed.index in used_eds:
+                        continue
+
+                    for lf in o_ed.link_faces:
+                        if lf.index in ed_faces:
+                            got_ed = False
+
+                    if got_ed:
+                        next_ed = o_ed
+                        break
+                    else:
+                        got_ed = True
+
+                if next_ed != None:
+                    con_ed_inds = [o_ed.index for o_ed in cur_vert.link_edges if o_ed.index !=
+                                   cur_ed.index and o_ed.index != next_ed.index]
+
+                    next_vert = next_ed.other_vert(cur_vert)
+                    if next_vert in skip_verts:
+                        next_vert = None
+
+                    for ind in con_ed_inds:
+                        if ind in cross_eds:
+                            next_vert = None
+                            next_ed = None
+
+                if next_vert != None and next_ed != None:
+
+                    cur_vert = next_vert
+                    cur_ed = next_ed
+
+                    used_eds.append(cur_ed.index)
+                    if backwards:
+                        loop.insert(0, cur_ed.index)
+                    else:
+                        loop.append(cur_ed.index)
+                    found = True
+
+            searching = found
+            if searching == False and v == 0:
+                backwards = True
+    return loop
+
+
+def nearest_co_on_line(co, lv1, lv2):
+    vec = (lv1 - lv2).normalized()
+
+    v1_vec = co - lv1
+    v2_vec = co - lv2
+
+    dot = v1_vec.dot(vec)
+
+    line_co = lv1 + dot * vec
+
+    line_len = (lv1 - lv2).length
+    v1_dist = (line_co-lv1).length
+    v2_dist = (line_co-lv2).length
+
+    if v1_dist > line_len or v2_dist > line_len:
+        if v1_dist < v2_dist:
+            new_co = lv1
+        else:
+            new_co = lv2
+    else:
+        new_co = line_co
+
+    dist = (new_co-co).length
+
+    return new_co, dist
+
+
 #
 #
 
@@ -198,7 +302,7 @@ def ray_cast_to_mouse(self):
     hit, norm, ind, dist = self._object_bvh.ray_cast(
         ray_origin, view_vector, 10000)
 
-    return ind
+    return hit, ind
 
 
 #
