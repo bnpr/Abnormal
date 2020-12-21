@@ -347,7 +347,7 @@ class ABNPoints:
         avail_sel_status = []
         avail_inds = []
         for po in self.points:
-            if po.hide == False and po.valid and po.index:
+            if po.hide == False and po.valid:
                 for loop in po.loops:
                     if loop.hide == False:
                         add = False
@@ -370,7 +370,7 @@ class ABNPoints:
         avail_sel_status = []
         avail_inds = []
         for po in self.points:
-            if po.hide == False and po.valid and po.index:
+            if po.hide == False and po.valid:
                 for loop in po.loops:
                     if loop.hide == False:
                         add = False

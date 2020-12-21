@@ -1076,8 +1076,10 @@ def start_sphereize_mode(self):
 def end_sphereize_mode(self, keep_normals):
     if keep_normals == False:
         sel_inds = self._points_container.get_selected_loops()
-        for i, ind in enumerate(sel_inds):
-            po = self._points_container.points[ind]
+        for i, ind_set in enumerate(sel_inds):
+            po = self._points_container.points[ind_set[0]]
+            print(ind_set)
+            print(self._mode_cache)
 
             for loop in po.loops:
                 loop.normal = self._mode_cache[-1][i][loop.index].copy()
@@ -1157,9 +1159,10 @@ def start_point_mode(self):
 
 def end_point_mode(self, keep_normals):
     if keep_normals == False:
+
         sel_inds = self._points_container.get_selected_loops()
-        for i, ind in enumerate(sel_inds):
-            po = self._points_container.points[ind]
+        for i, ind_set in enumerate(sel_inds):
+            po = self._points_container.points[ind_set[0]]
 
             for loop in po.loops:
                 loop.normal = self._mode_cache[-1][i][loop.index].copy()
@@ -1406,6 +1409,8 @@ def box_selection_test(self, event):
                 sel_ind = avail_inds[ind]
                 self._points_container.points[sel_ind[0]
                                               ].loops[sel_ind[1]].set_select(True)
+                self._points_container.points[sel_ind[0]
+                                              ].set_selection_from_loops()
 
         for ind in new_sel_remove:
             if ind < loop_switch_pont:
@@ -1415,6 +1420,8 @@ def box_selection_test(self, event):
                 sel_ind = avail_inds[ind]
                 self._points_container.points[sel_ind[0]
                                               ].loops[sel_ind[1]].set_select(False)
+                self._points_container.points[sel_ind[0]
+                                              ].set_selection_from_loops()
 
         if self._active_point != None:
             if self._active_point.select == False:
@@ -1441,9 +1448,10 @@ def circle_selection_test(self, event, radius):
     loop_switch_pont = len(avail_inds)
     # Add in loop selection data if enabled
     if self._individual_loops:
-        avail_tri_cos, avail_loop_sel_status, avail_loop_inds = self._points_container.get_loop_selection_available(
+        avail_loop_cos, avail_loop_sel_status, avail_loop_inds = self._points_container.get_loop_selection_available(
             add_rem_status)
-        avail_cos += avail_tri_cos
+
+        avail_cos += avail_loop_cos
         avail_sel_status += avail_loop_sel_status
         avail_inds += avail_loop_inds
 
@@ -1460,6 +1468,8 @@ def circle_selection_test(self, event, radius):
                 sel_ind = avail_inds[ind]
                 self._points_container.points[sel_ind[0]
                                               ].loops[sel_ind[1]].set_select(new_sel_status)
+                self._points_container.points[sel_ind[0]
+                                              ].set_selection_from_loops()
 
         if self._active_point != None:
             if self._active_point.select == False:
@@ -1505,6 +1515,8 @@ def lasso_selection_test(self, event):
                 sel_ind = avail_inds[ind]
                 self._points_container.points[sel_ind[0]
                                               ].loops[sel_ind[1]].set_select(True)
+                self._points_container.points[sel_ind[0]
+                                              ].set_selection_from_loops()
 
         for ind in new_sel_remove:
             if ind < loop_switch_pont:
@@ -1514,6 +1526,8 @@ def lasso_selection_test(self, event):
                 sel_ind = avail_inds[ind]
                 self._points_container.points[sel_ind[0]
                                               ].loops[sel_ind[1]].set_select(False)
+                self._points_container.points[sel_ind[0]
+                                              ].set_selection_from_loops()
 
         if self._active_point != None:
             if self._active_point.select == False:
