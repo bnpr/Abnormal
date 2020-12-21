@@ -240,6 +240,8 @@ class ABN_OT_normal_editor_modal(Operator):
             # INITIALIZE UI WINDOW
             init_ui_panels(self, rw, rh, self._ui_scale)
 
+            update_orbit_empty(self)
+
             # SETUP BATCHES
             refresh_batches(self, context)
             # OPENGL DRAWING HANDLER
