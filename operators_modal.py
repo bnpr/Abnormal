@@ -413,6 +413,8 @@ class ABN_OT_normal_editor_modal(Operator):
             #panel.collapse = True
             self._window.create_all_drawing_data()
 
+            update_orbit_empty(self,)
+
             # SETUP BATCHES
             refresh_batches(self, context)
             # OPENGL DRAWING HANDLER
