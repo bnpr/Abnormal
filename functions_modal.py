@@ -1338,6 +1338,8 @@ def selection_test(self, event, radius=6.0):
 
                 self._points_container.points[sel_ind[0]].set_loop_select(
                     sel_ind[1], new_sel_status)
+                self._points_container.points[sel_ind[0]
+                                              ].set_selection_from_loops()
 
                 if new_act != None:
                     self._points_container.set_active_loop(
@@ -1368,6 +1370,8 @@ def selection_test(self, event, radius=6.0):
                 self._points_container.select_face_loops(face_res[1])
             else:
                 self._points_container.select_face_verts(face_res[1])
+            for po in self._points_container.points:
+                po.set_selection_from_loops()
             change = True
 
     return change
