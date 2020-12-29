@@ -1562,6 +1562,12 @@ def add_orbit_empty(ob):
 
 
 def update_orbit_empty(self):
+    # Reset selection to only orbit object
+    for i in range(len(bpy.context.selected_objects)):
+        bpy.context.selected_objects[0].select_set(False)
+
+    self._orbit_ob.select_set(True)
+    bpy.context.view_layer.objects.active = self._orbit_ob
 
     sel_cos = self._points_container.get_selected_loop_cos()
     avg_loc = average_vecs(sel_cos)

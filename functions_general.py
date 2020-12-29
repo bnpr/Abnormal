@@ -302,7 +302,9 @@ def ray_cast_to_mouse(self):
     hit, norm, ind, dist = self._object_bvh.ray_cast(
         ray_origin, view_vector, 10000)
 
-    return hit, ind
+    if hit != None and ind != None:
+        return hit, ind
+    return None
 
 
 #
