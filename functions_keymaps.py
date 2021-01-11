@@ -262,14 +262,15 @@ def basic_keymap(self, context, event):
 
         else:
             sel_inds = self._points_container.get_selected_loops()
-            for ind in sel_inds:
-                self._points_container.points[ind[0]
-                                              ].loops[ind[1]].set_hide(True)
-                self._points_container.points[ind[0]
-                                              ].loops[ind[1]].set_select(False)
-                self._points_container.points[ind[0]
+            for ind_set in sel_inds:
+                self._points_container.points[ind_set[0]
+                                              ].loops[ind_set[1]].set_hide(True)
+                self._points_container.points[ind_set[0]
+                                              ].loops[ind_set[1]].set_select(False)
+                self._points_container.points[ind_set[0]
                                               ].set_selection_from_loops()
-                self._points_container.points[ind[0]].set_hidden_from_loops()
+                self._points_container.points[ind_set[0]
+                                              ].set_hidden_from_loops()
 
         add_to_undostack(self, 0)
         update_orbit_empty(self)
@@ -827,8 +828,8 @@ def sphereize_move_keymap(self, context, event):
 
     if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
         sel_inds = self._points_container.get_selected_loops()
-        for i, ind in enumerate(sel_inds):
-            po = self._points_container.points[ind]
+        for i, ind_set in enumerate(sel_inds):
+            po = self._points_container.points[ind_set[0]]
 
             for loop in po.loops:
                 loop.normal = self._mode_cache[2][i][l].copy()
@@ -995,8 +996,8 @@ def point_move_keymap(self, context, event):
 
     if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
         sel_inds = self._points_container.get_selected_loops()
-        for i, ind in enumerate(sel_inds):
-            po = self._points_container.points[ind]
+        for i, ind_set in enumerate(sel_inds):
+            po = self._points_container.points[ind_set[0]]
 
             for loop in po.loops:
                 loop.normal = self._mode_cache[2][i][l].copy()
