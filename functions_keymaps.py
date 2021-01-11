@@ -715,11 +715,6 @@ def sphereize_keymap(self, context, event):
 
         else:
             if len(sel_inds) > 0:
-                sel_cos = self._points_container.get_selected_loop_cos()
-
-                self._points_container.cache_current_normals()
-
-                sphereize_normals(self, sel_inds)
                 self._window.set_status('VIEW TRANSLATION')
 
                 rco = view3d_utils.location_3d_to_region_2d(
@@ -827,14 +822,6 @@ def sphereize_move_keymap(self, context, event):
             self._mode_cache.pop(0)
 
     if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
-        sel_inds = self._points_container.get_selected_loops()
-        for i, ind_set in enumerate(sel_inds):
-            po = self._points_container.points[ind_set[0]]
-
-            for loop in po.loops:
-                loop.normal = self._mode_cache[2][i][l].copy()
-
-        set_new_normals(self)
         self.translate_axis = 2
         self.translate_mode = 0
         clear_translate_axis_draw(self)
@@ -844,6 +831,8 @@ def sphereize_move_keymap(self, context, event):
         self.sphereize_move = False
         self._target_emp.location = self._mode_cache[1].copy()
         keymap_target(self)
+        sel_inds = self._points_container.get_selected_loops()
+        sphereize_normals(self, sel_inds)
         while len(self._mode_cache) > 1:
             self._mode_cache.pop(0)
     return status
@@ -881,11 +870,6 @@ def point_keymap(self, context, event):
 
         else:
             if len(sel_inds) > 0:
-                sel_cos = self._points_container.get_selected_loop_cos()
-
-                self._points_container.cache_current_normals()
-
-                point_normals(self, sel_inds)
                 self._window.set_status('VIEW TRANSLATION')
 
                 rco = view3d_utils.location_3d_to_region_2d(
@@ -995,14 +979,6 @@ def point_move_keymap(self, context, event):
             self._mode_cache.pop(0)
 
     if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
-        sel_inds = self._points_container.get_selected_loops()
-        for i, ind_set in enumerate(sel_inds):
-            po = self._points_container.points[ind_set[0]]
-
-            for loop in po.loops:
-                loop.normal = self._mode_cache[2][i][l].copy()
-
-        set_new_normals(self)
         self.translate_axis = 2
         self.translate_mode = 0
         clear_translate_axis_draw(self)
@@ -1011,6 +987,8 @@ def point_move_keymap(self, context, event):
         self.point_mode = True
         self.point_move = False
         self._target_emp.location = self._mode_cache[1].copy()
+        sel_inds = self._points_container.get_selected_loops()
+        point_normals(self, sel_inds)
         keymap_target(self)
         while len(self._mode_cache) > 1:
             self._mode_cache.pop(0)

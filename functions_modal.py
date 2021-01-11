@@ -1075,15 +1075,7 @@ def start_sphereize_mode(self):
 
 def end_sphereize_mode(self, keep_normals):
     if keep_normals == False:
-        sel_inds = self._points_container.get_selected_loops()
-        for i, ind_set in enumerate(sel_inds):
-            po = self._points_container.points[ind_set[0]]
-            print(ind_set)
-            print(self._mode_cache)
-
-            for loop in po.loops:
-                loop.normal = self._mode_cache[-1][i][loop.index].copy()
-
+        self._points_container.restore_cached_normals()
         set_new_normals(self)
 
     # self._export_panel.set_visibility(True)
@@ -1159,14 +1151,7 @@ def start_point_mode(self):
 
 def end_point_mode(self, keep_normals):
     if keep_normals == False:
-
-        sel_inds = self._points_container.get_selected_loops()
-        for i, ind_set in enumerate(sel_inds):
-            po = self._points_container.points[ind_set[0]]
-
-            for loop in po.loops:
-                loop.normal = self._mode_cache[-1][i][loop.index].copy()
-
+        self._points_container.restore_cached_normals()
         set_new_normals(self)
 
     # self._export_panel.set_visibility(True)
