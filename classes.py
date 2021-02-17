@@ -2,7 +2,6 @@ import bpy
 import mathutils
 import bgl
 import gpu
-import random
 from gpu_extras.batch import batch_for_shader
 from .functions_general import *
 

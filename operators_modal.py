@@ -1,11 +1,6 @@
 import bpy
-import math
-import mathutils
-import bmesh
-import time
 from bpy.props import *
 from bpy.types import Operator
-from bpy_extras import view3d_utils
 from .properties import *
 from .functions_general import *
 from .functions_drawing import *
@@ -14,8 +9,6 @@ from .functions_keymaps import *
 from .functions_modal_buttons import *
 from .functions_modal_keymap import *
 from .classes import *
-
-from bpy.types import PropertyGroup
 
 
 class ABN_OT_normal_editor_modal(Operator):

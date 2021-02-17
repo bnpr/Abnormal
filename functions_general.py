@@ -2,10 +2,7 @@ import bpy
 import bmesh
 import math
 import mathutils
-import bpy_extras
-import time
 from bpy_extras import view3d_utils
-from mathutils.bvhtree import BVHTree
 
 gen_mods = ['ARRAY', 'BEVEL', 'BOOLEAN', 'BUILD', 'DECIMATE',
             'EDGE_SPLIT', 'MASK', 'MIRROR', 'MULTIRES', 'REMESH',

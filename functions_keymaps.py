@@ -75,7 +75,6 @@ def basic_ui_hover_keymap(self, context, event):
             if self.bezier_changing:
                 self.sharpness_changing = True
                 self._mouse_init = self._mouse_reg_loc
-                keymap_sharpness_changing(self)
 
     # deleted selected points and roots
     if event.type == 'X' and event.value == 'PRESS':
@@ -1102,7 +1101,7 @@ def lasso_select_keymap(self, context, event):
         keymap_refresh(self)
         update_orbit_empty(self)
 
-    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and evnet.value == 'PRESS':
+    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
         self.lasso_selecting = False
         self._mode_cache.clear()
         bpy.context.window.cursor_modal_set('DEFAULT')

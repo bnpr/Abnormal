@@ -1,8 +1,5 @@
 import bpy
-import bmesh
 import bgl
-import blf
-import gpu
 from gpu_extras.batch import batch_for_shader
 from bpy_extras import view3d_utils
 from .functions_general import *
