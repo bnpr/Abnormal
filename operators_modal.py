@@ -87,6 +87,9 @@ class ABN_OT_normal_editor_modal(Operator):
         if context.space_data.type == 'VIEW_3D':
             # INITIALIZE PROPERTIES
             self._addon_prefs = bpy.context.preferences.addons[__package__].preferences
+            self._display_prefs = self._addon_prefs.display
+            self._behavior_prefs = self._addon_prefs.behavior
+            self._keymap_prefs = self._addon_prefs.keymap
             self._mouse_abs_loc = [event.mouse_x, event.mouse_y]
             self._mouse_reg_loc = [event.mouse_region_x, event.mouse_region_y]
 
@@ -132,25 +135,23 @@ class ABN_OT_normal_editor_modal(Operator):
             self._modal_running = True
             self.redraw = True
             self.circle_radius = 50
-            self.circle_status = False
 
             context.scene.abnormal_props.object = context.active_object.name
 
             # VIEWPORT DISPLAY SETTINGS
             self._x_ray_mode = False
-            self._use_gizmo = self._addon_prefs.rotate_gizmo_use
-            self._gizmo_size = self._addon_prefs.gizmo_size
-            self._left_select = self._addon_prefs.left_select
-            self._normal_size = self._addon_prefs.normal_size
-            self._line_brightness = self._addon_prefs.line_brightness
-            self._point_size = self._addon_prefs.point_size
-            self._selected_only = self._addon_prefs.selected_only
-            self._selected_scale = self._addon_prefs.selected_scale
-            self._individual_loops = self._addon_prefs.individual_loops
-            if self._addon_prefs.ui_scale == 0.0:
+            self._use_gizmo = self._behavior_prefs.rotate_gizmo_use
+            self._gizmo_size = self._display_prefs.gizmo_size
+            self._normal_size = self._display_prefs.normal_size
+            self._line_brightness = self._display_prefs.line_brightness
+            self._point_size = self._display_prefs.point_size
+            self._selected_only = self._display_prefs.selected_only
+            self._selected_scale = self._display_prefs.selected_scale
+            self._individual_loops = self._behavior_prefs.individual_loops
+            if self._display_prefs.ui_scale == 0.0:
                 self._ui_scale = context.window.width/1920
             else:
-                self._ui_scale = self._addon_prefs.ui_scale
+                self._ui_scale = self._display_prefs.ui_scale
             self.prev_view = context.region_data.view_matrix.copy()
 
             # CACHE VIEWPORT SETTINGS
@@ -175,6 +176,7 @@ class ABN_OT_normal_editor_modal(Operator):
             self.circle_selecting = False
             self.circle_select_start = False
             self.circle_resizing = False
+            self.circle_removing = False
 
             self.click_hold = False
             self.active_drawing = True
@@ -227,13 +229,12 @@ class ABN_OT_normal_editor_modal(Operator):
 
             update_filter_weights(self)
 
-            add_to_undostack(self, 0)
-            add_to_undostack(self, 1)
-
             # INITIALIZE UI WINDOW
             init_ui_panels(self, rw, rh, self._ui_scale)
 
             update_orbit_empty(self)
+
+            load_keymap(self)
 
             # SETUP BATCHES
             refresh_batches(self, context)
@@ -247,6 +248,9 @@ class ABN_OT_normal_editor_modal(Operator):
             dns = bpy.app.driver_namespace
             dns["dh2d"] = self._draw_handle_2d
             dns["dh3d"] = self._draw_handle_3d
+
+            add_to_undostack(self, 0)
+            add_to_undostack(self, 1)
 
             # SET MODAL
             context.window_manager.modal_handler_add(self)

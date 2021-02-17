@@ -9,7 +9,7 @@ def init_ui_panels(self, rw, rh, scale):
         0.0, 0.0, 0.2, 1.0), color_item=(0.0, 0.0, 0.2, 1.0), color_hover=(0.0, 0.0, 0.37, 1.0), color_click=(0.0, 0.0, 0.5, 1.0))
 
     self._rot_gizmo = self._window.add_rot_gizmo(
-        self._object.matrix_world, self._addon_prefs.gizmo_size, [True, True, True], 0.045)
+        self._object.matrix_world, self._display_prefs.gizmo_size, [True, True, True], 0.045)
 
     # INITIALIZE BORDER
     if True:
@@ -241,11 +241,6 @@ def init_ui_panels(self, rw, rh, scale):
         num.set_value_change_func(change_gizmo_size)
 
         row = box.add_row()
-        bool = row.add_bool(20, 'Left Click Select',
-                            default=self._left_select)
-        bool.set_click_up_func(toggle_left_select)
-
-        row = box.add_row()
         num = row.add_number(
             20, 'UI Scale', self._ui_scale, 2, .1, 0.5, 3.0)
         num.set_slide_factor(2)
@@ -436,9 +431,9 @@ def init_ui_panels(self, rw, rh, scale):
         box.set_header_font_size(14)
 
         row = box.add_row()
-        bool = row.add_bool(20, 'Use Rotation Gizmo',
-                            default=self._use_gizmo)
-        bool.set_click_up_func(toggle_use_gizmo)
+        self._gizmo_bool = row.add_bool(20, 'Use Rotation Gizmo',
+                                        default=self._use_gizmo)
+        self._gizmo_bool.set_click_up_func(toggle_use_gizmo)
 
         row = box.add_row()
         but = row.add_button(20, 'Average Individual Vertex Normals')
@@ -605,11 +600,6 @@ def toggle_use_gizmo(self, arguments):
     arguments[0]._use_gizmo = self.bool_val
     update_orbit_empty(arguments[0])
     gizmo_update_hide(arguments[0], arguments[0]._use_gizmo)
-    return
-
-
-def toggle_left_select(self, arguments):
-    arguments[0]._left_select = self.bool_val
     return
 
 
@@ -843,16 +833,15 @@ def reset_vectors(self, arguments):
 
 
 def save_preferences(self, arguments):
-    arguments[0]._addon_prefs.rotate_gizmo_use = arguments[0]._use_gizmo
-    arguments[0]._addon_prefs.gizmo_size = arguments[0]._gizmo_size
-    arguments[0]._addon_prefs.left_select = arguments[0]._left_select
-    arguments[0]._addon_prefs.normal_size = arguments[0]._normal_size
-    arguments[0]._addon_prefs.line_brightness = arguments[0]._line_brightness
-    arguments[0]._addon_prefs.point_size = arguments[0]._point_size
-    arguments[0]._addon_prefs.selected_only = arguments[0]._selected_only
-    arguments[0]._addon_prefs.selected_scale = arguments[0]._selected_scale
-    arguments[0]._addon_prefs.display_wireframe = arguments[0]._use_wireframe_overlay
-    arguments[0]._addon_prefs.ui_scale = arguments[0]._ui_scale
+    arguments[0]._behavior_prefs.rotate_gizmo_use = arguments[0]._use_gizmo
+    arguments[0]._display_prefs.gizmo_size = arguments[0]._gizmo_size
+    arguments[0]._display_prefs.normal_size = arguments[0]._normal_size
+    arguments[0]._display_prefs.line_brightness = arguments[0]._line_brightness
+    arguments[0]._display_prefs.point_size = arguments[0]._point_size
+    arguments[0]._display_prefs.selected_only = arguments[0]._selected_only
+    arguments[0]._display_prefs.selected_scale = arguments[0]._selected_scale
+    arguments[0]._display_prefs.display_wireframe = arguments[0]._use_wireframe_overlay
+    arguments[0]._display_prefs.ui_scale = arguments[0]._ui_scale
 
     bpy.ops.wm.save_userpref()
     return

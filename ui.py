@@ -16,8 +16,6 @@ class ABN_PT_abnormal_panel(Panel):
         layout = self.layout
         scn = context.scene
         data = bpy.data
-        objs = data.objects
-        aobj = context.active_object
         scn_prop = scn.abnormal_props
 
         row = layout.row(align=True)

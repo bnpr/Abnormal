@@ -36,52 +36,6 @@ def basic_ui_hover_keymap(self, context, event):
     if event.type == 'Z' and event.value == 'PRESS' and event.ctrl and event.shift:
         move_undostack(self, -1)
 
-    # select all bezier points
-    if event.type == 'A' and event.value == 'PRESS':
-        self._window.bezier_box_select_points(not event.alt)
-    # toggle cyclic of bezier lines
-    if event.type == 'F' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-        bezier_hover = self._window.bezier_box_toggle_cyclic()
-
-    # rotate select bezier points
-    if event.type == 'R' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-        if event.alt:
-            bezier_hover = self._window.bezier_box_clear_rotation(arguments=[
-                                                                  self, event])
-
-        else:
-            bezier_hover, bezier_id, self.bezier_changing, mid_co = self._window.bezier_box_rotate_points(
-                0.0, arguments=[event])
-
-            if self.bezier_changing:
-                self._mode_cache.append(mid_co)
-                self._mouse_init = self._mouse_reg_loc
-                self.rotating = True
-                keymap_rotating(self)
-
-    # change sharpness of selected points
-    if event.type == 'S' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-        if event.alt:
-            bezier_hover = self._window.bezier_box_clear_sharpness(arguments=[
-                                                                   self, event])
-
-        else:
-            bezier_hover, bezier_id, self.bezier_changing = self._window.bezier_box_sharpen_points(
-                0.0, arguments=[event])
-
-            if self.bezier_changing:
-                self.sharpness_changing = True
-                self._mouse_init = self._mouse_reg_loc
-
-    # deleted selected points and roots
-    if event.type == 'X' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-        bez_hover = self._window.bezier_box_delete_points(
-            arguments=[event])
-
     if event.type == 'LEFTMOUSE' and event.value == 'PRESS' and not event.ctrl:
         status = {'RUNNING_MODAL'}
 
@@ -119,8 +73,14 @@ def basic_ui_hover_keymap(self, context, event):
             if panel_status[0] == {'FINISHED'}:
                 status = panel_status[0]
 
+    keys = keys_find(self.keymap, event)
+    if keys == None:
+        return status
+    else:
+        status = {"RUNNING_MODAL"}
+
     # cancel modal
-    if event.type in {'ESC'} and event.value == 'PRESS':
+    if 'Cancel Modal' in keys:
         ob = self._object
         if self._object.as_pointer() != self._object_pointer:
             for o_ob in bpy.data.objects:
@@ -130,7 +90,8 @@ def basic_ui_hover_keymap(self, context, event):
         finish_modal(self, True)
         status = {'CANCELLED'}
 
-    if event.type in {'TAB'} and event.value == 'PRESS':
+    # Confirm modal
+    if 'Confirm Modal' in keys:
         ob = self._object
         if self._object.as_pointer() != self._object_pointer:
             for o_ob in bpy.data.objects:
@@ -184,41 +145,120 @@ def basic_keymap(self, context, event):
         else:
             gizmo_update_hide(self, False)
 
-    # select all normals
-    if event.type == 'A' and event.value == 'PRESS':
-        change = False
-        if event.alt:
-            for po in self._points_container.points:
-                if po.select:
-                    po.set_select(False)
-                    change = True
-                else:
-                    for loop in po.loops:
-                        if loop.select:
-                            loop.set_select(False)
-                            change = True
-
-            self._points_container.clear_active()
-            self._active_point = None
+    # undo redo
+    if event.type == 'Z' and event.value == 'PRESS' and event.ctrl:
+        if event.shift:
+            move_undostack(self, -1)
         else:
-            for po in self._points_container.points:
-                if po.select == False:
-                    po.set_select(True)
-                    change = True
-                else:
-                    for loop in po.loops:
-                        if loop.select:
-                            loop.set_select(True)
-                            change = True
+            move_undostack(self, 1)
+        status = {"RUNNING_MODAL"}
 
+    #
+    #
+    #
+
+    keys = keys_find(self.keymap, event)
+    if keys == None:
+        return status
+    else:
+        status = {"RUNNING_MODAL"}
+
+    # toggle xray
+    if 'Toggle X-Ray' in keys:
+        self._x_ray_mode = not self._x_ray_mode
+        self._xray_bool.toggle_bool()
+
+    # hide unselected normals
+    if 'Hide Unselected' in keys:
+        sel_inds = self._points_container.get_unselected_loops()
+        if sel_inds:
+            for ind in sel_inds:
+                self._points_container.points[ind[0]
+                                              ].loops[ind[1]].set_hide(True)
+                self._points_container.points[ind[0]
+                                              ].loops[ind[1]].set_select(False)
+                self._points_container.points[ind[0]
+                                              ].set_selection_from_loops()
+                self._points_container.points[ind[0]].set_hidden_from_loops()
+
+            add_to_undostack(self, 0)
+
+    # hide selected normals
+    if 'Hide Selected' in keys:
+        sel_inds = self._points_container.get_selected_loops()
+        if sel_inds:
+            for ind_set in sel_inds:
+                self._points_container.points[ind_set[0]
+                                              ].loops[ind_set[1]].set_hide(True)
+                self._points_container.points[ind_set[0]
+                                              ].loops[ind_set[1]].set_select(False)
+                self._points_container.points[ind_set[0]
+                                              ].set_selection_from_loops()
+                self._points_container.points[ind_set[0]
+                                              ].set_hidden_from_loops()
+
+            add_to_undostack(self, 0)
+
+    # unhide normals
+    if 'Unhide' in keys:
+        change = False
+        for po in self._points_container.points:
+            if po.hide:
+                change = True
+                po.set_hide(False)
+                po.set_select(True)
+            else:
+                for loop in po.loops:
+                    if loop.hide:
+                        change = True
+                        loop.set_hide(False)
+                        loop.set_select(True)
         if change:
             add_to_undostack(self, 0)
-            self.redraw = True
-            update_orbit_empty(self)
-            status = {"RUNNING_MODAL"}
+
+    # clear rotation
+    if 'Reset Gizmo Rotation' in keys:
+        if self._use_gizmo:
+            loc = self._orbit_ob.location.copy()
+            self._orbit_ob.matrix_world = self._object.matrix_world
+            self._orbit_ob.matrix_world.translation = loc
+            self._window.update_gizmo_orientation(
+                self._orbit_ob.matrix_world)
+
+    # Rotate Normals
+    if 'Rotate Normals' in keys:
+        update_filter_weights(self)
+        sel_inds = self._points_container.get_selected_loops()
+
+        if len(sel_inds) > 0:
+            sel_cos = self._points_container.get_selected_loop_cos()
+            avg_loc = average_vecs(sel_cos)
+
+            self._points_container.cache_current_normals()
+
+            self._window.set_status('VIEW ROTATION')
+
+            self._mode_cache.clear()
+            self._mode_cache.append(self._mouse_reg_loc)
+            self._mode_cache.append(avg_loc)
+            self._mode_cache.append(0)
+            self._mode_cache.append(1)
+            self.rotating = True
+            keymap_rotating(self)
+            gizmo_update_hide(self, False)
+
+    # Toggle Gizmo
+    if 'Toggle Gizmo' in keys:
+        self._use_gizmo = not self._use_gizmo
+        self._gizmo_bool.toggle_bool()
+        update_orbit_empty(self)
+        gizmo_update_hide(self, self._use_gizmo)
+
+    #
+    #
 
     # invert selection
-    if event.type == 'I' and event.value == 'PRESS' and event.ctrl:
+    if 'Invert Selection' in keys:
         change = False
         for po in self._points_container.points:
             if po.hide == False:
@@ -231,56 +271,67 @@ def basic_keymap(self, context, event):
 
         if change:
             add_to_undostack(self, 0)
-            self.redraw = True
-            update_orbit_empty(self)
-            status = {"RUNNING_MODAL"}
 
-    # hide normals
-    if event.type == 'H' and event.value == 'PRESS':
-        if event.alt:
-            for po in self._points_container.points:
-                if po.hide:
-                    po.set_hide(False)
-                    po.set_select(True)
-                else:
-                    for loop in po.loops:
-                        if loop.hide:
-                            loop.set_hide(False)
-                            loop.set_select(True)
+    # box select
+    if 'Box Start' in keys:
+        self.box_select_start = True
+        bpy.context.window.cursor_modal_set('CROSSHAIR')
+        keymap_box_selecting(self)
+        gizmo_update_hide(self, False)
 
-        elif event.shift:
-            sel_inds = self._points_container.get_unselected_loops()
-            for ind in sel_inds:
-                self._points_container.points[ind[0]
-                                              ].loops[ind[1]].set_hide(True)
-                self._points_container.points[ind[0]
-                                              ].loops[ind[1]].set_select(False)
-                self._points_container.points[ind[0]
-                                              ].set_selection_from_loops()
-                self._points_container.points[ind[0]].set_hidden_from_loops()
+    # circle select
+    if 'Circle Start' in keys:
+        self.circle_select_start = True
+        bpy.context.window.cursor_modal_set('CROSSHAIR')
+        keymap_circle_selecting(self)
+        gizmo_update_hide(self, False)
 
-        else:
-            sel_inds = self._points_container.get_selected_loops()
-            for ind_set in sel_inds:
-                self._points_container.points[ind_set[0]
-                                              ].loops[ind_set[1]].set_hide(True)
-                self._points_container.points[ind_set[0]
-                                              ].loops[ind_set[1]].set_select(False)
-                self._points_container.points[ind_set[0]
-                                              ].set_selection_from_loops()
-                self._points_container.points[ind_set[0]
-                                              ].set_hidden_from_loops()
+    # lasso select
+    if 'Lasso Start' in keys:
+        self.lasso_select_start = True
+        bpy.context.window.cursor_modal_set('CROSSHAIR')
+        keymap_lasso_selecting(self)
+        gizmo_update_hide(self, False)
 
-        add_to_undostack(self, 0)
-        update_orbit_empty(self)
-        self.redraw = True
-        status = {"RUNNING_MODAL"}
+    # select all normals
+    if 'Select All' in keys:
+        for po in self._points_container.points:
+            if po.select == False:
+                po.set_select(True)
+                change = True
+            else:
+                for loop in po.loops:
+                    if loop.select:
+                        loop.set_select(True)
+                        change = True
+
+        if change:
+            add_to_undostack(self, 0)
+
+    # unselect all normals
+    if 'Unselect All' in keys:
+        change = False
+        for po in self._points_container.points:
+            if po.select:
+                po.set_select(False)
+                change = True
+            else:
+                for loop in po.loops:
+                    if loop.select:
+                        loop.set_select(False)
+                        change = True
+
+        self._points_container.clear_active()
+        self._active_point = None
+
+        if change:
+            add_to_undostack(self, 0)
 
     # select linked normals
-    if event.type == 'L' and event.value == 'PRESS':
+    if 'Select Linked' in keys:
         change = False
-        if event.ctrl:
-            sel_inds = self._points_container.get_selected_loops()
+        sel_inds = self._points_container.get_selected_loops()
+        if sel_inds:
             po_inds = []
             for ind_set in sel_inds:
                 if ind_set[0] not in po_inds:
@@ -293,149 +344,58 @@ def basic_keymap(self, context, event):
                 if self._points_container.points[ind].select == False:
                     self._points_container.points[ind].set_select(True)
                     change = True
-        else:
-            # selection test
-            face_res = ray_cast_to_mouse(self)
-            if face_res != None:
-                sel_ind = self._object_bm.faces[face_res[1]].verts[0].index
 
-                vis_pos = self._points_container.get_visible()
-                new_sel = get_linked_geo(
-                    self._object_bm, [sel_ind], vis=vis_pos)
-
-                for ind in new_sel:
-                    if self._points_container.points[ind].select == False:
-                        self._points_container.points[ind].set_select(True)
-                        change = True
-
-        if change:
-            add_to_undostack(self, 0)
-            self.redraw = True
-            update_orbit_empty(self)
-            status = {"RUNNING_MODAL"}
-
-    # box select
-    if event.type == 'B' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-        self.box_select_start = True
-        bpy.context.window.cursor_modal_set('CROSSHAIR')
-        keymap_box_selecting(self)
-        gizmo_update_hide(self, False)
-
-    # circle select
-    if event.type == 'C' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-        self.circle_select_start = True
-        bpy.context.window.cursor_modal_set('CROSSHAIR')
-        keymap_circle_selecting(self)
-        gizmo_update_hide(self, False)
-
-    # lasso select
-    if event.type == 'V' and event.value == 'PRESS':
-        status = {"RUNNING_MODAL"}
-        self.lasso_select_start = True
-        bpy.context.window.cursor_modal_set('CROSSHAIR')
-        keymap_lasso_selecting(self)
-        gizmo_update_hide(self, False)
-
-    # rotation
-    if event.type == 'R' and event.value == 'PRESS':
-        if event.alt:
-            if self._use_gizmo:
-                loc = self._orbit_ob.location.copy()
-                self._orbit_ob.matrix_world = self._object.matrix_world
-                self._orbit_ob.matrix_world.translation = loc
-                self._window.update_gizmo_orientation(
-                    self._orbit_ob.matrix_world)
-        else:
-            update_filter_weights(self)
-            sel_inds = self._points_container.get_selected_loops()
-
-            if len(sel_inds) > 0:
-                sel_cos = self._points_container.get_selected_loop_cos()
-                avg_loc = average_vecs(sel_cos)
-
-                self._points_container.cache_current_normals()
-
-                self._window.set_status('VIEW ROTATION')
-
-                self._mode_cache.clear()
-                self._mode_cache.append(self._mouse_reg_loc)
-                self._mode_cache.append(avg_loc)
-                self._mode_cache.append(0)
-                self._mode_cache.append(1)
-                self.rotating = True
-                keymap_rotating(self)
-                gizmo_update_hide(self, False)
-        status = {"RUNNING_MODAL"}
-
-    # undo redo
-    if event.type == 'Z' and event.value == 'PRESS':
-        if event.ctrl:
-            if event.shift:
-                move_undostack(self, -1)
-            else:
-                move_undostack(self, 1)
-        else:
-            self._x_ray_mode = not self._x_ray_mode
-            self._xray_bool.toggle_bool()
-        status = {"RUNNING_MODAL"}
-
-    click = (event.type == 'RIGHTMOUSE' and self._left_select == False) or (
-        event.type == 'LEFTMOUSE' and self._left_select)
-    if click and event.value == 'PRESS' and event.ctrl != True:
-        # Vertex/Loop selection
-        if event.alt != True:
-            sel_res = selection_test(self, event)
-            if sel_res:
-                self.redraw = True
+            if change:
                 add_to_undostack(self, 0)
-                update_orbit_empty(self)
-                status = {"RUNNING_MODAL"}
 
-        # Edge loop selection
-        else:
-            if event.shift == False:
-                for po in self._points_container.points:
-                    po.set_select(False)
+    # select linked under cursor normals
+    if 'Select Hover Linked' in keys:
+        # selection test
+        face_res = ray_cast_to_mouse(self)
+        if face_res != None:
+            sel_ind = self._object_bm.faces[face_res[1]].verts[0].index
 
-            face_res = ray_cast_to_mouse(self)
-            if face_res != None:
-                sel_ed = None
-                small_dist = 0.0
-                for ed in self._object_bm.faces[face_res[1]].edges:
-                    # then find nearest point on those edges that are in range
-                    nearest_point_co, nearest_point_dist = nearest_co_on_line(
-                        face_res[0], ed.verts[0].co, ed.verts[1].co)
+            vis_pos = self._points_container.get_visible()
+            new_sel = get_linked_geo(
+                self._object_bm, [sel_ind], vis=vis_pos)
 
-                    if nearest_point_dist < small_dist or sel_ed == None:
-                        sel_ed = ed
-                        small_dist = nearest_point_dist
+            for ind in new_sel:
+                if self._points_container.points[ind].select == False:
+                    self._points_container.points[ind].set_select(True)
+                    change = True
 
-                if sel_ed != None:
-                    sel_loop = get_edge_loop(
-                        self._object_bm, sel_ed)
-                    v_inds = []
-                    for ed_ind in sel_loop:
-                        for v in self._object_bm.edges[ed_ind].verts:
-                            if v.index not in v_inds:
-                                v_inds.append(v.index)
+            if change:
+                add_to_undostack(self, 0)
 
-                    cur_sel = [
-                        self._points_container.points[ind].select for ind in v_inds]
+    # New Click selection
+    if 'New Click Selection' in keys:
+        sel_res = selection_test(self, False)
+        if sel_res:
+            add_to_undostack(self, 0)
 
-                    loop_status = False in cur_sel
-                    for ind in v_inds:
-                        self._points_container.points[ind].set_select(
-                            loop_status)
+    # Add Click selection
+    if 'Add Click Selection' in keys:
+        sel_res = selection_test(self, True)
+        if sel_res:
+            add_to_undostack(self, 0)
 
-                    self.redraw = True
-                    add_to_undostack(self, 0)
-                    update_orbit_empty(self)
-                    status = {"RUNNING_MODAL"}
+    # New Edge loop selection
+    if 'New Loop Selection' in keys:
+        sel_res = loop_selection_test(self, False)
+        if sel_res:
+            add_to_undostack(self, 0)
+
+    # Add Edge loop selection
+    if 'Add Loop Selection' in keys:
+        sel_res = loop_selection_test(self, True)
+        if sel_res:
+            add_to_undostack(self, 0)
+
+    #
+    #
 
     # cancel modal
-    if event.type in {'ESC'} and event.value == 'PRESS':
+    if 'Cancel Modal' in keys:
         ob = self._object
         if self._object.as_pointer() != self._object_pointer:
             for o_ob in bpy.data.objects:
@@ -445,7 +405,8 @@ def basic_keymap(self, context, event):
         finish_modal(self, True)
         status = {'CANCELLED'}
 
-    if event.type in {'TAB'} and event.value == 'PRESS':
+    # Confirm modal
+    if 'Confirm Modal' in keys:
         ob = self._object
         if self._object.as_pointer() != self._object_pointer:
             for o_ob in bpy.data.objects:
@@ -488,10 +449,19 @@ def typing_keymap(self, context, event):
 
     return status
 
+#
+#
+
 
 def rotating_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
     self.active_drawing = True
+
+    keys = keys_find(self.keymap, event)
+    if keys == None:
+        return status
+    else:
+        status = {"RUNNING_MODAL"}
 
     if event.type == 'X' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 0)
@@ -543,7 +513,7 @@ def rotating_keymap(self, context, event):
 
             self.redraw = True
 
-    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
         self._points_container.clear_cached_normals()
 
         add_to_undostack(self, 1)
@@ -556,7 +526,7 @@ def rotating_keymap(self, context, event):
         keymap_refresh(self)
         gizmo_update_hide(self, True)
 
-    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'RELEASE':
+    if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
         self._points_container.restore_cached_normals()
 
         set_new_normals(self)
@@ -575,6 +545,12 @@ def rotating_keymap(self, context, event):
 
 def gizmo_click_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
+
+    keys = keys_find(self.keymap, event)
+    if keys == None:
+        return status
+    else:
+        status = {"RUNNING_MODAL"}
 
     if event.type == 'MOUSEMOVE':
         start_vec = self._mode_cache[0]
@@ -656,7 +632,7 @@ def gizmo_click_keymap(self, context, event):
         self._mode_cache.clear()
         self.click_hold = False
 
-    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'RELEASE':
+    if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
         if self._mode_cache[5]:
             self._points_container.restore_cached_normals()
 
@@ -675,6 +651,7 @@ def gizmo_click_keymap(self, context, event):
         self._mode_cache.clear()
         self.redraw = True
         self.click_hold = False
+
     return status
 
 
@@ -684,6 +661,12 @@ def gizmo_click_keymap(self, context, event):
 
 def sphereize_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
+
+    keys = keys_find(self.keymap, event)
+    if keys == None:
+        return status
+    else:
+        status = {"RUNNING_MODAL"}
 
     if event.type in self.nav_list:
         # allow navigation
@@ -728,7 +711,7 @@ def sphereize_keymap(self, context, event):
                 self.sphereize_move = True
                 keymap_target_move(self)
 
-    if event.type == 'Z' and event.value == 'PRESS':
+    if 'Toggle X-Ray' in keys:
         self._x_ray_mode = not self._x_ray_mode
         self._xray_bool.toggle_bool()
 
@@ -770,6 +753,12 @@ def sphereize_keymap(self, context, event):
 
 def sphereize_move_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
+
+    keys = keys_find(self.keymap, event)
+    if keys == None:
+        return status
+    else:
+        status = {"RUNNING_MODAL"}
 
     if event.type == 'X' and event.value == 'PRESS':
         sel_inds = self._points_container.get_selected_loops()
@@ -820,7 +809,7 @@ def sphereize_move_keymap(self, context, event):
         while len(self._mode_cache) > 1:
             self._mode_cache.pop(0)
 
-    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
+    if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
         self.translate_axis = 2
         self.translate_mode = 0
         clear_translate_axis_draw(self)
@@ -834,11 +823,18 @@ def sphereize_move_keymap(self, context, event):
         sphereize_normals(self, sel_inds)
         while len(self._mode_cache) > 1:
             self._mode_cache.pop(0)
+
     return status
 
 
 def point_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
+
+    keys = keys_find(self.keymap, event)
+    if keys == None:
+        return status
+    else:
+        status = {"RUNNING_MODAL"}
 
     if event.type in self.nav_list:
         # allow navigation
@@ -883,7 +879,7 @@ def point_keymap(self, context, event):
                 self.point_move = True
                 keymap_target_move(self)
 
-    if event.type == 'Z' and event.value == 'PRESS':
+    if 'Toggle X-Ray' in keys:
         self._x_ray_mode = not self._x_ray_mode
         self._xray_bool.toggle_bool()
 
@@ -927,6 +923,12 @@ def point_keymap(self, context, event):
 
 def point_move_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
+
+    keys = keys_find(self.keymap, event)
+    if keys == None:
+        return status
+    else:
+        status = {"RUNNING_MODAL"}
 
     if event.type == 'X' and event.value == 'PRESS':
         sel_inds = self._points_container.get_selected_loops()
@@ -977,7 +979,7 @@ def point_move_keymap(self, context, event):
         while len(self._mode_cache) > 1:
             self._mode_cache.pop(0)
 
-    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
+    if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
         self.translate_axis = 2
         self.translate_mode = 0
         clear_translate_axis_draw(self)
@@ -1002,7 +1004,16 @@ def box_select_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
     self.active_drawing = True
 
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+    keys = keys_find(self.keymap, event)
+    if keys == None:
+        if self.lasso_selecting:
+            keys = []
+        else:
+            return status
+    else:
+        status = {"RUNNING_MODAL"}
+
+    if 'Box Start Selection' in keys and self.box_selecting == False:
         self._mode_cache.append(self._mouse_reg_loc)
         self.box_select_start = False
         self.box_selecting = True
@@ -1032,11 +1043,10 @@ def box_select_keymap(self, context, event):
             if (cur_loc-prev_loc).length > 10.0:
                 self._mode_cache.append(self._mouse_reg_loc)
 
-    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        change = box_selection_test(self, event)
+    if 'Box Add Selection' in keys:
+        change = box_selection_test(self, True, False)
         if change:
             add_to_undostack(self, 0)
-            self.redraw = True
 
         self.box_select_start = False
         self.box_selecting = False
@@ -1045,7 +1055,31 @@ def box_select_keymap(self, context, event):
         update_orbit_empty(self)
         keymap_refresh(self)
 
-    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
+    elif 'Box Remove Selection' in keys:
+        change = box_selection_test(self, False, True)
+        if change:
+            add_to_undostack(self, 0)
+
+        self.box_select_start = False
+        self.box_selecting = False
+        self._mode_cache.clear()
+        bpy.context.window.cursor_modal_set('DEFAULT')
+        update_orbit_empty(self)
+        keymap_refresh(self)
+
+    elif 'Box New Selection' in keys:
+        change = box_selection_test(self, False, False)
+        if change:
+            add_to_undostack(self, 0)
+
+        self.box_select_start = False
+        self.box_selecting = False
+        self._mode_cache.clear()
+        bpy.context.window.cursor_modal_set('DEFAULT')
+        update_orbit_empty(self)
+        keymap_refresh(self)
+
+    if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
         self.box_select_start = False
         self.box_selecting = False
         bpy.context.window.cursor_modal_set('DEFAULT')
@@ -1060,7 +1094,16 @@ def lasso_select_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
     self.active_drawing = True
 
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+    keys = keys_find(self.keymap, event)
+    if keys == None:
+        if self.lasso_selecting:
+            keys = []
+        else:
+            return status
+    else:
+        status = {"RUNNING_MODAL"}
+
+    if 'Lasso Start Selection' in keys and self.lasso_selecting == False:
         self._mode_cache.append(self._mouse_reg_loc)
         self.lasso_select_start = False
         self.lasso_selecting = True
@@ -1089,11 +1132,10 @@ def lasso_select_keymap(self, context, event):
             if (cur_loc-prev_loc).length > 10.0:
                 self._mode_cache.append(self._mouse_reg_loc)
 
-    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        change = lasso_selection_test(self, event)
+    if 'Lasso Add Selection' in keys:
+        change = lasso_selection_test(self, True, False)
         if change:
             add_to_undostack(self, 0)
-            self.redraw = True
 
         self.lasso_selecting = False
         self._mode_cache.clear()
@@ -1101,7 +1143,29 @@ def lasso_select_keymap(self, context, event):
         keymap_refresh(self)
         update_orbit_empty(self)
 
-    if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
+    elif 'Lasso Remove Selection' in keys:
+        change = lasso_selection_test(self, False, True)
+        if change:
+            add_to_undostack(self, 0)
+
+        self.lasso_selecting = False
+        self._mode_cache.clear()
+        bpy.context.window.cursor_modal_set('DEFAULT')
+        keymap_refresh(self)
+        update_orbit_empty(self)
+
+    elif 'Lasso New Selection' in keys:
+        change = lasso_selection_test(self, False, False)
+        if change:
+            add_to_undostack(self, 0)
+
+        self.lasso_selecting = False
+        self._mode_cache.clear()
+        bpy.context.window.cursor_modal_set('DEFAULT')
+        keymap_refresh(self)
+        update_orbit_empty(self)
+
+    if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
         self.lasso_selecting = False
         self._mode_cache.clear()
         bpy.context.window.cursor_modal_set('DEFAULT')
@@ -1119,6 +1183,15 @@ def circle_select_keymap(self, context, event):
     if event.type in self.nav_list:
         status = {'PASS_THROUGH'}
 
+    keys = keys_find(self.keymap, event)
+    if keys == None:
+        if self.circle_selecting or self.circle_resizing:
+            keys = []
+        else:
+            return status
+    else:
+        status = {"RUNNING_MODAL"}
+
     if self.circle_resizing:
         prev_loc = mathutils.Vector(
             (self._mode_cache[0][0], self._mode_cache[0][1]))
@@ -1126,18 +1199,19 @@ def circle_select_keymap(self, context, event):
 
         diff = int((cur_loc-prev_loc).length)
         self.circle_radius = diff
+        print(self.circle_radius)
 
-        if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
+        if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
             self.circle_resizing = False
             self.circle_radius = self._mode_cache[1]
             self._mode_cache.clear()
 
-        if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+        if 'Circle Confirm Resize' in keys:
             self.circle_resizing = False
             self._mode_cache.clear()
 
     else:
-        if event.type == 'F' and event.value == 'PRESS':
+        if 'Circle Resize Mode Start' in keys:
             self.circle_resizing = True
             if self._mouse_reg_loc[0]-self.circle_radius < 0:
                 self._mode_cache.append(
@@ -1146,37 +1220,55 @@ def circle_select_keymap(self, context, event):
                 self._mode_cache.append(
                     [self._mouse_reg_loc[0]-self.circle_radius, self._mouse_reg_loc[1]])
             self._mode_cache.append(self.circle_radius)
+            return status
 
-        if (event.type == 'LEFT_BRACKET' or (event.type == 'WHEELDOWNMOUSE' and event.alt)) and event.value == 'PRESS':
+        if 'Circle Decrease Size 1' in keys or 'Circle Decrease Size 2' in keys:
             self.circle_radius -= 10
             if self.circle_radius < 10:
                 self.circle_radius = 10
             status = {'RUNNING_MODAL'}
 
-        if (event.type == 'RIGHT_BRACKET' or (event.type == 'WHEELUPMOUSE' and event.alt)) and event.value == 'PRESS':
+        if 'Circle Increase Size 1' in keys or 'Circle Increase Size 2' in keys:
             self.circle_radius += 10
             status = {'RUNNING_MODAL'}
 
-        if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-            circle_selection_test(self, event, self.circle_radius)
-            self.redraw = True
+        #
+        #
+
+        if 'Circle Start Selection' in keys and self.circle_selecting == False:
+            if 'Circle Add Selection' in keys:
+                circle_selection_test(self, True, False, self.circle_radius)
+                self.redraw = True
+            elif 'Circle Remove Selection' in keys:
+                circle_selection_test(self, False, True, self.circle_radius)
+                self.redraw = True
+                self.circle_removing = True
+            else:
+                circle_selection_test(self, False, False, self.circle_radius)
+                self.redraw = True
 
             self.circle_select_start = False
             self.circle_selecting = True
 
         if event.type == 'MOUSEMOVE' and self.circle_selecting:
-            circle_selection_test(self, event, self.circle_radius)
-            self.redraw = True
+            if self.circle_removing == False:
+                circle_selection_test(self, True, False, self.circle_radius)
+                self.redraw = True
+            else:
+                circle_selection_test(self, False, True, self.circle_radius)
+                self.redraw = True
 
-        if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+        if 'Circle End Selection' in keys and self.circle_selecting and event.value == 'RELEASE':
             self.circle_select_start = True
             self.circle_selecting = False
+            self.circle_removing = False
 
-        if (event.type == 'RIGHTMOUSE' or event.type == 'ESC') and event.value == 'PRESS':
+        if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
             add_to_undostack(self, 0)
 
             self.circle_select_start = False
             self.circle_selecting = False
+            self.circle_removing = False
             bpy.context.window.cursor_modal_set('DEFAULT')
             keymap_refresh(self)
             update_orbit_empty(self)

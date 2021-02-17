@@ -245,7 +245,7 @@ def viewport_change_cache(self, context):
                 self._thresh = space.overlay.wireframe_threshold
                 self._text = space.overlay.show_text
 
-                self._use_wireframe_overlay = self._addon_prefs.display_wireframe
+                self._use_wireframe_overlay = self._display_prefs.display_wireframe
                 space.overlay.show_wireframes = self._use_wireframe_overlay
                 space.overlay.wireframe_threshold = 1.0
 

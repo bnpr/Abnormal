@@ -6,6 +6,7 @@ from .functions_general import *
 from .functions_drawing import *
 from .functions_modal_keymap import *
 from .classes import *
+from .keymap import addon_keymaps
 
 
 def match_loops_vecs(self, loop, o_tangs, flip_axis=None):
@@ -742,6 +743,9 @@ def add_to_undostack(self, stack_type):
             self._history_stack.pop(-1)
         self._history_stack.insert(0, [stack_type, sel_status, vis_status])
 
+        self.redraw = True
+        update_orbit_empty(self)
+
     else:
         cur_normals = self._points_container.get_current_normals()
         if self._history_position > 0:
@@ -830,17 +834,16 @@ def img_load(img_name, path):
 
 
 def finish_modal(self, restore):
-    self._addon_prefs.rotate_gizmo_use = self._use_gizmo
-    self._addon_prefs.gizmo_size = self._gizmo_size
-    self._addon_prefs.left_select = self._left_select
-    self._addon_prefs.normal_size = self._normal_size
-    self._addon_prefs.line_brightness = self._line_brightness
-    self._addon_prefs.point_size = self._point_size
-    self._addon_prefs.selected_only = self._selected_only
-    self._addon_prefs.selected_scale = self._selected_scale
-    self._addon_prefs.individual_loops = self._individual_loops
-    self._addon_prefs.ui_scale = self._ui_scale
-    self._addon_prefs.display_wireframe = self._use_wireframe_overlay
+    self._behavior_prefs.rotate_gizmo_use = self._use_gizmo
+    self._display_prefs.gizmo_size = self._gizmo_size
+    self._display_prefs.normal_size = self._normal_size
+    self._display_prefs.line_brightness = self._line_brightness
+    self._display_prefs.point_size = self._point_size
+    self._display_prefs.selected_only = self._selected_only
+    self._display_prefs.selected_scale = self._selected_scale
+    self._behavior_prefs.individual_loops = self._individual_loops
+    self._display_prefs.ui_scale = self._ui_scale
+    self._display_prefs.display_wireframe = self._use_wireframe_overlay
 
     if bpy.context.area != None:
         if bpy.context.area.type == 'VIEW_3D':
@@ -1264,7 +1267,7 @@ def get_active_loop_index(indeces, active):
     return None
 
 
-def selection_test(self, event, radius=6.0):
+def selection_test(self, shift, radius=6.0):
     test_face = False
 
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
@@ -1273,7 +1276,7 @@ def selection_test(self, event, radius=6.0):
     active_ind = get_active_point_index(avail_inds, self._active_point)
 
     change, unselect, new_active, new_sel, new_sel_status = click_points_selection_test(
-        avail_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, event.shift, self._x_ray_mode, self._object_bvh, active=active_ind)
+        avail_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, shift, self._x_ray_mode, self._object_bvh, active=active_ind)
 
     sel_ind = None
     new_act = None
@@ -1306,7 +1309,7 @@ def selection_test(self, event, radius=6.0):
             active_ind = get_active_loop_index(avail_inds, self._active_point)
 
             change, unselect, new_active, new_sel, new_sel_status = click_tris_selection_test(
-                avail_tri_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, event.shift, self._x_ray_mode, self._object_bvh, active=active_ind)
+                avail_tri_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, shift, self._x_ray_mode, self._object_bvh, active=active_ind)
 
             sel_ind = None
             new_act = None
@@ -1346,7 +1349,7 @@ def selection_test(self, event, radius=6.0):
     if test_face:
         face_res = ray_cast_to_mouse(self)
         if face_res != None:
-            if event.shift == False:
+            if shift == False:
                 self._points_container.clear_active()
                 for po in self._points_container.points:
                     po.set_select(False)
@@ -1362,12 +1365,53 @@ def selection_test(self, event, radius=6.0):
     return change
 
 
-def box_selection_test(self, event):
+def loop_selection_test(self, shift, radius=6.0):
+    change = False
+
+    face_res = ray_cast_to_mouse(self)
+    if face_res != None:
+        if shift == False:
+            for po in self._points_container.points:
+                po.set_select(False)
+
+        sel_ed = None
+        small_dist = 0.0
+        for ed in self._object_bm.faces[face_res[1]].edges:
+            # then find nearest point on those edges that are in range
+            nearest_point_co, nearest_point_dist = nearest_co_on_line(
+                face_res[0], ed.verts[0].co, ed.verts[1].co)
+
+            if nearest_point_dist < small_dist or sel_ed == None:
+                sel_ed = ed
+                small_dist = nearest_point_dist
+
+        if sel_ed != None:
+            sel_loop = get_edge_loop(
+                self._object_bm, sel_ed)
+            v_inds = []
+            for ed_ind in sel_loop:
+                for v in self._object_bm.edges[ed_ind].verts:
+                    if v.index not in v_inds:
+                        v_inds.append(v.index)
+
+            cur_sel = [
+                self._points_container.points[ind].select for ind in v_inds]
+
+            loop_status = False in cur_sel
+            for ind in v_inds:
+                self._points_container.points[ind].set_select(
+                    loop_status)
+                change = True
+
+    return change
+
+
+def box_selection_test(self, shift, ctrl):
     add_rem_status = 0
-    if event.ctrl:
+    if ctrl:
         add_rem_status = 2
     else:
-        if event.shift:
+        if shift:
             add_rem_status = 1
 
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
@@ -1423,12 +1467,12 @@ def box_selection_test(self, event):
     return change
 
 
-def circle_selection_test(self, event, radius):
+def circle_selection_test(self, shift, ctrl, radius):
     add_rem_status = 0
-    if event.ctrl:
+    if ctrl:
         add_rem_status = 2
     else:
-        if event.shift:
+        if shift:
             add_rem_status = 1
 
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
@@ -1468,12 +1512,12 @@ def circle_selection_test(self, event, radius):
     return change
 
 
-def lasso_selection_test(self, event):
+def lasso_selection_test(self, shift, ctrl):
     add_rem_status = 0
-    if event.ctrl:
+    if ctrl:
         add_rem_status = 2
     else:
-        if event.shift:
+        if shift:
             add_rem_status = 1
 
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
@@ -1586,3 +1630,30 @@ def delete_orbit_empty(self):
             self._orbit_ob = None
 
     return
+
+
+#
+# KEYMAP TEST/LOAD
+#
+
+def load_keymap(self):
+    # self.keymap = {}
+
+    # for item in addon_keymaps[0][0].keymap_items:
+    #     self.keymap[item.name] = item
+
+    self.keymap = addon_keymaps[0]
+    return
+
+
+def keys_find(keymap, event):
+    key_val = []
+    for key in keymap.keymap_items:
+        if key.type == event.type:
+            if (key.alt == event.alt and key.ctrl == event.ctrl and key.shift == event.shift) or key.any:
+                if key.value == event.value:
+                    key_val.append(key.name)
+
+    if len(key_val) == 0:
+        key_val = None
+    return key_val
