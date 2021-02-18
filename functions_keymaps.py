@@ -75,9 +75,10 @@ def basic_ui_hover_keymap(self, context, event):
 
     keys = keys_find(self.keymap, event)
     if keys == None:
-        return status
-    else:
-        status = {"RUNNING_MODAL"}
+        keys = []
+    #     return status
+    # else:
+    #     status = {"RUNNING_MODAL"}
 
     # cancel modal
     if 'Cancel Modal' in keys:
@@ -257,6 +258,32 @@ def basic_keymap(self, context, event):
             gizmo_update_hide(self, True)
         else:
             gizmo_update_hide(self, False)
+
+    #
+    #
+
+    # SHORTCUT KEYS
+    # # Toggle Gizmo
+    # if 'Toggle Gizmo' in keys:
+    #     self._use_gizmo = not self._use_gizmo
+    #     self._gizmo_bool.toggle_bool()
+    #     update_orbit_empty(self)
+    #     sel_inds = self._points_container.get_selected_loops()
+    #     if len(sel_inds) > 0:
+    #         gizmo_update_hide(self, True)
+    #     else:
+    #         gizmo_update_hide(self, False)
+
+    # # Toggle Gizmo
+    # if 'Toggle Gizmo' in keys:
+    #     self._use_gizmo = not self._use_gizmo
+    #     self._gizmo_bool.toggle_bool()
+    #     update_orbit_empty(self)
+    #     sel_inds = self._points_container.get_selected_loops()
+    #     if len(sel_inds) > 0:
+    #         gizmo_update_hide(self, True)
+    #     else:
+    #         gizmo_update_hide(self, False)
 
     #
     #
@@ -463,9 +490,10 @@ def rotating_keymap(self, context, event):
 
     keys = keys_find(self.keymap, event)
     if keys == None:
-        return status
-    else:
-        status = {"RUNNING_MODAL"}
+        keys = []
+    #     return status
+    # else:
+    #     status = {"RUNNING_MODAL"}
 
     if event.type == 'X' and event.value == 'PRESS':
         translate_axis_change(self, 'ROTATING', 0)
@@ -552,9 +580,10 @@ def gizmo_click_keymap(self, context, event):
 
     keys = keys_find(self.keymap, event)
     if keys == None:
-        return status
-    else:
-        status = {"RUNNING_MODAL"}
+        keys = []
+    #     return status
+    # else:
+    #     status = {"RUNNING_MODAL"}
 
     if event.type == 'MOUSEMOVE':
         start_vec = self._mode_cache[0]
@@ -668,9 +697,10 @@ def sphereize_keymap(self, context, event):
 
     keys = keys_find(self.keymap, event)
     if keys == None:
-        return status
-    else:
-        status = {"RUNNING_MODAL"}
+        keys = []
+    #     return status
+    # else:
+    #     status = {"RUNNING_MODAL"}
 
     if event.type in self.nav_list:
         # allow navigation
@@ -760,9 +790,10 @@ def sphereize_move_keymap(self, context, event):
 
     keys = keys_find(self.keymap, event)
     if keys == None:
-        return status
-    else:
-        status = {"RUNNING_MODAL"}
+        keys = []
+    #     return status
+    # else:
+    #     status = {"RUNNING_MODAL"}
 
     if event.type == 'X' and event.value == 'PRESS':
         sel_inds = self._points_container.get_selected_loops()
@@ -836,9 +867,10 @@ def point_keymap(self, context, event):
 
     keys = keys_find(self.keymap, event)
     if keys == None:
-        return status
-    else:
-        status = {"RUNNING_MODAL"}
+        keys = []
+    #     return status
+    # else:
+    #     status = {"RUNNING_MODAL"}
 
     if event.type in self.nav_list:
         # allow navigation
@@ -930,9 +962,10 @@ def point_move_keymap(self, context, event):
 
     keys = keys_find(self.keymap, event)
     if keys == None:
-        return status
-    else:
-        status = {"RUNNING_MODAL"}
+        keys = []
+    #     return status
+    # else:
+    #     status = {"RUNNING_MODAL"}
 
     if event.type == 'X' and event.value == 'PRESS':
         sel_inds = self._points_container.get_selected_loops()
@@ -1010,7 +1043,7 @@ def box_select_keymap(self, context, event):
 
     keys = keys_find(self.keymap, event)
     if keys == None:
-        if self.lasso_selecting:
+        if self.box_selecting:
             keys = []
         else:
             return status

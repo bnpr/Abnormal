@@ -37,9 +37,43 @@ def register():
         km.keymap_items.new('Select All', 'A', 'PRESS')
         km.keymap_items.new('Unselect All', 'A', 'PRESS', alt=True)
 
+        km.keymap_items.new('Mirror Normals Start', 'M', 'PRESS')
+        km.keymap_items.new('Mirror Normals X', 'X', 'PRESS')
+        km.keymap_items.new('Mirror Normals Y', 'Y', 'PRESS')
+        km.keymap_items.new('Mirror Normals Z', 'Z', 'PRESS')
+
+        km.keymap_items.new('Smooth Normals', 'S', 'PRESS')
+
+        km.keymap_items.new('Flatten Normals Start', 'F', 'PRESS')
+        km.keymap_items.new('Flatten Normals X', 'X', 'PRESS')
+        km.keymap_items.new('Flatten Normals Y', 'Y', 'PRESS')
+        km.keymap_items.new('Flatten Normals Z', 'Z', 'PRESS')
+
+        km.keymap_items.new('Align Normals Start', 'E', 'PRESS')
+        km.keymap_items.new('Align Normals Pos X', 'X', 'PRESS')
+        km.keymap_items.new('Align Normals Pos Y', 'Y', 'PRESS')
+        km.keymap_items.new('Align Normals Pos Z', 'Z', 'PRESS')
+        km.keymap_items.new('Align Normals Neg X', 'X', 'PRESS', shift=True)
+        km.keymap_items.new('Align Normals Neg Y', 'Y', 'PRESS', shift=True)
+        km.keymap_items.new('Align Normals Neg Z', 'Z', 'PRESS', shift=True)
+
+        km.keymap_items.new('Copy Active Normal', 'C', 'PRESS', ctrl=True)
+        km.keymap_items.new('Paste Stored Normal', 'V', 'PRESS', ctrl=True)
+        km.keymap_items.new('Paste Active Normal to Selected',
+                            'V', 'PRESS', shift=True, ctrl=True)
+
+        km.keymap_items.new('Set Normals Outside', 'N', 'PRESS', shift=True)
+        km.keymap_items.new('Set Normals Inside', 'N',
+                            'PRESS', shift=True, ctrl=True)
+
+        km.keymap_items.new('Flip Normals', 'R', 'PRESS', shift=True)
+        km.keymap_items.new('Reset Vectors', 'R', 'PRESS', alt=True)
+
+        km.keymap_items.new('Average Individual Normals', 'Q', 'PRESS')
+        km.keymap_items.new('Average Selected Normals', 'W', 'PRESS')
+
         km.keymap_items.new('Cancel Modal', 'ESC', 'PRESS')
         km.keymap_items.new('Confirm Modal', 'TAB', 'PRESS')
-        addon_keymaps.append(km)
 
         # TOOLS KEYMAP
         km.keymap_items.new('Box Start Selection',
@@ -85,7 +119,6 @@ def register():
 
         km.keymap_items.new('Cancel Tool 1', 'ESC', 'PRESS')
         km.keymap_items.new('Cancel Tool 2', 'RIGHTMOUSE', 'PRESS')
-
         addon_keymaps.append(km)
 
 
