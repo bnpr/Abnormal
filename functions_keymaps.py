@@ -252,7 +252,11 @@ def basic_keymap(self, context, event):
         self._use_gizmo = not self._use_gizmo
         self._gizmo_bool.toggle_bool()
         update_orbit_empty(self)
-        gizmo_update_hide(self, self._use_gizmo)
+        sel_inds = self._points_container.get_selected_loops()
+        if len(sel_inds) > 0:
+            gizmo_update_hide(self, True)
+        else:
+            gizmo_update_hide(self, False)
 
     #
     #
@@ -1199,7 +1203,6 @@ def circle_select_keymap(self, context, event):
 
         diff = int((cur_loc-prev_loc).length)
         self.circle_radius = diff
-        print(self.circle_radius)
 
         if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
             self.circle_resizing = False
