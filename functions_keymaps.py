@@ -246,6 +246,8 @@ def basic_keymap(self, context, event):
             self._mode_cache.append(0)
             self._mode_cache.append(1)
             self.rotating = True
+            self._current_tool = self._rotate_norms_tool
+            self.tool_mode = True
             keymap_rotating(self)
             gizmo_update_hide(self, False)
             self.active_drawing = True
@@ -491,96 +493,6 @@ def typing_keymap(self, context, event):
 
 #
 #
-
-
-def rotating_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-
-    keys = keys_find(self.keymap.keymap_items, event)
-    if len(keys) == 0:
-        keys = []
-    #     return status
-    # else:
-    #     status = {"RUNNING_MODAL"}
-
-    if event.type == 'X' and event.value == 'PRESS':
-        translate_axis_change(self, 'ROTATING', 0)
-        self._mode_cache[3] = translate_axis_side(self)
-        rotate_vectors(
-            self, self._mode_cache[2]*self._mode_cache[3])
-        self.redraw = True
-
-    if event.type == 'Y' and event.value == 'PRESS':
-        translate_axis_change(self, 'ROTATING', 1)
-        self._mode_cache[3] = translate_axis_side(self)
-        rotate_vectors(
-            self, self._mode_cache[2]*self._mode_cache[3])
-        self.redraw = True
-
-    if event.type == 'Z' and event.value == 'PRESS':
-        translate_axis_change(self, 'ROTATING', 2)
-        self._mode_cache[3] = translate_axis_side(self)
-        rotate_vectors(
-            self, self._mode_cache[2]*self._mode_cache[3])
-        self.redraw = True
-
-    if event.type == 'R' and event.value == 'PRESS':
-        translate_axis_change(self, 'ROTATING', 2)
-        self._mode_cache[3] = translate_axis_side(self)
-        rotate_vectors(
-            self, self._mode_cache[2]*self._mode_cache[3])
-        self.redraw = True
-
-    if event.type == 'MOUSEMOVE':
-        center = view3d_utils.location_3d_to_region_2d(
-            self.act_reg, self.act_rv3d, self._mode_cache[1])
-
-        start_vec = mathutils.Vector(
-            (self._mode_cache[0][0]-center[0], self._mode_cache[0][1]-center[1]))
-        mouse_vec = mathutils.Vector(
-            (self._mouse_reg_loc[0]-center[0], self._mouse_reg_loc[1]-center[1]))
-
-        ang = mouse_vec.angle_signed(start_vec)
-        if event.shift:
-            ang *= 0.1
-
-        if ang != 0.0:
-            self._mode_cache[2] = self._mode_cache[2]+ang
-            rotate_vectors(
-                self, self._mode_cache[2]*self._mode_cache[3])
-            self._mode_cache.pop(0)
-            self._mode_cache.insert(0, self._mouse_reg_loc)
-
-            self.redraw = True
-
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-        self._points_container.clear_cached_normals()
-
-        add_to_undostack(self, 1)
-        self._mode_cache.clear()
-        self.translate_axis = 2
-        self.translate_mode = 0
-        clear_translate_axis_draw(self)
-        self._window.clear_status()
-        self.rotating = False
-        keymap_refresh(self)
-        gizmo_update_hide(self, True)
-
-    if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
-        self._points_container.restore_cached_normals()
-
-        set_new_normals(self)
-        self._mode_cache.clear()
-        self.translate_axis = 2
-        self.translate_mode = 0
-        clear_translate_axis_draw(self)
-        self._window.clear_status()
-        self.redraw = True
-        self.rotating = False
-        keymap_refresh(self)
-        gizmo_update_hide(self, True)
-
-    return status
 
 
 def gizmo_click_keymap(self, context, event):

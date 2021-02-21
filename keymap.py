@@ -104,31 +104,21 @@ def register():
         km.keymap_items.new('Circle Remove Selection',
                             'LEFTMOUSE', 'PRESS', ctrl=True)
 
-        km.keymap_items.new('Circle Select Increase 1',
-                            'LEFT_BRACKET', 'PRESS')
-        km.keymap_items.new('Circle Select Increase 2',
-                            'WHEELDOWNMOUSE', 'PRESS', alt=True)
-        km.keymap_items.new('Circle Select Decrease 1',
+        km.keymap_items.new('Circle Increase Size 1',
                             'RIGHT_BRACKET', 'PRESS')
-        km.keymap_items.new('Circle Select Decrease 2',
+        km.keymap_items.new('Circle Increase Size 2',
                             'WHEELUPMOUSE', 'PRESS', alt=True)
-        km.keymap_items.new('Circle Select Resize Start', 'F', 'PRESS')
-        km.keymap_items.new('Circle Select Resize Confirm',
+        km.keymap_items.new('Circle Decrease Size 1',
+                            'LEFT_BRACKET', 'PRESS')
+        km.keymap_items.new('Circle Decrease Size 2',
+                            'WHEELDOWNMOUSE', 'PRESS', alt=True)
+        km.keymap_items.new('Circle Resize Mode Start', 'F', 'PRESS')
+        km.keymap_items.new('Circle Confirm Resize',
                             'F', 'RELEASE', any=True)
 
-        km.keymap_items.new('Circle Resize Mode Start',
-                            'F', 'PRESS')
-        km.keymap_items.new('Circle Confirm Resize',
-                            'LEFTMOUSE', 'PRESS')
-
-        km.keymap_items.new('Circle Increase Size 1',
-                            'WHEELUPMOUSE', 'PRESS', alt=True)
-        km.keymap_items.new('Circle Increase Size 2',
-                            'RIGHT_BRACKET', 'PRESS')
-        km.keymap_items.new('Circle Decrease Size 1',
-                            'WHEELDOWNMOUSE', 'PRESS', alt=True)
-        km.keymap_items.new('Circle Decrease Size 2',
-                            'LEFT_BRACKET', 'PRESS')
+        km.keymap_items.new('Rotate X Axis', 'X', 'PRESS')
+        km.keymap_items.new('Rotate Y Axis', 'Y', 'PRESS')
+        km.keymap_items.new('Rotate Z Axis', 'Z', 'PRESS')
 
         km.keymap_items.new('Cancel Tool 1', 'ESC', 'PRESS')
         km.keymap_items.new('Cancel Tool 2', 'RIGHTMOUSE', 'PRESS')

@@ -43,12 +43,6 @@ class ABN_OT_normal_editor_modal(Operator):
         elif self.tool_mode and self._current_tool != None:
             status = self._current_tool.test_mode(
                 self, context, event, self.keymap, None)
-        elif self.lasso_selecting:
-            status = lasso_select_keymap(self, context, event)
-        elif self.circle_selecting:
-            status = circle_select_keymap(self, context, event)
-        elif self.rotating:
-            status = rotating_keymap(self, context, event)
         elif self.sphereize_mode:
             status = sphereize_keymap(self, context, event)
         elif self.sphereize_move:

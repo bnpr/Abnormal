@@ -202,6 +202,17 @@ def draw(preference, context, layout):
     keymap_row(keymap_items, 'Lasso Remove Selection',
                layout.row(), 'Lasso Remove Selection Key')
 
+    #
+    layout.separator()
+    #
+
+    keymap_row(keymap_items, 'Rotate X Axis',
+               layout.row(), 'Rotate X Axis Key')
+    keymap_row(keymap_items, 'Rotate Y Axis',
+               layout.row(), 'Rotate Y Axis Key')
+    keymap_row(keymap_items, 'Rotate Z Axis',
+               layout.row(), 'Rotate Z Axis Key')
+
 
 def register():
     bpy.utils.register_class(prefs)

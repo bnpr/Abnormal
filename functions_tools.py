@@ -72,19 +72,22 @@ def setup_tools(modal):
 
     modal._circle_resize_tool = tool
 
-    # # ROTATE POINTS
-    # tool = modal.tools.add_tool()
-    # tool.set_mouse_function(rotate_pos_mouse)
-    # tool.set_cancel_function(rotate_pos_cancel)
-    # tool.set_confirm_function(rotate_pos_confirm)
-    # tool.set_pre_pass_through_function(rotate_pre_navigate)
-    # tool.set_post_pass_through_function(rotate_post_navigate)
+    # ROTATE NORMALS
+    tool = modal.tools.add_tool()
+    tool.set_mouse_function(rotate_norms_mouse)
+    tool.set_cancel_function(rotate_norms_cancel)
+    tool.set_confirm_function(rotate_norms_confirm)
+    tool.add_keymap_argument('Rotate X Axis', rotate_set_x)
+    tool.add_keymap_argument('Rotate Y Axis', rotate_set_y)
+    tool.add_keymap_argument('Rotate Z Axis', rotate_set_z)
 
-    # modal._rotate_pos_tool = tool
+    tool.set_pre_pass_through_function(rotate_pre_navigate)
+    tool.set_post_pass_through_function(rotate_post_navigate)
+
+    modal._rotate_norms_tool = tool
     return
 
 
-# ROTATE
 # GIZMO CLICK
 # SPHEREIZE
 # SPHEREIZE MOVE
@@ -345,4 +348,112 @@ def clear_draw_pre_navigate(modal, context, event, func_data):
 
 def clear_draw_post_navigate(modal, context, event, func_data):
     modal.active_drawing = True
+    return
+
+
+#
+# ROTATE NORMALS FUNCS
+def rotate_norms_mouse(modal, context, event, func_data):
+    center = view3d_utils.location_3d_to_region_2d(
+        modal.act_reg, modal.act_rv3d, modal._mode_cache[1])
+
+    start_vec = mathutils.Vector(
+        (modal._mode_cache[0][0]-center[0], modal._mode_cache[0][1]-center[1]))
+    mouse_vec = mathutils.Vector(
+        (modal._mouse_reg_loc[0]-center[0], modal._mouse_reg_loc[1]-center[1]))
+
+    ang = mouse_vec.angle_signed(start_vec)
+    if event.shift:
+        ang *= 0.1
+
+    if ang != 0.0:
+        modal._mode_cache[2] = modal._mode_cache[2]+ang
+        rotate_vectors(
+            modal, modal._mode_cache[2]*modal._mode_cache[3])
+        modal._mode_cache.pop(0)
+        modal._mode_cache.insert(0, modal._mouse_reg_loc)
+
+        modal.redraw = True
+    return
+
+
+def rotate_norms_confirm(modal, context, event, keys, func_data):
+    modal._points_container.clear_cached_normals()
+
+    add_to_undostack(modal, 1)
+    modal._mode_cache.clear()
+    modal._mouse_init = None
+    modal.translate_axis = 2
+    modal.translate_mode = 0
+    clear_translate_axis_draw(modal)
+    modal._window.clear_status()
+
+    modal.rotating = False
+    keymap_refresh(modal)
+    gizmo_update_hide(modal, True)
+    modal.tool_mode = False
+    end_active_drawing(modal)
+    return
+
+
+def rotate_norms_cancel(modal, context, event, keys, func_data):
+    modal._points_container.restore_cached_normals()
+
+    set_new_normals(modal)
+    modal._mode_cache.clear()
+    modal._mouse_init = None
+    modal.translate_axis = 2
+    modal.translate_mode = 0
+    clear_translate_axis_draw(modal)
+    modal._window.clear_status()
+
+    modal.redraw = True
+    modal.rotating = False
+    keymap_refresh(modal)
+    gizmo_update_hide(modal, True)
+    modal.tool_mode = False
+    end_active_drawing(modal)
+    return
+
+
+def rotate_pre_navigate(modal, context, event, func_data):
+    modal._mouse_init = modal._mouse_reg_loc
+    modal.rotating = False
+    end_active_drawing(modal)
+    bpy.context.window.cursor_modal_set('NONE')
+    return
+
+
+def rotate_post_navigate(modal, context, event, func_data):
+    modal._mouse_init = modal._mouse_reg_loc
+    bpy.context.window.cursor_modal_set('DEFAULT')
+    modal.rotating = True
+    modal.active_drawing = True
+    return
+
+
+def rotate_set_x(modal, context, event, keys, func_data):
+    translate_axis_change(modal, 'ROTATING', 0)
+    modal._mode_cache[3] = translate_axis_side(modal)
+    rotate_vectors(
+        modal, modal._mode_cache[2]*modal._mode_cache[3])
+    modal.redraw = True
+    return
+
+
+def rotate_set_y(modal, context, event, keys, func_data):
+    translate_axis_change(modal, 'ROTATING', 1)
+    modal._mode_cache[3] = translate_axis_side(modal)
+    rotate_vectors(
+        modal, modal._mode_cache[2]*modal._mode_cache[3])
+    modal.redraw = True
+    return
+
+
+def rotate_set_z(modal, context, event, keys, func_data):
+    translate_axis_change(modal, 'ROTATING', 2)
+    modal._mode_cache[3] = translate_axis_side(modal)
+    rotate_vectors(
+        modal, modal._mode_cache[2]*modal._mode_cache[3])
+    modal.redraw = True
     return
