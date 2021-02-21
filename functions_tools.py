@@ -6,6 +6,7 @@ from .classes_tool import *
 def setup_tools(modal):
     modal.tools = GEN_Modal_Container()
     modal.tools.set_cancel_keys(['Cancel Tool 1', 'Cancel Tool 2'])
+    modal.tools.set_confirm_keys(['Confirm Tool 1', 'Confirm Tool 2'])
     modal.tools.set_pass_through_events(modal.nav_list)
 
     # BOX SEL

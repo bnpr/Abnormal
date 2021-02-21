@@ -120,6 +120,9 @@ def register():
         km.keymap_items.new('Rotate Y Axis', 'Y', 'PRESS')
         km.keymap_items.new('Rotate Z Axis', 'Z', 'PRESS')
 
+        km.keymap_items.new('Confirm Tool 1', 'LEFTMOUSE', 'PRESS', any=True)
+        km.keymap_items.new('Confirm Tool 2', 'RET', 'PRESS', any=True)
+
         km.keymap_items.new('Cancel Tool 1', 'ESC', 'PRESS')
         km.keymap_items.new('Cancel Tool 2', 'RIGHTMOUSE', 'PRESS')
         addon_keymaps.append(km)
