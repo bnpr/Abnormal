@@ -223,8 +223,6 @@ def rotate_vectors(self, angle):
 #
 # AXIS ALIGNMENT
 #
-
-
 def flatten_normals(self, sel_inds, axis):
     update_filter_weights(self)
     for ind in sel_inds:
@@ -266,8 +264,6 @@ def align_to_axis_normals(self, sel_inds, axis, dir):
 #
 # MANIPULATE NORMALS
 #
-
-
 def average_vertex_normals(self, sel_inds):
     update_filter_weights(self)
 
@@ -363,8 +359,6 @@ def smooth_normals(self, sel_inds, fac):
 #
 # NORMAL DIRECTION
 #
-
-
 def flip_normals(self, sel_inds):
     for ind in sel_inds:
         po = self._points_container.points[ind[0]]
@@ -422,8 +416,6 @@ def reset_normals(self, sel_inds):
 #
 # COPY/PASTE
 #
-
-
 def copy_active_to_selected(self, sel_inds):
     update_filter_weights(self)
     if self._active_point != None:
@@ -588,8 +580,6 @@ def translate_axis_side(self):
 #
 # MODAL
 #
-
-
 def cache_point_data(self):
     self._object.data.calc_normals_split()
 
@@ -690,8 +680,13 @@ def update_filter_weights(self):
 
 
 def init_nav_list(self):
-    self.nav_list = ['LEFTMOUSE', 'MOUSEMOVE',
-                     'WHEELUPMOUSE', 'WHEELDOWNMOUSE', 'N', 'MIDDLEMOUSE']
+    self.nav_list = [['LEFTMOUSE', 'PRESS', True, False, False, False],
+                     ['LEFTMOUSE', 'RELEASE', True, False, False, False],
+                     ['MOUSEMOVE', 'PRESS', True, False, False, False],
+                     ['WHEELUPMOUSE', 'PRESS', True, False, False, False],
+                     ['WHEELDOWNMOUSE', 'PRESS', True, False, False, False],
+                     ['N', 'PRESS', True, False, False, False],
+                     ['MIDDLEMOUSE', 'PRESS', True, False, False, False], ]
 
     names = ['Zoom View', 'Rotate View', 'Pan View', 'Dolly View',
              'View Selected', 'View Camera Center', 'View All', 'View Axis',
@@ -701,15 +696,19 @@ def init_nav_list(self):
     if config:
         for item in config.keymaps['3D View'].keymap_items:
             if item.name in names:
-                if item.type not in self.nav_list:
-                    self.nav_list.append(item.type)
+                item_dat = [item.type, item.value, item.any,
+                            item.ctrl, item.shift, item.alt]
+                if item_dat not in self.nav_list:
+                    self.nav_list.append(item_dat)
 
     config = bpy.context.window_manager.keyconfigs.get('blender user')
     if config:
         for item in config.keymaps['3D View'].keymap_items:
             if item.name in names:
-                if item.type not in self.nav_list:
-                    self.nav_list.append(item.type)
+                item_dat = [item.type, item.value, item.any,
+                            item.ctrl, item.shift, item.alt]
+                if item_dat not in self.nav_list:
+                    self.nav_list.append(item_dat)
 
     return
 
@@ -930,8 +929,6 @@ def check_area(self):
 #
 # GIZMO
 #
-
-
 def gizmo_click_init(self, event, giz_status):
     if self._use_gizmo:
         if event.alt == False:
@@ -1033,8 +1030,6 @@ def gizmo_update_hide(self, status):
 #
 # MODES
 #
-
-
 def add_target_empty(ob):
     emp = bpy.data.objects.new('ABN_Target Empty', None)
     emp.empty_display_size = 0.0
@@ -1244,7 +1239,6 @@ def move_target(self, shift):
 #
 # SELECTION
 #
-
 def get_active_point_index(indeces, active):
     if active == None or active.type != 'POINT':
         return None
@@ -1580,8 +1574,6 @@ def lasso_selection_test(self, shift, ctrl):
 #
 # ORBIT EMPTY
 #
-
-
 def add_orbit_empty(ob):
     for i in range(len(bpy.context.selected_objects)):
         bpy.context.selected_objects[0].select_set(False)
@@ -1635,7 +1627,6 @@ def delete_orbit_empty(self):
 #
 # KEYMAP TEST/LOAD
 #
-
 def load_keymap(self):
     # self.keymap = {}
 
@@ -1646,14 +1637,34 @@ def load_keymap(self):
     return
 
 
-def keys_find(keymap, event):
+def keys_find(keymap_items, event):
+    scroll_up = ['WHEELINMOUSE', 'WHEELUPMOUSE']
+    scroll_down = ['WHEELOUTMOUSE', 'WHEELDOWNMOUSE']
+
     key_val = []
-    for key in keymap.keymap_items:
-        if key.type == event.type:
+    for key in keymap_items:
+        if key.type == event.type or (key.type in scroll_up and event.type in scroll_up) or (key.type in scroll_down and event.type in scroll_down):
             if (key.alt == event.alt and key.ctrl == event.ctrl and key.shift == event.shift) or key.any:
                 if key.value == event.value:
                     key_val.append(key.name)
 
-    if len(key_val) == 0:
-        key_val = None
+    # if len(key_val) == 0:
+    #     key_val = None
     return key_val
+
+
+def test_navigation_key(nav_list, event):
+    nav_status = False
+
+    scroll_up = ['WHEELINMOUSE', 'WHEELUPMOUSE']
+    scroll_down = ['WHEELOUTMOUSE', 'WHEELDOWNMOUSE']
+
+    nav_inds = [i for i in range(
+        len(nav_list)) if (nav_list[i][0] == event.type and nav_list[i][1] == event.value) or (nav_list[i][0] in scroll_up and event.type in scroll_up) or (nav_list[i][0] in scroll_down and event.type in scroll_down)]
+    if len(nav_inds) > 0:
+        for ind in nav_inds:
+            nav_key = nav_list[ind]
+            if nav_key[2] or (event.ctrl == nav_key[3] and event.shift == nav_key[4] and event.alt == nav_key[5]):
+                nav_status = True
+
+    return nav_status
