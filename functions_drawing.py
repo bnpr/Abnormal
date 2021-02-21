@@ -1,106 +1,20 @@
 import bpy
 import bgl
+import traceback
 from gpu_extras.batch import batch_for_shader
 from bpy_extras import view3d_utils
 from .functions_general import *
 
 
 def refresh_batches(self, context):
-    # region outline calculation
-    rh = self.act_reg.height
-    rw = self.act_reg.width
-
-    center = rw/2
-
     # ACTIVELY DRAWING DATA LISTS
     if self.active_drawing:
-        # LASSO SELECTION LINES
-        lassosel_screen_lines = []
-        if self.lasso_selecting:
-            for i in range(len(self._mode_cache)):
-                lassosel_screen_lines.append(self._mode_cache[i-1])
-                lassosel_screen_lines.append(self._mode_cache[i])
-
-        # CIRCLE SELECTION LINES
-        circlesel_screen_lines = []
-        if self.circle_selecting or self.circle_select_start or self.circle_resizing:
-            if self.circle_resizing:
-                cur_loc = mathutils.Vector(
-                    (self._mode_cache[0][0], self._mode_cache[0][1]))
-            else:
-                cur_loc = mathutils.Vector(
-                    (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
-
-            co = cur_loc.copy()
-            co[1] += self.circle_radius
-            angle = math.radians(360/32)
-
-            for i in range(32):
-                circlesel_screen_lines.append(co.copy())
-                co = rotate_2d(cur_loc, co, angle)
-                circlesel_screen_lines.append(co.copy())
-
-        # BOX SELECTION LINES
-        boxsel_screen_lines = []
-        if self.box_selecting:
-
-            init_loc = mathutils.Vector(
-                (self._mode_cache[0][0], self._mode_cache[0][1]))
-            cur_loc = mathutils.Vector(
-                (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
-
-            top_right = mathutils.Vector(
-                (self._mouse_reg_loc[0], self._mode_cache[0][1]))
-            bot_left = mathutils.Vector(
-                (self._mode_cache[0][0], self._mouse_reg_loc[1]))
-
-            vec = init_loc-top_right
-            start_co = top_right
-            dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
-            boxsel_screen_lines += dashed_lines
-
-            vec = top_right-cur_loc
-            start_co = cur_loc
-            dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
-            boxsel_screen_lines += dashed_lines
-
-            vec = cur_loc-bot_left
-            start_co = bot_left
-            dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
-            boxsel_screen_lines += dashed_lines
-
-            vec = bot_left-init_loc
-            start_co = init_loc
-            dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
-            boxsel_screen_lines += dashed_lines
-
-        rot_screen_lines = []
-        if self.rotating:
-            cent_loc = view3d_utils.location_3d_to_region_2d(
-                self.act_reg, self.act_rv3d, self._mode_cache[1])
-            cur_loc = mathutils.Vector(
-                (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
-
-            vec = cur_loc-cent_loc
-            start_co = cent_loc
-            dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
-            rot_screen_lines += dashed_lines
-
-        # stores 2d batches
-        self.batch_boxsel_screen_lines = batch_for_shader(
-            self.shader_2d, 'LINES', {"pos": boxsel_screen_lines})
-        self.batch_circlesel_screen_lines = batch_for_shader(
-            self.shader_2d, 'LINES', {"pos": circlesel_screen_lines})
-        self.batch_lassosel_screen_lines = batch_for_shader(
-            self.shader_2d, 'LINES', {"pos": lassosel_screen_lines})
-        self.batch_rotate_screen_lines = batch_for_shader(
-            self.shader_2d, 'LINES', {"pos": rot_screen_lines})
+        create_selection_drawing_lists(self)
 
     if self.redraw:
         self._points_container.update()
 
     self.redraw = False
-    self.active_drawing = False
     force_scene_update()
     return
 
@@ -139,12 +53,16 @@ def draw_callback_3d(self, context):
 
         bgl.glDisable(bgl.GL_BLEND)
 
-    except Exception as e:
+    except Exception:
         print()
         print()
         print()
+        print('######')
         print('ABNORMAL DRAW 3D ERROR! INCLUDE THE NEXT ERROR MESSAGE WITH ANY BUG REPORT')
-        print(e)
+        print('######')
+        print()
+        print()
+        traceback.print_exc()
         print()
         print()
         print()
@@ -198,12 +116,16 @@ def draw_callback_2d(self, context):
             self.shader_2d.uniform_float("color", (1.0, 0.0, 0.0, 1))
             self.batch_po.draw(self.shader_2d)
 
-    except Exception as e:
+    except Exception:
         print()
         print()
         print()
+        print('######')
         print('ABNORMAL DRAW 2D ERROR! INCLUDE THE NEXT ERROR MESSAGE WITH ANY BUG REPORT')
-        print(e)
+        print('######')
+        print()
+        print()
+        traceback.print_exc()
         print()
         print()
         print()
@@ -253,4 +175,121 @@ def viewport_change_cache(self, context):
                 space.show_region_ui = False
                 space.overlay.show_cursor = False
                 space.overlay.show_text = False
+    return
+
+
+#
+#
+
+
+def end_active_drawing(self):
+    self.active_drawing = False
+    create_selection_drawing_lists(self)
+    return
+
+
+def create_selection_drawing_lists(self):
+    # region outline calculation
+    rh = self.act_reg.height
+    rw = self.act_reg.width
+
+    center = rw/2
+
+    # CIRCLE SELECTION LINES
+    circlesel_screen_lines = []
+    if self.circle_selecting or self.circle_resizing:
+        if self.circle_resizing:
+            cur_loc = mathutils.Vector(
+                (self._mode_cache[0][0], self._mode_cache[0][1]))
+        else:
+            cur_loc = mathutils.Vector(
+                (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
+
+        co = cur_loc.copy()
+        co[1] += self.circle_radius
+        angle = math.radians(360/32)
+
+        for i in range(32):
+            circlesel_screen_lines.append(co.copy())
+            co = rotate_2d(cur_loc, co, angle)
+            circlesel_screen_lines.append(co.copy())
+
+    # LASSO SELECTION LINES
+    lassosel_screen_lines = []
+    if self.lasso_selecting:
+        for i in range(len(self._mode_cache)):
+            lassosel_screen_lines.append(self._mode_cache[i-1])
+            lassosel_screen_lines.append(self._mode_cache[i])
+
+    # BOX SELECTION LINES
+    boxsel_screen_lines = []
+    if self.box_selecting:
+
+        init_loc = mathutils.Vector(
+            (self._mode_cache[0][0], self._mode_cache[0][1]))
+        cur_loc = mathutils.Vector(
+            (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
+
+        top_right = mathutils.Vector(
+            (self._mouse_reg_loc[0], self._mode_cache[0][1]))
+        bot_left = mathutils.Vector(
+            (self._mode_cache[0][0], self._mouse_reg_loc[1]))
+
+        vec = init_loc-top_right
+        start_co = top_right
+        dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
+        boxsel_screen_lines += dashed_lines
+
+        vec = top_right-cur_loc
+        start_co = cur_loc
+        dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
+        boxsel_screen_lines += dashed_lines
+
+        vec = cur_loc-bot_left
+        start_co = bot_left
+        dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
+        boxsel_screen_lines += dashed_lines
+
+        vec = bot_left-init_loc
+        start_co = init_loc
+        dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
+        boxsel_screen_lines += dashed_lines
+
+    # ROTATION CENTER LINE
+    rot_screen_lines = []
+    if self.rotating:
+        cent_loc = view3d_utils.location_3d_to_region_2d(
+            self.act_reg, self.act_rv3d, self._mode_cache[1])
+        cur_loc = mathutils.Vector(
+            (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
+
+        vec = cur_loc-cent_loc
+        start_co = cent_loc
+        dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
+        rot_screen_lines += dashed_lines
+
+    # STORE 2D BATCHES
+    self.batch_boxsel_screen_lines = batch_for_shader(
+        self.shader_2d, 'LINES', {"pos": boxsel_screen_lines})
+    self.batch_lassosel_screen_lines = batch_for_shader(
+        self.shader_2d, 'LINES', {"pos": lassosel_screen_lines})
+    self.batch_circlesel_screen_lines = batch_for_shader(
+        self.shader_2d, 'LINES', {"pos": circlesel_screen_lines})
+    self.batch_rotate_screen_lines = batch_for_shader(
+        self.shader_2d, 'LINES', {"pos": rot_screen_lines})
+
+    return
+
+
+def empty_selection_drawing_lists(self):
+    # STORE 2D BATCHES
+    self.batch_boxsel_screen_lines = batch_for_shader(
+        self.shader_2d, 'LINES', {"pos": []})
+    self.batch_lassosel_screen_lines = batch_for_shader(
+        self.shader_2d, 'LINES', {"pos": []})
+    self.batch_circlesel_screen_lines = batch_for_shader(
+        self.shader_2d, 'LINES', {"pos": []})
+    self.batch_rotate_screen_lines = batch_for_shader(
+        self.shader_2d, 'LINES', {"pos": []})
+
     return
