@@ -73,8 +73,8 @@ def basic_ui_hover_keymap(self, context, event):
             if panel_status[0] == {'FINISHED'}:
                 status = panel_status[0]
 
-    keys = keys_find(self.keymap, event)
-    if keys == None:
+    keys = keys_find(self.keymap.keymap_items, event)
+    if len(keys) == 0:
         keys = []
     #     return status
     # else:
@@ -109,7 +109,8 @@ def basic_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
     # allow viewport navigation
-    if event.type in self.nav_list:
+    nav_status = test_navigation_key(self.nav_list, event)
+    if nav_status:
         # allow navigation
         status = {'PASS_THROUGH'}
 
@@ -158,8 +159,8 @@ def basic_keymap(self, context, event):
     #
     #
 
-    keys = keys_find(self.keymap, event)
-    if keys == None:
+    keys = keys_find(self.keymap.keymap_items, event)
+    if len(keys) == 0:
         return status
     else:
         status = {"RUNNING_MODAL"}
@@ -247,6 +248,7 @@ def basic_keymap(self, context, event):
             self.rotating = True
             keymap_rotating(self)
             gizmo_update_hide(self, False)
+            self.active_drawing = True
 
     # Toggle Gizmo
     if 'Toggle Gizmo' in keys:
@@ -305,22 +307,29 @@ def basic_keymap(self, context, event):
 
     # box select
     if 'Box Start' in keys:
-        self.box_select_start = True
         bpy.context.window.cursor_modal_set('CROSSHAIR')
+        self._current_tool = self._box_sel_tool
+        self.tool_mode = True
+        self.active_drawing = True
         keymap_box_selecting(self)
         gizmo_update_hide(self, False)
 
     # circle select
     if 'Circle Start' in keys:
-        self.circle_select_start = True
         bpy.context.window.cursor_modal_set('CROSSHAIR')
+        self._current_tool = self._circle_sel_tool
+        self.tool_mode = True
+        self.active_drawing = True
+        self.circle_selecting = True
         keymap_circle_selecting(self)
         gizmo_update_hide(self, False)
 
     # lasso select
     if 'Lasso Start' in keys:
-        self.lasso_select_start = True
         bpy.context.window.cursor_modal_set('CROSSHAIR')
+        self._current_tool = self._lasso_sel_tool
+        self.tool_mode = True
+        self.active_drawing = True
         keymap_lasso_selecting(self)
         gizmo_update_hide(self, False)
 
@@ -486,10 +495,9 @@ def typing_keymap(self, context, event):
 
 def rotating_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
-    self.active_drawing = True
 
-    keys = keys_find(self.keymap, event)
-    if keys == None:
+    keys = keys_find(self.keymap.keymap_items, event)
+    if len(keys) == 0:
         keys = []
     #     return status
     # else:
@@ -578,8 +586,8 @@ def rotating_keymap(self, context, event):
 def gizmo_click_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
-    keys = keys_find(self.keymap, event)
-    if keys == None:
+    keys = keys_find(self.keymap.keymap_items, event)
+    if len(keys) == 0:
         keys = []
     #     return status
     # else:
@@ -695,14 +703,16 @@ def gizmo_click_keymap(self, context, event):
 def sphereize_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
-    keys = keys_find(self.keymap, event)
-    if keys == None:
+    keys = keys_find(self.keymap.keymap_items, event)
+    if len(keys) == 0:
         keys = []
     #     return status
     # else:
     #     status = {"RUNNING_MODAL"}
 
-    if event.type in self.nav_list:
+    # allow viewport navigation
+    nav_status = test_navigation_key(self.nav_list, event)
+    if nav_status:
         # allow navigation
         status = {'PASS_THROUGH'}
 
@@ -788,8 +798,8 @@ def sphereize_keymap(self, context, event):
 def sphereize_move_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
-    keys = keys_find(self.keymap, event)
-    if keys == None:
+    keys = keys_find(self.keymap.keymap_items, event)
+    if len(keys) == 0:
         keys = []
     #     return status
     # else:
@@ -865,14 +875,16 @@ def sphereize_move_keymap(self, context, event):
 def point_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
-    keys = keys_find(self.keymap, event)
-    if keys == None:
+    keys = keys_find(self.keymap.keymap_items, event)
+    if len(keys) == 0:
         keys = []
     #     return status
     # else:
     #     status = {"RUNNING_MODAL"}
 
-    if event.type in self.nav_list:
+    # allow viewport navigation
+    nav_status = test_navigation_key(self.nav_list, event)
+    if nav_status:
         # allow navigation
         status = {'PASS_THROUGH'}
 
@@ -960,8 +972,8 @@ def point_keymap(self, context, event):
 def point_move_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
-    keys = keys_find(self.keymap, event)
-    if keys == None:
+    keys = keys_find(self.keymap.keymap_items, event)
+    if len(keys) == 0:
         keys = []
     #     return status
     # else:
@@ -1030,283 +1042,4 @@ def point_move_keymap(self, context, event):
         keymap_target(self)
         while len(self._mode_cache) > 1:
             self._mode_cache.pop(0)
-    return status
-
-
-#
-#
-
-
-def box_select_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-    self.active_drawing = True
-
-    keys = keys_find(self.keymap, event)
-    if keys == None:
-        if self.box_selecting:
-            keys = []
-        else:
-            return status
-    else:
-        status = {"RUNNING_MODAL"}
-
-    if 'Box Start Selection' in keys and self.box_selecting == False:
-        self._mode_cache.append(self._mouse_reg_loc)
-        self.box_select_start = False
-        self.box_selecting = True
-
-    if event.type == 'MOUSEMOVE' and self.box_selecting:
-        prev_loc = mathutils.Vector(
-            (self._mode_cache[-1][0], self._mode_cache[-1][1]))
-        cur_loc = mathutils.Vector(self._mouse_reg_loc)
-
-        if event.alt:
-            if self._mouse_init == None:
-                self._mouse_init = self._mouse_reg_loc
-
-            else:
-                offset = [self._mouse_reg_loc[0]-self._mouse_init[0],
-                          self._mouse_reg_loc[1]-self._mouse_init[1]]
-                for p in range(len(self._mode_cache)):
-                    self._mode_cache.append(
-                        [self._mode_cache[0][0]+offset[0], self._mode_cache[0][1]+offset[1]])
-                    self._mode_cache.pop(0)
-                self._mouse_init = self._mouse_reg_loc
-
-        else:
-            if self._mouse_init:
-                self._mouse_init = None
-
-            if (cur_loc-prev_loc).length > 10.0:
-                self._mode_cache.append(self._mouse_reg_loc)
-
-    if 'Box Add Selection' in keys:
-        change = box_selection_test(self, True, False)
-        if change:
-            add_to_undostack(self, 0)
-
-        self.box_select_start = False
-        self.box_selecting = False
-        self._mode_cache.clear()
-        bpy.context.window.cursor_modal_set('DEFAULT')
-        update_orbit_empty(self)
-        keymap_refresh(self)
-
-    elif 'Box Remove Selection' in keys:
-        change = box_selection_test(self, False, True)
-        if change:
-            add_to_undostack(self, 0)
-
-        self.box_select_start = False
-        self.box_selecting = False
-        self._mode_cache.clear()
-        bpy.context.window.cursor_modal_set('DEFAULT')
-        update_orbit_empty(self)
-        keymap_refresh(self)
-
-    elif 'Box New Selection' in keys:
-        change = box_selection_test(self, False, False)
-        if change:
-            add_to_undostack(self, 0)
-
-        self.box_select_start = False
-        self.box_selecting = False
-        self._mode_cache.clear()
-        bpy.context.window.cursor_modal_set('DEFAULT')
-        update_orbit_empty(self)
-        keymap_refresh(self)
-
-    if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
-        self.box_select_start = False
-        self.box_selecting = False
-        bpy.context.window.cursor_modal_set('DEFAULT')
-        gizmo_update_hide(self, True)
-        self._mode_cache.clear()
-        keymap_refresh(self)
-
-    return status
-
-
-def lasso_select_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-    self.active_drawing = True
-
-    keys = keys_find(self.keymap, event)
-    if keys == None:
-        if self.lasso_selecting:
-            keys = []
-        else:
-            return status
-    else:
-        status = {"RUNNING_MODAL"}
-
-    if 'Lasso Start Selection' in keys and self.lasso_selecting == False:
-        self._mode_cache.append(self._mouse_reg_loc)
-        self.lasso_select_start = False
-        self.lasso_selecting = True
-
-    if event.type == 'MOUSEMOVE' and self.lasso_selecting:
-        prev_loc = mathutils.Vector(
-            (self._mode_cache[-1][0], self._mode_cache[-1][1]))
-        cur_loc = mathutils.Vector(self._mouse_reg_loc)
-
-        if event.alt:
-            if self._mouse_init == None:
-                self._mouse_init = self._mouse_reg_loc
-
-            else:
-                offset = cur_loc - prev_loc
-                for p in range(len(self._mode_cache)):
-                    self._mode_cache.append(
-                        [self._mode_cache[0][0]+offset[0], self._mode_cache[0][1]+offset[1]])
-                    self._mode_cache.pop(0)
-                self._mouse_init = self._mouse_reg_loc
-
-        else:
-            if self._mouse_init:
-                self._mouse_init = None
-
-            if (cur_loc-prev_loc).length > 10.0:
-                self._mode_cache.append(self._mouse_reg_loc)
-
-    if 'Lasso Add Selection' in keys:
-        change = lasso_selection_test(self, True, False)
-        if change:
-            add_to_undostack(self, 0)
-
-        self.lasso_selecting = False
-        self._mode_cache.clear()
-        bpy.context.window.cursor_modal_set('DEFAULT')
-        keymap_refresh(self)
-        update_orbit_empty(self)
-
-    elif 'Lasso Remove Selection' in keys:
-        change = lasso_selection_test(self, False, True)
-        if change:
-            add_to_undostack(self, 0)
-
-        self.lasso_selecting = False
-        self._mode_cache.clear()
-        bpy.context.window.cursor_modal_set('DEFAULT')
-        keymap_refresh(self)
-        update_orbit_empty(self)
-
-    elif 'Lasso New Selection' in keys:
-        change = lasso_selection_test(self, False, False)
-        if change:
-            add_to_undostack(self, 0)
-
-        self.lasso_selecting = False
-        self._mode_cache.clear()
-        bpy.context.window.cursor_modal_set('DEFAULT')
-        keymap_refresh(self)
-        update_orbit_empty(self)
-
-    if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
-        self.lasso_selecting = False
-        self._mode_cache.clear()
-        bpy.context.window.cursor_modal_set('DEFAULT')
-        keymap_refresh(self)
-        gizmo_update_hide(self, True)
-
-    return status
-
-
-def circle_select_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-    self.active_drawing = True
-
-    # allow viewport navigation
-    if event.type in self.nav_list:
-        status = {'PASS_THROUGH'}
-
-    keys = keys_find(self.keymap, event)
-    if keys == None:
-        if self.circle_selecting or self.circle_resizing:
-            keys = []
-        else:
-            return status
-    else:
-        status = {"RUNNING_MODAL"}
-
-    if self.circle_resizing:
-        prev_loc = mathutils.Vector(
-            (self._mode_cache[0][0], self._mode_cache[0][1]))
-        cur_loc = mathutils.Vector(self._mouse_reg_loc)
-
-        diff = int((cur_loc-prev_loc).length)
-        self.circle_radius = diff
-
-        if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
-            self.circle_resizing = False
-            self.circle_radius = self._mode_cache[1]
-            self._mode_cache.clear()
-
-        if 'Circle Confirm Resize' in keys:
-            self.circle_resizing = False
-            self._mode_cache.clear()
-
-    else:
-        if 'Circle Resize Mode Start' in keys:
-            self.circle_resizing = True
-            if self._mouse_reg_loc[0]-self.circle_radius < 0:
-                self._mode_cache.append(
-                    [self._mouse_reg_loc[0]+self.circle_radius, self._mouse_reg_loc[1]])
-            else:
-                self._mode_cache.append(
-                    [self._mouse_reg_loc[0]-self.circle_radius, self._mouse_reg_loc[1]])
-            self._mode_cache.append(self.circle_radius)
-            return status
-
-        if 'Circle Decrease Size 1' in keys or 'Circle Decrease Size 2' in keys:
-            self.circle_radius -= 10
-            if self.circle_radius < 10:
-                self.circle_radius = 10
-            status = {'RUNNING_MODAL'}
-
-        if 'Circle Increase Size 1' in keys or 'Circle Increase Size 2' in keys:
-            self.circle_radius += 10
-            status = {'RUNNING_MODAL'}
-
-        #
-        #
-
-        if 'Circle Start Selection' in keys and self.circle_selecting == False:
-            if 'Circle Add Selection' in keys:
-                circle_selection_test(self, True, False, self.circle_radius)
-                self.redraw = True
-            elif 'Circle Remove Selection' in keys:
-                circle_selection_test(self, False, True, self.circle_radius)
-                self.redraw = True
-                self.circle_removing = True
-            else:
-                circle_selection_test(self, False, False, self.circle_radius)
-                self.redraw = True
-
-            self.circle_select_start = False
-            self.circle_selecting = True
-
-        if event.type == 'MOUSEMOVE' and self.circle_selecting:
-            if self.circle_removing == False:
-                circle_selection_test(self, True, False, self.circle_radius)
-                self.redraw = True
-            else:
-                circle_selection_test(self, False, True, self.circle_radius)
-                self.redraw = True
-
-        if 'Circle End Selection' in keys and self.circle_selecting and event.value == 'RELEASE':
-            self.circle_select_start = True
-            self.circle_selecting = False
-            self.circle_removing = False
-
-        if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
-            add_to_undostack(self, 0)
-
-            self.circle_select_start = False
-            self.circle_selecting = False
-            self.circle_removing = False
-            bpy.context.window.cursor_modal_set('DEFAULT')
-            keymap_refresh(self)
-            update_orbit_empty(self)
-
     return status

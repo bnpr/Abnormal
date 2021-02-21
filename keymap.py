@@ -13,6 +13,7 @@ def register():
         km = wm.keyconfigs.addon.keymaps.new(
             name='Abnormal', space_type='EMPTY')
 
+        # SHORTCUTS KEYMAP
         km.keymap_items.new('Rotate Normals', 'R', 'PRESS')
         km.keymap_items.new('Toggle X-Ray', 'Z', 'PRESS')
         km.keymap_items.new('Hide Unselected', 'H', 'PRESS', alt=True)
@@ -102,6 +103,18 @@ def register():
                             'LEFTMOUSE', 'PRESS', shift=True)
         km.keymap_items.new('Circle Remove Selection',
                             'LEFTMOUSE', 'PRESS', ctrl=True)
+
+        km.keymap_items.new('Circle Select Increase 1',
+                            'LEFT_BRACKET', 'PRESS')
+        km.keymap_items.new('Circle Select Increase 2',
+                            'WHEELDOWNMOUSE', 'PRESS', alt=True)
+        km.keymap_items.new('Circle Select Decrease 1',
+                            'RIGHT_BRACKET', 'PRESS')
+        km.keymap_items.new('Circle Select Decrease 2',
+                            'WHEELUPMOUSE', 'PRESS', alt=True)
+        km.keymap_items.new('Circle Select Resize Start', 'F', 'PRESS')
+        km.keymap_items.new('Circle Select Resize Confirm',
+                            'F', 'RELEASE', any=True)
 
         km.keymap_items.new('Circle Resize Mode Start',
                             'F', 'PRESS')

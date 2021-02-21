@@ -8,6 +8,7 @@ from .functions_modal import *
 from .functions_keymaps import *
 from .functions_modal_buttons import *
 from .functions_modal_keymap import *
+from .functions_tools import *
 from .classes import *
 
 
@@ -39,11 +40,12 @@ class ABN_OT_normal_editor_modal(Operator):
         status = {"RUNNING_MODAL"}
         if self.typing:
             status = typing_keymap(self, context, event)
-        elif self.box_selecting or self.box_select_start:
-            status = box_select_keymap(self, context, event)
-        elif self.lasso_select_start or self.lasso_selecting:
+        elif self.tool_mode and self._current_tool != None:
+            status = self._current_tool.test_mode(
+                self, context, event, self.keymap, None)
+        elif self.lasso_selecting:
             status = lasso_select_keymap(self, context, event)
-        elif self.circle_selecting or self.circle_select_start:
+        elif self.circle_selecting:
             status = circle_select_keymap(self, context, event)
         elif self.rotating:
             status = rotating_keymap(self, context, event)
@@ -169,14 +171,14 @@ class ABN_OT_normal_editor_modal(Operator):
             self.gizmo_click = False
             self.waiting = False
 
-            self.box_select_start = False
             self.box_selecting = False
-            self.lasso_select_start = False
             self.lasso_selecting = False
             self.circle_selecting = False
-            self.circle_select_start = False
             self.circle_resizing = False
             self.circle_removing = False
+
+            self._current_tool = None
+            self.tool_mode = False
 
             self.click_hold = False
             self.active_drawing = True
@@ -235,6 +237,7 @@ class ABN_OT_normal_editor_modal(Operator):
             update_orbit_empty(self)
 
             load_keymap(self)
+            setup_tools(self)
 
             # SETUP BATCHES
             refresh_batches(self, context)
