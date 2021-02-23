@@ -405,7 +405,6 @@ def reset_normals(self, sel_inds):
         if po.valid:
             loop = po.loops[ind[1]]
             loop.reset_normal()
-
         self.redraw = True
 
     set_new_normals(self)

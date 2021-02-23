@@ -88,7 +88,9 @@ class ABN_OT_normal_editor_modal(Operator):
             self._addon_prefs = bpy.context.preferences.addons[__package__].preferences
             self._display_prefs = self._addon_prefs.display
             self._behavior_prefs = self._addon_prefs.behavior
-            self._keymap_prefs = self._addon_prefs.keymap
+            self._keymap_sel_prefs = self._addon_prefs.keymap_sel
+            self._keymap_shortcut_prefs = self._addon_prefs.keymap_shortcut
+            self._keymap_tool_prefs = self._addon_prefs.keymap_tool
             self._mouse_abs_loc = [event.mouse_x, event.mouse_y]
             self._mouse_reg_loc = [event.mouse_region_x, event.mouse_region_y]
             self._prev_mouse_loc = [event.mouse_region_x, event.mouse_region_y]

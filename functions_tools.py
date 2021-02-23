@@ -92,8 +92,8 @@ def setup_tools(modal):
     tool.set_mouse_function(sphereize_mouse)
     tool.set_confirm_function(sphereize_confirm)
     tool.set_mouse_pass(True)
-    tool.add_keymap_argument('Sphereize Move Start', sphereize_start_move)
-    tool.add_keymap_argument('Sphereize Center Reset', sphereize_reset)
+    tool.add_keymap_argument('Target Move Start', sphereize_start_move)
+    tool.add_keymap_argument('Target Center Reset', sphereize_reset)
     tool.add_keymap_argument('Toggle X-Ray', toggle_x_ray)
 
     modal._sphereize_tool = tool
@@ -103,9 +103,9 @@ def setup_tools(modal):
     tool.set_mouse_function(sphereize_move_mouse)
     tool.set_cancel_function(sphereize_move_cancel)
     tool.set_confirm_function(sphereize_move_confirm)
-    tool.add_keymap_argument('Sphereize Move X Axis', sphereize_move_set_x)
-    tool.add_keymap_argument('Sphereize Move Y Axis', sphereize_move_set_y)
-    tool.add_keymap_argument('Sphereize Move Z Axis', sphereize_move_set_z)
+    tool.add_keymap_argument('Target Move X Axis', sphereize_move_set_x)
+    tool.add_keymap_argument('Target Move Y Axis', sphereize_move_set_y)
+    tool.add_keymap_argument('Target Move Z Axis', sphereize_move_set_z)
     tool.add_keymap_argument('Toggle X-Ray', toggle_x_ray)
 
     modal._sphereize_move_tool = tool
@@ -115,8 +115,8 @@ def setup_tools(modal):
     tool.set_mouse_function(point_mouse)
     tool.set_confirm_function(point_confirm)
     tool.set_mouse_pass(True)
-    tool.add_keymap_argument('Sphereize Move Start', point_start_move)
-    tool.add_keymap_argument('Sphereize Center Reset', point_reset)
+    tool.add_keymap_argument('Target Move Start', point_start_move)
+    tool.add_keymap_argument('Target Center Reset', point_reset)
     tool.add_keymap_argument('Toggle X-Ray', toggle_x_ray)
 
     modal._point_tool = tool
@@ -126,21 +126,49 @@ def setup_tools(modal):
     tool.set_mouse_function(point_move_mouse)
     tool.set_cancel_function(point_move_cancel)
     tool.set_confirm_function(point_move_confirm)
-    tool.add_keymap_argument('Sphereize Move X Axis', point_move_set_x)
-    tool.add_keymap_argument('Sphereize Move Y Axis', point_move_set_y)
-    tool.add_keymap_argument('Sphereize Move Z Axis', point_move_set_z)
+    tool.add_keymap_argument('Target Move X Axis', point_move_set_x)
+    tool.add_keymap_argument('Target Move Y Axis', point_move_set_y)
+    tool.add_keymap_argument('Target Move Z Axis', point_move_set_z)
     tool.add_keymap_argument('Toggle X-Ray', toggle_x_ray)
 
     modal._point_move_tool = tool
 
     # GIZMO CLICK
     tool = modal.tools.add_tool()
-    tool.set_mouse_function(gizmo_mouse)
     tool.set_confirm_function(gizmo_confirm)
     tool.set_cancel_function(gizmo_cancel)
-    tool.add_confirm_key('Confirm Tool 3')
 
     modal._gizmo_tool = tool
+
+    # MIRROR
+    tool = modal.tools.add_tool(inherit_confirm=False)
+    tool.set_cancel_function(mirror_cancel)
+    tool.add_keymap_argument('Mirror Normals X', mirror_x)
+    tool.add_keymap_argument('Mirror Normals Y', mirror_y)
+    tool.add_keymap_argument('Mirror Normals Z', mirror_z)
+
+    modal._mirror_tool = tool
+
+    # FLATTEN
+    tool = modal.tools.add_tool(inherit_confirm=False)
+    tool.set_cancel_function(flatten_cancel)
+    tool.add_keymap_argument('Flatten Normals X', flatten_x)
+    tool.add_keymap_argument('Flatten Normals Y', flatten_y)
+    tool.add_keymap_argument('Flatten Normals Z', flatten_z)
+
+    modal._flatten_tool = tool
+
+    # ALIGN
+    tool = modal.tools.add_tool(inherit_confirm=False)
+    tool.set_cancel_function(align_cancel)
+    tool.add_keymap_argument('Align Normals Pos X', align_pos_x)
+    tool.add_keymap_argument('Align Normals Pos Y', align_pos_y)
+    tool.add_keymap_argument('Align Normals Pos Z', align_pos_z)
+    tool.add_keymap_argument('Align Normals Neg X', align_neg_x)
+    tool.add_keymap_argument('Align Normals Neg Y', align_neg_y)
+    tool.add_keymap_argument('Align Normals Neg Z', align_neg_z)
+
+    modal._align_tool = tool
     return
 
 
@@ -851,4 +879,112 @@ def gizmo_cancel(modal, context, event, keys, func_data):
     modal._mode_cache.clear()
     modal.redraw = True
     modal.click_hold = False
+    return
+
+
+#
+# MIRROR FUNCS
+def mirror_x(modal, context, event, keys, func_data):
+    mirror_normals(modal, modal._mode_cache[0], 0)
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+def mirror_y(modal, context, event, keys, func_data):
+    mirror_normals(modal, modal._mode_cache[0], 1)
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+def mirror_z(modal, context, event, keys, func_data):
+    mirror_normals(modal, modal._mode_cache[0], 2)
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+def mirror_cancel(modal, context, event, keys, func_data):
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+#
+# FLATTEN FUNCS
+def flatten_x(modal, context, event, keys, func_data):
+    flatten_normals(modal, modal._mode_cache[0], 0)
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+def flatten_y(modal, context, event, keys, func_data):
+    flatten_normals(modal, modal._mode_cache[0], 1)
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+def flatten_z(modal, context, event, keys, func_data):
+    flatten_normals(modal, modal._mode_cache[0], 2)
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+def flatten_cancel(modal, context, event, keys, func_data):
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+#
+# ALIGN FUNCS
+def align_pos_x(modal, context, event, keys, func_data):
+    align_to_axis_normals(modal, modal._mode_cache[0], 0, 1)
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+def align_pos_y(modal, context, event, keys, func_data):
+    align_to_axis_normals(modal, modal._mode_cache[0], 1, 1)
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+def align_pos_z(modal, context, event, keys, func_data):
+    align_to_axis_normals(modal, modal._mode_cache[0], 2, 1)
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+def align_neg_x(modal, context, event, keys, func_data):
+    align_to_axis_normals(modal, modal._mode_cache[0], 0, -1)
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+def align_neg_y(modal, context, event, keys, func_data):
+    align_to_axis_normals(modal, modal._mode_cache[0], 1, -1)
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+def align_neg_z(modal, context, event, keys, func_data):
+    align_to_axis_normals(modal, modal._mode_cache[0], 2, -1)
+    modal._mode_cache.clear()
+    modal.tool_mode = False
+    return
+
+
+def align_cancel(modal, context, event, keys, func_data):
+    modal._mode_cache.clear()
+    modal.tool_mode = False
     return
