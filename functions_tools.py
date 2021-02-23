@@ -144,9 +144,6 @@ def setup_tools(modal):
     return
 
 
-# TYPING
-
-
 #
 # BOX SELECT FUNCS
 def box_sel_start(modal, context, event, keys, func_data):

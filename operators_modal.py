@@ -47,12 +47,14 @@ class ABN_OT_normal_editor_modal(Operator):
         if mouse_move_check:
             if self.typing:
                 status = typing_keymap(self, context, event)
+
             elif self.tool_mode and self._current_tool != None:
                 if self.ui_hover:
                     status = basic_ui_hover_keymap(self, context, event)
                 else:
                     status = self._current_tool.test_mode(
                         self, context, event, self.keymap, None)
+
             else:
                 if self.ui_hover:
                     status = basic_ui_hover_keymap(self, context, event)
