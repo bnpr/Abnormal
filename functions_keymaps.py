@@ -46,6 +46,7 @@ def basic_ui_hover_keymap(self, context, event):
         if panel_status:
             if panel_status[0] == 'GIZMO':
                 gizmo_click_init(self, event, panel_status[1])
+                self.ui_hover = False
 
             else:
                 if panel_status[0] == {'CANCELLED'}:
@@ -511,121 +512,5 @@ def typing_keymap(self, context, event):
 
     else:
         self._window.type_add_key(event.ascii)
-
-    return status
-
-#
-#
-
-
-def gizmo_click_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-
-    keys = keys_find(self.keymap.keymap_items, event)
-    if len(keys) == 0:
-        keys = []
-    #     return status
-    # else:
-    #     status = {"RUNNING_MODAL"}
-
-    if event.type == 'MOUSEMOVE':
-        start_vec = self._mode_cache[0]
-        view_vec = view3d_utils.region_2d_to_vector_3d(
-            self.act_reg, self.act_rv3d, mathutils.Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
-        view_orig = view3d_utils.region_2d_to_origin_3d(
-            self.act_reg, self.act_rv3d, mathutils.Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
-        line_a = view_orig
-        line_b = view_orig + view_vec*10000
-        if self._mode_cache[1][0] == 'ROT_X':
-            x_vec = self._mode_cache[4] @ mathutils.Vector(
-                (1, 0, 0)) - self._mode_cache[4].translation
-            mouse_co_3d = mathutils.geometry.intersect_line_plane(
-                line_a, line_b, self._mode_cache[4].translation, x_vec)
-        if self._mode_cache[1][0] == 'ROT_Y':
-            y_vec = self._mode_cache[4] @ mathutils.Vector(
-                (0, 1, 0)) - self._mode_cache[4].translation
-            mouse_co_3d = mathutils.geometry.intersect_line_plane(
-                line_a, line_b, self._mode_cache[4].translation, y_vec)
-        if self._mode_cache[1][0] == 'ROT_Z':
-            z_vec = self._mode_cache[4] @ mathutils.Vector(
-                (0, 0, 1)) - self._mode_cache[4].translation
-            mouse_co_3d = mathutils.geometry.intersect_line_plane(
-                line_a, line_b, self._mode_cache[4].translation, z_vec)
-
-        mouse_co_local = self._mode_cache[4].inverted() @ mouse_co_3d
-
-        self.translate_mode = 2
-        if self._mode_cache[1][0] == 'ROT_X':
-            mouse_loc = mouse_co_local.yz
-            ang = start_vec.angle_signed(mouse_co_local.yz)*-1
-            self.translate_axis = 0
-        if self._mode_cache[1][0] == 'ROT_Y':
-            mouse_loc = mouse_co_local.xz
-            ang = start_vec.angle_signed(mouse_co_local.xz)*-1
-            self.translate_axis = 1
-        if self._mode_cache[1][0] == 'ROT_Z':
-            mouse_loc = mouse_co_local.xy
-            ang = start_vec.angle_signed(mouse_co_local.xy)*-1
-            self.translate_axis = 2
-
-        if event.shift:
-            ang *= 0.1
-
-        if ang != 0.0:
-            self._mode_cache[2] = self._mode_cache[2]+ang
-            self._mode_cache.pop(0)
-            self._mode_cache.insert(0, mouse_loc)
-
-            if self._mode_cache[5]:
-                rotate_vectors(self, self._mode_cache[2])
-                self._window.update_gizmo_rot(
-                    self._mode_cache[2], self._mode_cache[3])
-                self.redraw = True
-            else:
-                if self.translate_axis == 0:
-                    rot_mat = mathutils.Euler([ang, 0, 0]).to_matrix().to_4x4()
-                if self.translate_axis == 1:
-                    rot_mat = mathutils.Euler(
-                        [0, -ang, 0]).to_matrix().to_4x4()
-                if self.translate_axis == 2:
-                    rot_mat = mathutils.Euler([0, 0, ang]).to_matrix().to_4x4()
-
-                self._orbit_ob.matrix_world = self._orbit_ob.matrix_world @ rot_mat
-                self._window.update_gizmo_orientation(
-                    self._orbit_ob.matrix_world)
-
-    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        for gizmo in self._rot_gizmo.gizmos:
-            gizmo.active = True
-            gizmo.in_use = False
-
-        if self._mode_cache[5]:
-            add_to_undostack(self, 1)
-
-        self.gizmo_click = False
-        self.translate_mode = 0
-        self.translate_axis = 2
-        self._mode_cache.clear()
-        self.click_hold = False
-
-    if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
-        if self._mode_cache[5]:
-            self._points_container.restore_cached_normals()
-
-            set_new_normals(self)
-        else:
-            self._orbit_ob.matrix_world = self._mode_cache[4].copy()
-            self._window.update_gizmo_orientation(self._orbit_ob.matrix_world)
-
-        for gizmo in self._rot_gizmo.gizmos:
-            gizmo.active = True
-            gizmo.in_use = False
-
-        self.gizmo_click = False
-        self.translate_mode = 0
-        self.translate_axis = 2
-        self._mode_cache.clear()
-        self.redraw = True
-        self.click_hold = False
 
     return status

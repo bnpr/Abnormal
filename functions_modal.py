@@ -1005,6 +1005,8 @@ def gizmo_click_init(self, event, giz_status):
             self._mode_cache.append(False)
 
         self.gizmo_click = True
+        self._current_tool = self._gizmo_tool
+        self.tool_mode = True
 
         return False
     return True

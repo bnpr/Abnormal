@@ -53,8 +53,6 @@ class ABN_OT_normal_editor_modal(Operator):
                 else:
                     status = self._current_tool.test_mode(
                         self, context, event, self.keymap, None)
-            elif self.gizmo_click:
-                status = gizmo_click_keymap(self, context, event)
             else:
                 if self.ui_hover:
                     status = basic_ui_hover_keymap(self, context, event)
