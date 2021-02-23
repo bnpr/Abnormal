@@ -43,15 +43,15 @@ def setup_tools(modal):
     tool = modal.tools.add_tool(inherit_confirm=False)
     tool.set_use_start(True)
     tool.add_start_argument('Circle Start Selection', circle_sel_start)
-    tool.add_keymap_argument('Circle Select Increase 1',
+    tool.add_keymap_argument('Circle Increase Size 1',
                              circle_sel_inc, pre_start=True)
-    tool.add_keymap_argument('Circle Select Increase 2',
+    tool.add_keymap_argument('Circle Increase Size 2',
                              circle_sel_inc, pre_start=True)
-    tool.add_keymap_argument('Circle Select Decrease 1',
+    tool.add_keymap_argument('Circle Decrease Size 1',
                              circle_sel_dec, pre_start=True)
-    tool.add_keymap_argument('Circle Select Decrease 2',
+    tool.add_keymap_argument('Circle Decrease Size 2',
                              circle_sel_dec, pre_start=True)
-    tool.add_keymap_argument('Circle Select Resize Start',
+    tool.add_keymap_argument('Circle Resize Mode Start',
                              circle_sel_start_resize, pre_start=True)
     tool.set_mouse_function(circle_sel_mouse)
     tool.set_cancel_function(circle_sel_cancel)
@@ -69,7 +69,7 @@ def setup_tools(modal):
     tool.set_mouse_function(circle_resize_mouse)
     tool.set_cancel_function(circle_resize_cancel)
     tool.set_confirm_function(circle_resize_confirm)
-    tool.add_confirm_key('Circle Select Resize Confirm')
+    tool.add_confirm_key('Circle Resize Confirm')
 
     modal._circle_resize_tool = tool
 

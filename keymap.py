@@ -113,7 +113,7 @@ def register():
         km.keymap_items.new('Circle Decrease Size 2',
                             'WHEELDOWNMOUSE', 'PRESS', alt=True)
         km.keymap_items.new('Circle Resize Mode Start', 'F', 'PRESS')
-        km.keymap_items.new('Circle Confirm Resize',
+        km.keymap_items.new('Circle Resize Confirm',
                             'F', 'RELEASE', any=True)
 
         km.keymap_items.new('Rotate X Axis', 'X', 'PRESS')

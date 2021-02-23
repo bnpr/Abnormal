@@ -177,8 +177,8 @@ def draw(preference, context, layout):
 
     keymap_row(keymap_items, 'Circle Resize Mode Start',
                layout.row(), 'Circle Resize Mode Start Key')
-    keymap_row(keymap_items, 'Circle Confirm Resize',
-               layout.row(), 'Circle Confirm Resize Key')
+    keymap_row(keymap_items, 'Circle Resize Confirm',
+               layout.row(), 'Circle Resize Confirm Key')
 
     keymap_row(keymap_items, 'Circle Increase Size 1',
                layout.row(), 'Circle Increase Size Key 1')
