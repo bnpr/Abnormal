@@ -74,9 +74,9 @@ def register():
         if True:
             km.keymap_items.new('Rotate Normals', 'R', 'PRESS')
             km.keymap_items.new('Toggle X-Ray', 'Z', 'PRESS')
-            km.keymap_items.new('Hide Unselected', 'H', 'PRESS', alt=True)
-            km.keymap_items.new('Hide Selected', 'H', 'PRESS', shift=True)
-            km.keymap_items.new('Unhide', 'H', 'PRESS')
+            km.keymap_items.new('Hide Unselected', 'H', 'PRESS', shift=True)
+            km.keymap_items.new('Hide Selected', 'H', 'PRESS')
+            km.keymap_items.new('Unhide', 'H', 'PRESS', alt=True)
             km.keymap_items.new('Reset Gizmo Rotation', 'R', 'PRESS', alt=True)
             km.keymap_items.new('Toggle Gizmo', 'G', 'PRESS')
 
