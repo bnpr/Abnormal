@@ -86,10 +86,57 @@ def setup_tools(modal):
     tool.set_post_pass_through_function(rotate_post_navigate)
 
     modal._rotate_norms_tool = tool
+
+    # SPHEREIZE
+    tool = modal.tools.add_tool(inherit_confirm=False)
+    tool.set_mouse_function(sphereize_mouse)
+    tool.set_confirm_function(sphereize_confirm)
+    tool.set_mouse_pass(True)
+    tool.add_keymap_argument('Sphereize Move Start', sphereize_start_move)
+    tool.add_keymap_argument('Sphereize Center Reset', sphereize_reset)
+    tool.add_keymap_argument('Toggle X-Ray', toggle_x_ray)
+
+    modal._sphereize_tool = tool
+
+    # SPHEREIZE MOVE
+    tool = modal.tools.add_tool()
+    tool.set_mouse_function(sphereize_move_mouse)
+    tool.set_cancel_function(sphereize_move_cancel)
+    tool.set_confirm_function(sphereize_move_confirm)
+    tool.add_keymap_argument('Sphereize Move X Axis', sphereize_move_set_x)
+    tool.add_keymap_argument('Sphereize Move Y Axis', sphereize_move_set_y)
+    tool.add_keymap_argument('Sphereize Move Z Axis', sphereize_move_set_z)
+    tool.add_keymap_argument('Toggle X-Ray', toggle_x_ray)
+
+    modal._sphereize_move_tool = tool
+
+    # POINT
+    tool = modal.tools.add_tool(inherit_confirm=False)
+    tool.set_mouse_function(point_mouse)
+    tool.set_confirm_function(point_confirm)
+    tool.set_mouse_pass(True)
+    tool.add_keymap_argument('Sphereize Move Start', point_start_move)
+    tool.add_keymap_argument('Sphereize Center Reset', point_reset)
+    tool.add_keymap_argument('Toggle X-Ray', toggle_x_ray)
+
+    modal._point_tool = tool
+
+    # POINT MOVE
+    tool = modal.tools.add_tool()
+    tool.set_mouse_function(point_move_mouse)
+    tool.set_cancel_function(point_move_cancel)
+    tool.set_confirm_function(point_move_confirm)
+    tool.add_keymap_argument('Sphereize Move X Axis', point_move_set_x)
+    tool.add_keymap_argument('Sphereize Move Y Axis', point_move_set_y)
+    tool.add_keymap_argument('Sphereize Move Z Axis', point_move_set_z)
+    tool.add_keymap_argument('Toggle X-Ray', toggle_x_ray)
+
+    modal._point_move_tool = tool
     return
 
 
 # GIZMO CLICK
+# TYPING
 # SPHEREIZE
 # SPHEREIZE MOVE
 # POINT
@@ -456,5 +503,235 @@ def rotate_set_z(modal, context, event, keys, func_data):
     modal._mode_cache[3] = translate_axis_side(modal)
     rotate_vectors(
         modal, modal._mode_cache[2]*modal._mode_cache[3])
+    modal.redraw = True
+    return
+
+
+#
+# SPHEREIZE FUNCS
+def sphereize_mouse(modal, context, event, func_data):
+    hov_status = modal._window.test_hover(modal._mouse_reg_loc)
+    modal.ui_hover = hov_status != None
+    return
+
+
+def sphereize_start_move(modal, context, event, keys, func_data):
+    modal._window.set_status('VIEW TRANSLATION')
+
+    rco = view3d_utils.location_3d_to_region_2d(
+        modal.act_reg, modal.act_rv3d, modal._target_emp.location)
+
+    modal._mode_cache.append(modal._mouse_reg_loc)
+    modal._mode_cache.append(modal._target_emp.location.copy())
+    modal._mode_cache.append(rco)
+    keymap_target_move(modal)
+    modal._current_tool = modal._sphereize_move_tool
+    return
+
+
+def sphereize_reset(modal, context, event, keys, func_data):
+    modal._target_emp.location = modal._mode_cache[1]
+    sphereize_normals(modal, modal._mode_cache[0])
+    return
+
+
+def sphereize_confirm(modal, context, event, keys, func_data):
+    if event.value == 'PRESS':
+        # Test 2d ui selection
+        if modal._sphere_panel.visible:
+            modal._sphere_panel.test_click_down(
+                modal._mouse_reg_loc, event.shift, arguments=[event])
+            modal.click_hold = True
+    else:
+        if modal._sphere_panel.visible:
+            modal._sphere_panel.test_click_up(
+                modal._mouse_reg_loc, event.shift, arguments=[event])
+            modal.click_hold = False
+    return
+
+
+def toggle_x_ray(modal, context, event, keys, func_data):
+    modal._x_ray_mode = not modal._x_ray_mode
+    modal._xray_bool.toggle_bool()
+    return
+
+
+#
+# SPHEREIZE MOVE FUNCS
+def sphereize_move_mouse(modal, context, event, func_data):
+    move_target(modal, event.shift)
+    sphereize_normals(modal, modal._mode_cache[0])
+
+    modal._mode_cache.pop(2)
+    modal._mode_cache.insert(2, modal._mouse_reg_loc)
+
+    modal.redraw = True
+    return
+
+
+def sphereize_move_confirm(modal, context, event, keys, func_data):
+    modal.translate_axis = 2
+    modal.translate_mode = 0
+    clear_translate_axis_draw(modal)
+    modal._window.clear_status()
+    keymap_target(modal)
+    modal._mode_cache.pop(4)
+    modal._mode_cache.pop(3)
+    modal._mode_cache.pop(2)
+    modal._current_tool = modal._sphereize_tool
+    return
+
+
+def sphereize_move_cancel(modal, context, event, keys, func_data):
+    modal.translate_axis = 2
+    modal.translate_mode = 0
+    clear_translate_axis_draw(modal)
+    modal._window.clear_status()
+    modal.redraw = True
+    modal._target_emp.location = modal._mode_cache[3].copy()
+    keymap_target(modal)
+    sphereize_normals(modal, modal._mode_cache[0])
+    modal._mode_cache.pop(4)
+    modal._mode_cache.pop(3)
+    modal._mode_cache.pop(2)
+    modal._current_tool = modal._sphereize_tool
+    return
+
+
+def sphereize_move_set_x(modal, context, event, keys, func_data):
+    translate_axis_change(modal, 'TRANSLATING', 0)
+    move_target(modal, event.shift)
+    sphereize_normals(modal, modal._mode_cache[0])
+
+    modal.redraw = True
+    return
+
+
+def sphereize_move_set_y(modal, context, event, keys, func_data):
+    translate_axis_change(modal, 'TRANSLATING', 1)
+    move_target(modal, event.shift)
+    sphereize_normals(modal, modal._mode_cache[0])
+
+    modal.redraw = True
+    return
+
+
+def sphereize_move_set_z(modal, context, event, keys, func_data):
+    translate_axis_change(modal, 'TRANSLATING', 2)
+    move_target(modal, event.shift)
+    sphereize_normals(modal, modal._mode_cache[0])
+
+    modal.redraw = True
+    return
+
+
+#
+# POINT FUNCS
+def point_mouse(modal, context, event, func_data):
+    hov_status = modal._window.test_hover(modal._mouse_reg_loc)
+    modal.ui_hover = hov_status != None
+    return
+
+
+def point_start_move(modal, context, event, keys, func_data):
+    modal._window.set_status('VIEW TRANSLATION')
+
+    rco = view3d_utils.location_3d_to_region_2d(
+        modal.act_reg, modal.act_rv3d, modal._target_emp.location)
+
+    modal._mode_cache.append(modal._mouse_reg_loc)
+    modal._mode_cache.append(modal._target_emp.location.copy())
+    modal._mode_cache.append(rco)
+    keymap_target_move(modal)
+    modal._current_tool = modal._point_move_tool
+    return
+
+
+def point_reset(modal, context, event, keys, func_data):
+    modal._target_emp.location = modal._mode_cache[1]
+    point_normals(modal, modal._mode_cache[0])
+    return
+
+
+def point_confirm(modal, context, event, keys, func_data):
+    if event.value == 'PRESS':
+        # Test 2d ui selection
+        if modal._point_panel.visible:
+            modal._point_panel.test_click_down(
+                modal._mouse_reg_loc, event.shift, arguments=[event])
+            modal.click_hold = True
+    else:
+        if modal._point_panel.visible:
+            modal._point_panel.test_click_up(
+                modal._mouse_reg_loc, event.shift, arguments=[event])
+            modal.click_hold = False
+    return
+
+
+#
+# POINT MOVE FUNCS
+def point_move_mouse(modal, context, event, func_data):
+    move_target(modal, event.shift)
+    point_normals(modal, modal._mode_cache[0])
+
+    modal._mode_cache.pop(2)
+    modal._mode_cache.insert(2, modal._mouse_reg_loc)
+
+    modal.redraw = True
+    return
+
+
+def point_move_confirm(modal, context, event, keys, func_data):
+    modal.translate_axis = 2
+    modal.translate_mode = 0
+    clear_translate_axis_draw(modal)
+    modal._window.clear_status()
+    keymap_target(modal)
+    modal._mode_cache.pop(4)
+    modal._mode_cache.pop(3)
+    modal._mode_cache.pop(2)
+    modal._current_tool = modal._point_tool
+    return
+
+
+def point_move_cancel(modal, context, event, keys, func_data):
+    modal.translate_axis = 2
+    modal.translate_mode = 0
+    clear_translate_axis_draw(modal)
+    modal._window.clear_status()
+    modal.redraw = True
+    modal._target_emp.location = modal._mode_cache[3].copy()
+    keymap_target(modal)
+    point_normals(modal, modal._mode_cache[0])
+    modal._mode_cache.pop(4)
+    modal._mode_cache.pop(3)
+    modal._mode_cache.pop(2)
+    modal._current_tool = modal._point_tool
+    return
+
+
+def point_move_set_x(modal, context, event, keys, func_data):
+    translate_axis_change(modal, 'TRANSLATING', 0)
+    move_target(modal, event.shift)
+    point_normals(modal, modal._mode_cache[0])
+
+    modal.redraw = True
+    return
+
+
+def point_move_set_y(modal, context, event, keys, func_data):
+    translate_axis_change(modal, 'TRANSLATING', 1)
+    move_target(modal, event.shift)
+    point_normals(modal, modal._mode_cache[0])
+
+    modal.redraw = True
+    return
+
+
+def point_move_set_z(modal, context, event, keys, func_data):
+    translate_axis_change(modal, 'TRANSLATING', 2)
+    move_target(modal, event.shift)
+    point_normals(modal, modal._mode_cache[0])
+
     modal.redraw = True
     return

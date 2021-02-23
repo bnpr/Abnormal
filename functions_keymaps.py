@@ -108,14 +108,9 @@ def basic_ui_hover_keymap(self, context, event):
 def basic_keymap(self, context, event):
     status = {'RUNNING_MODAL'}
 
-    # allow viewport navigation
-    nav_status = test_navigation_key(self.nav_list, event)
-    if nav_status:
-        # allow navigation
-        status = {'PASS_THROUGH'}
-
     # test hover ui
     if event.type == 'MOUSEMOVE' and self.click_hold == False:
+        status = {'RUNNING_MODAL'}
         hov_status = self._window.test_hover(self._mouse_reg_loc)
         self.ui_hover = hov_status != None
         if self.ui_hover:
@@ -153,7 +148,7 @@ def basic_keymap(self, context, event):
             move_undostack(self, -1)
         else:
             move_undostack(self, 1)
-        status = {"RUNNING_MODAL"}
+        return status
 
     #
     #
@@ -161,14 +156,13 @@ def basic_keymap(self, context, event):
 
     keys = keys_find(self.keymap.keymap_items, event)
     if len(keys) == 0:
-        return status
-    else:
-        status = {"RUNNING_MODAL"}
+        return {'PASS_THROUGH'}
 
     # toggle xray
     if 'Toggle X-Ray' in keys:
         self._x_ray_mode = not self._x_ray_mode
         self._xray_bool.toggle_bool()
+        return status
 
     # hide unselected normals
     if 'Hide Unselected' in keys:
@@ -184,6 +178,7 @@ def basic_keymap(self, context, event):
                 self._points_container.points[ind[0]].set_hidden_from_loops()
 
             add_to_undostack(self, 0)
+        return status
 
     # hide selected normals
     if 'Hide Selected' in keys:
@@ -200,6 +195,7 @@ def basic_keymap(self, context, event):
                                               ].set_hidden_from_loops()
 
             add_to_undostack(self, 0)
+        return status
 
     # unhide normals
     if 'Unhide' in keys:
@@ -217,6 +213,7 @@ def basic_keymap(self, context, event):
                         loop.set_select(True)
         if change:
             add_to_undostack(self, 0)
+        return status
 
     # clear rotation
     if 'Reset Gizmo Rotation' in keys:
@@ -226,6 +223,7 @@ def basic_keymap(self, context, event):
             self._orbit_ob.matrix_world.translation = loc
             self._window.update_gizmo_orientation(
                 self._orbit_ob.matrix_world)
+        return status
 
     # Rotate Normals
     if 'Rotate Normals' in keys:
@@ -251,6 +249,7 @@ def basic_keymap(self, context, event):
             keymap_rotating(self)
             gizmo_update_hide(self, False)
             self.active_drawing = True
+        return status
 
     # Toggle Gizmo
     if 'Toggle Gizmo' in keys:
@@ -262,6 +261,7 @@ def basic_keymap(self, context, event):
             gizmo_update_hide(self, True)
         else:
             gizmo_update_hide(self, False)
+        return status
 
     #
     #
@@ -306,6 +306,7 @@ def basic_keymap(self, context, event):
 
         if change:
             add_to_undostack(self, 0)
+        return status
 
     # box select
     if 'Box Start' in keys:
@@ -315,6 +316,7 @@ def basic_keymap(self, context, event):
         self.active_drawing = True
         keymap_box_selecting(self)
         gizmo_update_hide(self, False)
+        return status
 
     # circle select
     if 'Circle Start' in keys:
@@ -325,6 +327,7 @@ def basic_keymap(self, context, event):
         self.circle_selecting = True
         keymap_circle_selecting(self)
         gizmo_update_hide(self, False)
+        return status
 
     # lasso select
     if 'Lasso Start' in keys:
@@ -334,6 +337,7 @@ def basic_keymap(self, context, event):
         self.active_drawing = True
         keymap_lasso_selecting(self)
         gizmo_update_hide(self, False)
+        return status
 
     # select all normals
     if 'Select All' in keys:
@@ -349,6 +353,7 @@ def basic_keymap(self, context, event):
 
         if change:
             add_to_undostack(self, 0)
+        return status
 
     # unselect all normals
     if 'Unselect All' in keys:
@@ -368,6 +373,7 @@ def basic_keymap(self, context, event):
 
         if change:
             add_to_undostack(self, 0)
+        return status
 
     # select linked normals
     if 'Select Linked' in keys:
@@ -389,6 +395,7 @@ def basic_keymap(self, context, event):
 
             if change:
                 add_to_undostack(self, 0)
+        return status
 
     # select linked under cursor normals
     if 'Select Hover Linked' in keys:
@@ -408,30 +415,35 @@ def basic_keymap(self, context, event):
 
             if change:
                 add_to_undostack(self, 0)
+        return status
 
     # New Click selection
     if 'New Click Selection' in keys:
         sel_res = selection_test(self, False)
         if sel_res:
             add_to_undostack(self, 0)
+        return status
 
     # Add Click selection
     if 'Add Click Selection' in keys:
         sel_res = selection_test(self, True)
         if sel_res:
             add_to_undostack(self, 0)
+        return status
 
     # New Edge loop selection
     if 'New Loop Selection' in keys:
         sel_res = loop_selection_test(self, False)
         if sel_res:
             add_to_undostack(self, 0)
+        return status
 
     # Add Edge loop selection
     if 'Add Loop Selection' in keys:
         sel_res = loop_selection_test(self, True)
         if sel_res:
             add_to_undostack(self, 0)
+        return status
 
     #
     #
@@ -446,6 +458,7 @@ def basic_keymap(self, context, event):
 
         finish_modal(self, True)
         status = {'CANCELLED'}
+        return status
 
     # Confirm modal
     if 'Confirm Modal' in keys:
@@ -457,6 +470,16 @@ def basic_keymap(self, context, event):
 
         finish_modal(self, False)
         status = {'FINISHED'}
+        return status
+
+    #
+    #
+
+    # allow viewport navigation
+    nav_status = test_navigation_key(self.nav_list, event)
+    if nav_status:
+        # allow navigation
+        status = {'PASS_THROUGH'}
 
     return status
 
@@ -605,353 +628,4 @@ def gizmo_click_keymap(self, context, event):
         self.redraw = True
         self.click_hold = False
 
-    return status
-
-
-#
-#
-
-
-def sphereize_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-
-    keys = keys_find(self.keymap.keymap_items, event)
-    if len(keys) == 0:
-        keys = []
-    #     return status
-    # else:
-    #     status = {"RUNNING_MODAL"}
-
-    # allow viewport navigation
-    nav_status = test_navigation_key(self.nav_list, event)
-    if nav_status:
-        # allow navigation
-        status = {'PASS_THROUGH'}
-
-    # test hover panels
-    if event.type == 'MOUSEMOVE' and self.click_hold == False:
-        hov_status = self._window.test_hover(self._mouse_reg_loc)
-        self.ui_hover = hov_status != None
-
-    # click down move
-    if event.type == 'MOUSEMOVE' and self.click_hold:
-        self._window.click_down_move(
-            self._mouse_reg_loc, event.shift, arguments=[event])
-
-    if event.type == 'N':
-        status = {'PASS_THROUGH'}
-
-    if event.type == 'G' and event.value == 'PRESS':
-        sel_inds = self._points_container.get_selected_loops()
-        if event.alt:
-            if len(sel_inds) > 0:
-                sel_cos = self._points_container.get_selected_loop_cos()
-                avg_loc = average_vecs(sel_cos)
-
-                self._target_emp.location = avg_loc
-                sphereize_normals(self, sel_inds)
-
-        else:
-            if len(sel_inds) > 0:
-                self._window.set_status('VIEW TRANSLATION')
-
-                rco = view3d_utils.location_3d_to_region_2d(
-                    self.act_reg, self.act_rv3d, self._target_emp.location)
-
-                self._mode_cache.insert(0, self._mouse_reg_loc)
-                self._mode_cache.insert(
-                    1, self._target_emp.location.copy())
-                self._mode_cache.insert(2, rco)
-
-                self.sphereize_mode = False
-                self.sphereize_move = True
-                keymap_target_move(self)
-
-    if 'Toggle X-Ray' in keys:
-        self._x_ray_mode = not self._x_ray_mode
-        self._xray_bool.toggle_bool()
-
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-
-        panel_status = False
-        # Test 2d ui selection
-        if self._sphere_panel.visible:
-            panel_status = self._sphere_panel.test_click_down(
-                self._mouse_reg_loc, event.shift, arguments=[event])
-            self.click_hold = True
-
-        if panel_status:
-            if panel_status[0] == {'CANCELLED'}:
-                status = panel_status[0]
-            if panel_status[0] == {'FINISHED'}:
-                status = panel_status[0]
-
-    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        status = {'RUNNING_MODAL'}
-        panel_status = None
-
-        if self._sphere_panel.visible:
-            panel_status = self._sphere_panel.test_click_up(
-                self._mouse_reg_loc, event.shift, arguments=[event])
-            self.click_hold = False
-
-        if panel_status:
-            if panel_status[0] == 'NUMBER_BAR_TYPE':
-                self.typing = True
-            if panel_status[0] == {'CANCELLED'}:
-                status = panel_status[0]
-            if panel_status[0] == {'FINISHED'}:
-                status = panel_status[0]
-
-    return status
-
-
-def sphereize_move_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-
-    keys = keys_find(self.keymap.keymap_items, event)
-    if len(keys) == 0:
-        keys = []
-    #     return status
-    # else:
-    #     status = {"RUNNING_MODAL"}
-
-    if event.type == 'X' and event.value == 'PRESS':
-        sel_inds = self._points_container.get_selected_loops()
-
-        translate_axis_change(self, 'TRANSLATING', 0)
-        move_target(self, event.shift)
-        sphereize_normals(self, sel_inds)
-
-        self.redraw = True
-
-    if event.type == 'Y' and event.value == 'PRESS':
-        sel_inds = self._points_container.get_selected_loops()
-
-        translate_axis_change(self, 'TRANSLATING', 1)
-        move_target(self, event.shift)
-        sphereize_normals(self, sel_inds)
-
-        self.redraw = True
-
-    if event.type == 'Z' and event.value == 'PRESS':
-        sel_inds = self._points_container.get_selected_loops()
-
-        translate_axis_change(self, 'TRANSLATING', 2)
-        move_target(self, event.shift)
-        sphereize_normals(self, sel_inds)
-
-        self.redraw = True
-
-    if event.type == 'MOUSEMOVE':
-        sel_inds = self._points_container.get_selected_loops()
-
-        move_target(self, event.shift)
-        sphereize_normals(self, sel_inds)
-
-        self._mode_cache.pop(0)
-        self._mode_cache.insert(0, self._mouse_reg_loc)
-
-        self.redraw = True
-
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-        self.translate_axis = 2
-        self.translate_mode = 0
-        clear_translate_axis_draw(self)
-        self._window.clear_status()
-        self.sphereize_mode = True
-        self.sphereize_move = False
-        keymap_target(self)
-        while len(self._mode_cache) > 1:
-            self._mode_cache.pop(0)
-
-    if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
-        self.translate_axis = 2
-        self.translate_mode = 0
-        clear_translate_axis_draw(self)
-        self._window.clear_status()
-        self.redraw = True
-        self.sphereize_mode = True
-        self.sphereize_move = False
-        self._target_emp.location = self._mode_cache[1].copy()
-        keymap_target(self)
-        sel_inds = self._points_container.get_selected_loops()
-        sphereize_normals(self, sel_inds)
-        while len(self._mode_cache) > 1:
-            self._mode_cache.pop(0)
-
-    return status
-
-
-def point_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-
-    keys = keys_find(self.keymap.keymap_items, event)
-    if len(keys) == 0:
-        keys = []
-    #     return status
-    # else:
-    #     status = {"RUNNING_MODAL"}
-
-    # allow viewport navigation
-    nav_status = test_navigation_key(self.nav_list, event)
-    if nav_status:
-        # allow navigation
-        status = {'PASS_THROUGH'}
-
-    # test hover panels
-    if event.type == 'MOUSEMOVE' and self.click_hold == False:
-        hov_status = self._window.test_hover(self._mouse_reg_loc)
-        self.ui_hover = hov_status != None
-
-    # click down move
-    if event.type == 'MOUSEMOVE' and self.click_hold:
-        self._window.click_down_move(
-            self._mouse_reg_loc, event.shift, arguments=[event])
-
-    if event.type == 'N':
-        status = {'PASS_THROUGH'}
-
-    if event.type == 'G' and event.value == 'PRESS':
-        sel_inds = self._points_container.get_selected_loops()
-        if event.alt:
-            if len(sel_inds) > 0:
-                sel_cos = self._points_container.get_selected_loop_cos()
-                avg_loc = average_vecs(sel_cos)
-
-                self._target_emp.location = avg_loc
-                point_normals(self, sel_inds)
-
-        else:
-            if len(sel_inds) > 0:
-                self._window.set_status('VIEW TRANSLATION')
-
-                rco = view3d_utils.location_3d_to_region_2d(
-                    self.act_reg, self.act_rv3d, self._target_emp.location)
-
-                self._mode_cache.insert(0, self._mouse_reg_loc)
-                self._mode_cache.insert(
-                    1, self._target_emp.location.copy())
-                self._mode_cache.insert(2, rco)
-
-                self.point_mode = False
-                self.point_move = True
-                keymap_target_move(self)
-
-    if 'Toggle X-Ray' in keys:
-        self._x_ray_mode = not self._x_ray_mode
-        self._xray_bool.toggle_bool()
-
-        status = {'RUNNING_MODAL'}
-
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-        status = {'RUNNING_MODAL'}
-
-        panel_status = False
-        # Test 2d ui selection
-        if self._point_panel.visible:
-            panel_status = self._point_panel.test_click_down(
-                self._mouse_reg_loc, event.shift, arguments=[event])
-            self.click_hold = True
-
-        if panel_status:
-            if panel_status[0] == {'CANCELLED'}:
-                status = panel_status[0]
-            if panel_status[0] == {'FINISHED'}:
-                status = panel_status[0]
-
-    if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        status = {'RUNNING_MODAL'}
-        panel_status = None
-
-        if self._point_panel.visible:
-            panel_status = self._point_panel.test_click_up(
-                self._mouse_reg_loc, event.shift, arguments=[event])
-            self.click_hold = False
-
-        if panel_status:
-            if panel_status[0] == 'NUMBER_BAR_TYPE':
-                self.typing = True
-            if panel_status[0] == {'CANCELLED'}:
-                status = panel_status[0]
-            if panel_status[0] == {'FINISHED'}:
-                status = panel_status[0]
-
-    return status
-
-
-def point_move_keymap(self, context, event):
-    status = {'RUNNING_MODAL'}
-
-    keys = keys_find(self.keymap.keymap_items, event)
-    if len(keys) == 0:
-        keys = []
-    #     return status
-    # else:
-    #     status = {"RUNNING_MODAL"}
-
-    if event.type == 'X' and event.value == 'PRESS':
-        sel_inds = self._points_container.get_selected_loops()
-
-        translate_axis_change(self, 'TRANSLATING', 0)
-        move_target(self, event.shift)
-        point_normals(self, sel_inds)
-
-        self.redraw = True
-
-    if event.type == 'Y' and event.value == 'PRESS':
-        sel_inds = self._points_container.get_selected_loops()
-
-        translate_axis_change(self, 'TRANSLATING', 1)
-        move_target(self, event.shift)
-        point_normals(self, sel_inds)
-
-        self.redraw = True
-
-    if event.type == 'Z' and event.value == 'PRESS':
-        sel_inds = self._points_container.get_selected_loops()
-
-        translate_axis_change(self, 'TRANSLATING', 2)
-        move_target(self, event.shift)
-        point_normals(self, sel_inds)
-
-        self.redraw = True
-
-    if event.type == 'MOUSEMOVE':
-        sel_inds = self._points_container.get_selected_loops()
-
-        move_target(self, event.shift)
-        point_normals(self, sel_inds)
-
-        self._mode_cache.pop(0)
-        self._mode_cache.insert(0, self._mouse_reg_loc)
-
-        self.redraw = True
-
-    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-        self.translate_axis = 2
-        self.translate_mode = 0
-        clear_translate_axis_draw(self)
-        self._window.clear_status()
-        self.point_mode = True
-        self.point_move = False
-        keymap_target(self)
-        while len(self._mode_cache) > 1:
-            self._mode_cache.pop(0)
-
-    if 'Cancel Tool 1' in keys or 'Cancel Tool 2' in keys:
-        self.translate_axis = 2
-        self.translate_mode = 0
-        clear_translate_axis_draw(self)
-        self._window.clear_status()
-        self.redraw = True
-        self.point_mode = True
-        self.point_move = False
-        self._target_emp.location = self._mode_cache[1].copy()
-        sel_inds = self._points_container.get_selected_loops()
-        point_normals(self, sel_inds)
-        keymap_target(self)
-        while len(self._mode_cache) > 1:
-            self._mode_cache.pop(0)
     return status

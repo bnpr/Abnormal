@@ -680,9 +680,11 @@ def update_filter_weights(self):
 
 
 def init_nav_list(self):
-    self.nav_list = [['LEFTMOUSE', 'PRESS', True, False, False, False],
+    self.nav_list = [['LEFTMOUSE', 'CLICK', True, False, False, False],
+                     ['LEFTMOUSE', 'PRESS', True, False, False, False],
                      ['LEFTMOUSE', 'RELEASE', True, False, False, False],
                      ['MOUSEMOVE', 'PRESS', True, False, False, False],
+                     ['MOUSEMOVE', 'RELEASE', True, False, False, False],
                      ['WHEELUPMOUSE', 'PRESS', True, False, False, False],
                      ['WHEELDOWNMOUSE', 'PRESS', True, False, False, False],
                      ['N', 'PRESS', True, False, False, False],
@@ -1055,11 +1057,16 @@ def start_sphereize_mode(self):
     bpy.context.view_layer.objects.active = self._target_emp
 
     sel_inds = self._points_container.get_selected_loops()
+    self._mode_cache.append(sel_inds)
+    self._mode_cache.append(avg_loc)
 
     self._points_container.cache_current_normals()
 
     gizmo_update_hide(self, False)
     self.sphereize_mode = True
+    self.tool_mode = True
+    self._current_tool = self._sphereize_tool
+
     keymap_target(self)
     # self._export_panel.set_visibility(False)
     self._tools_panel.set_visibility(False)
@@ -1085,8 +1092,6 @@ def end_sphereize_mode(self, keep_normals):
     self.translate_mode = 0
     clear_translate_axis_draw(self)
     self.redraw = True
-    self.sphereize_mode = False
-    self.sphereize_move = False
     self._target_emp.empty_display_size = 0.0
     self._target_emp.select_set(False)
     self._orbit_ob.select_set(True)
@@ -1094,6 +1099,8 @@ def end_sphereize_mode(self, keep_normals):
 
     gizmo_update_hide(self, True)
 
+    self.sphereize_mode = False
+    self.tool_mode = False
     self._mode_cache.clear()
     keymap_refresh(self)
     return
@@ -1131,11 +1138,16 @@ def start_point_mode(self):
     bpy.context.view_layer.objects.active = self._target_emp
 
     sel_inds = self._points_container.get_selected_loops()
+    self._mode_cache.append(sel_inds)
+    self._mode_cache.append(avg_loc)
 
     self._points_container.cache_current_normals()
 
     gizmo_update_hide(self, False)
     self.point_mode = True
+    self.tool_mode = True
+    self._current_tool = self._point_tool
+
     keymap_target(self)
     # self._export_panel.set_visibility(False)
     self._tools_panel.set_visibility(False)
@@ -1161,8 +1173,6 @@ def end_point_mode(self, keep_normals):
     self.translate_mode = 0
     clear_translate_axis_draw(self)
     self.redraw = True
-    self.point_mode = False
-    self.point_move = False
     self._target_emp.empty_display_size = 0.0
     self._target_emp.select_set(False)
     self._orbit_ob.select_set(True)
@@ -1170,6 +1180,8 @@ def end_point_mode(self, keep_normals):
 
     gizmo_update_hide(self, True)
 
+    self.point_mode = False
+    self.tool_mode = False
     self._mode_cache.clear()
     keymap_refresh(self)
     return
@@ -1201,23 +1213,23 @@ def point_normals(self, sel_inds):
 
 
 def move_target(self, shift):
-    offset = [self._mouse_reg_loc[0] - self._mode_cache[0]
-              [0], self._mouse_reg_loc[1] - self._mode_cache[0][1]]
+    offset = [self._mouse_reg_loc[0] - self._mode_cache[2]
+              [0], self._mouse_reg_loc[1] - self._mode_cache[2][1]]
 
     if shift:
         offset[0] = offset[0]*.1
         offset[1] = offset[1]*.1
 
-    self._mode_cache[2][0] = self._mode_cache[2][0] + offset[0]
-    self._mode_cache[2][1] = self._mode_cache[2][1] + offset[1]
+    self._mode_cache[4][0] = self._mode_cache[4][0] + offset[0]
+    self._mode_cache[4][1] = self._mode_cache[4][1] + offset[1]
 
     new_co = view3d_utils.region_2d_to_location_3d(
-        self.act_reg, self.act_rv3d, self._mode_cache[2], self._mode_cache[1])
+        self.act_reg, self.act_rv3d, self._mode_cache[4], self._mode_cache[3])
     if self.translate_mode == 0:
         self._target_emp.location = new_co
 
     elif self.translate_mode == 1:
-        self._target_emp.location = self._mode_cache[1].copy()
+        self._target_emp.location = self._mode_cache[3].copy()
         self._target_emp.location[self.translate_axis] = new_co[self.translate_axis]
 
     elif self.translate_mode == 2:
@@ -1230,7 +1242,7 @@ def move_target(self, shift):
         def_vec = (self._object.matrix_world @ def_vec) - \
             self._object.matrix_world.translation
 
-        self._target_emp.location = self._mode_cache[1].copy()
+        self._target_emp.location = self._mode_cache[3].copy()
         self._target_emp.location += def_vec
 
     return

@@ -79,6 +79,7 @@ class GEN_Modal_Tool:
         self.use_start = True
         self.initialized = False
         self.passing_through = False
+        self.mouse_pass_through = False
 
         self.start_argument = None
         self.mouse_function = None
@@ -105,6 +106,8 @@ class GEN_Modal_Tool:
         # Call mouse move function
         if self.mouse_function != None and is_started:
             if event.type == 'MOUSEMOVE':
+                if self.mouse_pass_through:
+                    status = {"PASS_THROUGH"}
                 self.mouse_function(modal, context, event, pass_in_data)
                 return status
 
@@ -182,6 +185,10 @@ class GEN_Modal_Tool:
         return
 
     #
+
+    def set_mouse_pass(self, status):
+        self.mouse_pass_through = status
+        return
 
     def set_use_start(self, status):
         self.use_start = status

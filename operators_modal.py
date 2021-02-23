@@ -1,6 +1,7 @@
 import bpy
 from bpy.props import *
 from bpy.types import Operator
+from mathutils import Vector
 from .properties import *
 from .functions_general import *
 from .functions_drawing import *
@@ -38,27 +39,29 @@ class ABN_OT_normal_editor_modal(Operator):
 
         self._window.check_dimensions(context)
         status = {"RUNNING_MODAL"}
-        if self.typing:
-            status = typing_keymap(self, context, event)
-        elif self.tool_mode and self._current_tool != None:
-            status = self._current_tool.test_mode(
-                self, context, event, self.keymap, None)
-        elif self.sphereize_mode:
-            status = sphereize_keymap(self, context, event)
-        elif self.sphereize_move:
-            status = sphereize_move_keymap(self, context, event)
-        elif self.point_mode:
-            status = point_keymap(self, context, event)
-        elif self.point_move:
-            status = point_move_keymap(self, context, event)
-        elif self.gizmo_click:
-            status = gizmo_click_keymap(self, context, event)
-        else:
-            if self.ui_hover:
-                status = basic_ui_hover_keymap(self, context, event)
-            else:
-                status = basic_keymap(self, context, event)
+        # Check that mousemove is larger than a pixel to be tested
+        mouse_move_check = True
+        if event.type == 'MOUSEMOVE' and Vector((self._mouse_reg_loc[0]-self._prev_mouse_loc[0], self._mouse_reg_loc[1]-self._prev_mouse_loc[1])).length < 1.0:
+            mouse_move_check = False
 
+        if mouse_move_check:
+            if self.typing:
+                status = typing_keymap(self, context, event)
+            elif self.tool_mode and self._current_tool != None:
+                if self.ui_hover:
+                    status = basic_ui_hover_keymap(self, context, event)
+                else:
+                    status = self._current_tool.test_mode(
+                        self, context, event, self.keymap, None)
+            elif self.gizmo_click:
+                status = gizmo_click_keymap(self, context, event)
+            else:
+                if self.ui_hover:
+                    status = basic_ui_hover_keymap(self, context, event)
+                else:
+                    status = basic_keymap(self, context, event)
+
+        self._prev_mouse_loc = self._mouse_reg_loc.copy()
         refresh_batches(self, context)
         self._modal_running = True
         return status
@@ -88,6 +91,7 @@ class ABN_OT_normal_editor_modal(Operator):
             self._keymap_prefs = self._addon_prefs.keymap
             self._mouse_abs_loc = [event.mouse_x, event.mouse_y]
             self._mouse_reg_loc = [event.mouse_region_x, event.mouse_region_y]
+            self._prev_mouse_loc = [event.mouse_region_x, event.mouse_region_y]
 
             self._mouse_init = None
             self._active_point = None
@@ -159,9 +163,7 @@ class ABN_OT_normal_editor_modal(Operator):
             # MODES
             self.rotating = False
             self.sphereize_mode = False
-            self.sphereize_move = False
             self.point_mode = False
-            self.point_move = False
             self.gizmo_click = False
             self.waiting = False
 
