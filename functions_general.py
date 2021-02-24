@@ -237,6 +237,63 @@ def nearest_co_on_line(co, lv1, lv2):
     return new_co, dist
 
 
+def find_path_between_verts(verts, bm):
+    #
+    # Find shortest path between 2 verts. Start at first vertex and expand outward till it reaches the second vertex
+    #
+    v1 = bm.verts[verts[0]]
+    v2 = bm.verts[verts[1]]
+
+    cur_layer = [v1.index]
+    searching, path_completed = True, False
+    vert_order, edge_order, layers, found_inds = [], [], [], []
+    while searching:
+        found = False
+
+        next_layer = []
+        for ind in cur_layer:
+            v = bm.verts[ind]
+            lvs = [ed.other_vert(v).index for ed in v.link_edges if ed.other_vert(
+                v).index not in found_inds]
+
+            if v2.index in lvs:
+                path_completed = True
+            next_layer += lvs
+
+        if path_completed:
+            found = False
+        else:
+            next_layer = set(next_layer)
+            if len(next_layer) > 0:
+                found = True
+                found_inds += next_layer
+                cur_layer = next_layer.copy()
+                layers.append(next_layer.copy())
+
+        searching = found
+
+    # Found the second vertex so construct path
+    if path_completed:
+        vert_order.append(v2.index)
+        cur_v = bm.verts[v2.index]
+        for l, layer in enumerate(layers[::-1]):
+            l_eds = [ed for ed in cur_v.link_edges]
+            for ed in l_eds:
+                ov = ed.other_vert(cur_v)
+                if ov.index in layer:
+                    vert_order.insert(0, ov.index)
+                    edge_order.insert(0, ed.index)
+                    cur_v = bm.verts[ov.index]
+                    break
+
+        for ed in v1.link_edges:
+            if ed.other_vert(v1).index == vert_order[0]:
+                edge_order.insert(0, ed.index)
+        vert_order.insert(0, v1.index)
+
+    return vert_order, edge_order
+
+
 #
 #
 

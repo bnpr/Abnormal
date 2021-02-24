@@ -513,6 +513,22 @@ def basic_keymap(self, context, event):
                 add_to_undostack(self, 0)
             return status
 
+        # New Vertex Path selection
+        if 'New Shortest Path Selection' in keys:
+            if self._active_point != None:
+                sel_res = path_selection_test(self, False)
+                if sel_res:
+                    add_to_undostack(self, 0)
+            return status
+
+        # Add Vertex Path selection
+        if 'Add Shortest Path Selection' in keys:
+            if self._active_point != None:
+                sel_res = path_selection_test(self, True)
+                if sel_res:
+                    add_to_undostack(self, 0)
+            return status
+
     #
     #
 

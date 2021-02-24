@@ -37,6 +37,10 @@ def draw(preference, context, layout):
                layout.row(), 'New Loop Selection Key')
     keymap_row(keymap_items, 'Add Loop Selection',
                layout.row(), 'Add Loop Selection Key')
+    keymap_row(keymap_items, 'New Shortest Path Selection',
+               layout.row(), 'New Shortest Path Selection Key')
+    keymap_row(keymap_items, 'Add Shortest Path Selection',
+               layout.row(), 'Add Shortest Path Selection Key')
 
     #
     layout.separator()

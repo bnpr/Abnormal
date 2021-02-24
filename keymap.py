@@ -23,6 +23,10 @@ def register():
                                 'RIGHTMOUSE', 'PRESS', alt=True)
             km.keymap_items.new('Add Loop Selection', 'RIGHTMOUSE',
                                 'PRESS', alt=True, shift=True)
+            km.keymap_items.new('New Shortest Path Selection',
+                                'RIGHTMOUSE', 'PRESS', ctrl=True)
+            km.keymap_items.new('Add Shortest Path Selection', 'RIGHTMOUSE',
+                                'PRESS', ctrl=True, shift=True)
             km.keymap_items.new('Select Linked', 'L', 'PRESS', ctrl=True)
             km.keymap_items.new('Select Hover Linked', 'L', 'PRESS')
             km.keymap_items.new('Select All', 'A', 'PRESS')

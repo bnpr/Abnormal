@@ -1414,6 +1414,30 @@ def loop_selection_test(self, shift, radius=6.0):
     return change
 
 
+def path_selection_test(self, shift, radius=6.0):
+    change = False
+
+    face_res = ray_cast_to_mouse(self)
+    if face_res != None:
+        if shift == False:
+            for po in self._points_container.points:
+                po.set_select(False)
+
+        near_ind = self._object_kd.find(face_res[0])
+        path_v, path_ed = find_path_between_verts(
+            [self._active_point.index, near_ind[1]], self._object_bm)
+
+        for ind in path_v:
+            self._points_container.points[ind].set_select(True)
+
+        self._points_container.points[near_ind[1]].set_select(True)
+        self._points_container.set_active_point(near_ind[1])
+        self._active_point = self._points_container.points[near_ind[1]]
+        change = True
+
+    return change
+
+
 def box_selection_test(self, shift, ctrl):
     add_rem_status = 0
     if ctrl:
