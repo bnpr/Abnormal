@@ -178,6 +178,7 @@ def basic_keymap(self, context, event):
                     self._points_container.points[ind[0]
                                                   ].set_hidden_from_loops()
 
+                self._active_face = None
                 add_to_undostack(self, 0)
             return status
 
@@ -195,6 +196,7 @@ def basic_keymap(self, context, event):
                     self._points_container.points[ind_set[0]
                                                   ].set_hidden_from_loops()
 
+                self._active_face = None
                 add_to_undostack(self, 0)
             return status
 
@@ -373,6 +375,7 @@ def basic_keymap(self, context, event):
                     po.set_selection_from_loops()
 
             if change:
+                self._active_face = None
                 add_to_undostack(self, 0)
             return status
 
@@ -420,6 +423,7 @@ def basic_keymap(self, context, event):
                             change = True
 
             if change:
+                self._active_face = None
                 add_to_undostack(self, 0)
             return status
 
@@ -440,6 +444,7 @@ def basic_keymap(self, context, event):
             self._active_point = None
 
             if change:
+                self._active_face = None
                 add_to_undostack(self, 0)
             return status
 
@@ -462,6 +467,7 @@ def basic_keymap(self, context, event):
                         change = True
 
                 if change:
+                    self._active_face = None
                     add_to_undostack(self, 0)
             return status
 
@@ -482,6 +488,7 @@ def basic_keymap(self, context, event):
                         change = True
 
                 if change:
+                    self._active_face = None
                     add_to_undostack(self, 0)
             return status
 

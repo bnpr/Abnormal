@@ -184,7 +184,7 @@ def get_edge_loop(bm, ed, direction=0, skip_verts=[], skip_eds=[], cross_eds=[])
                                    cur_ed.index and o_ed.index != next_ed.index]
 
                     next_vert = next_ed.other_vert(cur_vert)
-                    if next_vert in skip_verts:
+                    if next_vert.index in skip_verts:
                         next_vert = None
 
                     for ind in con_ed_inds:
@@ -207,6 +207,58 @@ def get_edge_loop(bm, ed, direction=0, skip_verts=[], skip_eds=[], cross_eds=[])
             searching = found
             if searching == False and v == 0:
                 backwards = True
+    return loop
+
+
+def get_face_loop(bm, ed, skip_fs=[], skip_eds=[]):
+    #
+    # Get face loop from a single edge
+    # Goes along linked faces until hitting a non quad face
+    #
+
+    # No linked faces so return empty list
+    if len(ed.link_faces) == 0:
+        return []
+
+    used_eds = [ed.index]
+    used_eds += skip_eds
+    used_fs = []
+    used_fs += skip_fs
+    loop = []
+    backwards = False
+
+    cur_ed = ed
+
+    searching = True
+    while searching:
+        next_ed = None
+        next_f = None
+        found = False
+
+        ed_faces = [lf for lf in cur_ed.link_faces if len(
+            lf.verts) == 4 and lf.index not in used_fs]
+        if len(ed_faces) > 0:
+            next_f = ed_faces[0]
+            for e, f_ed in enumerate(next_f.edges):
+                if f_ed.index == cur_ed.index:
+                    o_ind = (e+2) % len(next_f.edges)
+                    next_ed = next_f.edges[o_ind]
+                    if next_ed.index not in used_eds:
+                        break
+
+        if next_f != None:
+            loop.append(next_f.index)
+            used_fs.append(next_f.index)
+            used_eds.append(next_ed.index)
+            cur_ed = next_ed
+            found = True
+
+        searching = found
+        if searching == False and backwards == False:
+            backwards = True
+            searching = True
+            cur_ed = ed
+
     return loop
 
 

@@ -611,7 +611,34 @@ def cache_point_data(self):
                 v.co, mathutils.Vector((0, 0, 1)))
 
         po.set_hide(v.hide)
-        po.set_select(v.select)
+
+        # Vertex selection
+        if bpy.context.tool_settings.mesh_select_mode[0]:
+            po.set_select(v.select)
+
+    # Edge selection
+    if bpy.context.tool_settings.mesh_select_mode[1]:
+        for ed in self._object_bm.edges:
+            if ed.select:
+                for v in ed.verts:
+                    if self._individual_loops:
+                        for loop in self._points_container.points[v.index].loops:
+                            if loop.face_index in [ed.link_faces[0].index, ed.link_faces[1].index]:
+                                loop.set_select(True)
+                    else:
+                        self._points_container.points[v.index].set_select(True)
+
+    # Face selection
+    if bpy.context.tool_settings.mesh_select_mode[2]:
+        for f in self._object_bm.faces:
+            if f.select:
+                for v in f.verts:
+                    if self._individual_loops:
+                        for loop in self._points_container.points[v.index].loops:
+                            if loop.face_index == f.index:
+                                loop.set_select(True)
+                    else:
+                        self._points_container.points[v.index].set_select(True)
 
     cache_mirror_data(self)
     return
@@ -1277,6 +1304,7 @@ def get_active_loop_index(indeces, active):
 
 def selection_test(self, shift, radius=6.0):
     test_face = False
+    self._active_face = None
 
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         0)
@@ -1368,6 +1396,8 @@ def selection_test(self, shift, radius=6.0):
                 self._points_container.select_face_verts(face_res[1])
             for po in self._points_container.points:
                 po.set_selection_from_loops()
+
+            self._active_face = face_res[1]
             change = True
 
     return change
@@ -1375,6 +1405,7 @@ def selection_test(self, shift, radius=6.0):
 
 def loop_selection_test(self, shift, radius=6.0):
     change = False
+    self._active_face = None
 
     face_res = ray_cast_to_mouse(self)
     if face_res != None:
@@ -1382,8 +1413,12 @@ def loop_selection_test(self, shift, radius=6.0):
             for po in self._points_container.points:
                 po.set_select(False)
 
+        face_rco = view3d_utils.location_3d_to_region_2d(
+            self.act_reg, self.act_rv3d, face_res[0])
+
         sel_ed = None
         small_dist = 0.0
+        dist_2d = 0.0
         for ed in self._object_bm.faces[face_res[1]].edges:
             # then find nearest point on those edges that are in range
             nearest_point_co, nearest_point_dist = nearest_co_on_line(
@@ -1393,29 +1428,86 @@ def loop_selection_test(self, shift, radius=6.0):
                 sel_ed = ed
                 small_dist = nearest_point_dist
 
+                near_rco = view3d_utils.location_3d_to_region_2d(
+                    self.act_reg, self.act_rv3d, nearest_point_co)
+
+                dist_2d = (near_rco - face_rco).length
+
         if sel_ed != None:
-            sel_loop = get_edge_loop(
-                self._object_bm, sel_ed)
-            v_inds = []
-            for ed_ind in sel_loop:
-                for v in self._object_bm.edges[ed_ind].verts:
-                    if v.index not in v_inds:
-                        v_inds.append(v.index)
+            # Edge loop selection
+            if dist_2d < 12.0:
+                skip_vs = [
+                    po.index for po in self._points_container.points if po.hide and po.valid]
 
-            cur_sel = [
-                self._points_container.points[ind].select for ind in v_inds]
+                sel_loop = get_edge_loop(
+                    self._object_bm, sel_ed, skip_verts=skip_vs)
 
-            loop_status = False in cur_sel
-            for ind in v_inds:
-                self._points_container.points[ind].set_select(
-                    loop_status)
-                change = True
+                v_inds = []
+                for ed_ind in sel_loop:
+                    for v in self._object_bm.edges[ed_ind].verts:
+                        if v.index not in v_inds:
+                            v_inds.append(v.index)
+
+                cur_sel = [
+                    self._points_container.points[ind].select for ind in v_inds]
+
+                loop_status = False in cur_sel
+                for ind in v_inds:
+                    self._points_container.points[ind].set_select(
+                        loop_status)
+                    change = True
+
+            # Face loop selection
+            else:
+                skip_fs = set()
+                if self._individual_loops:
+                    for po in self._points_container.points:
+                        if po.valid:
+                            for loop in po.loops:
+                                if loop.hide or po.hide:
+                                    skip_fs.add(loop.face_index)
+                else:
+                    for po in self._points_container.points:
+                        if po.hide and po.valid:
+                            for loop in po.loops:
+                                skip_fs.add(loop.face_index)
+
+                sel_loop = get_face_loop(
+                    self._object_bm, sel_ed, skip_fs=list(skip_fs))
+
+                v_inds = []
+                for f_ind in sel_loop:
+                    for v in self._object_bm.faces[f_ind].verts:
+                        if v.index not in v_inds:
+                            v_inds.append(v.index)
+
+                if self._individual_loops:
+                    cur_sel = []
+                    for ind in v_inds:
+                        for loop in self._points_container.points[ind].loops:
+                            if loop.face_index in sel_loop:
+                                cur_sel.append(loop.select)
+                else:
+                    cur_sel = [
+                        self._points_container.points[ind].select for ind in v_inds]
+
+                loop_status = False in cur_sel
+                for ind in v_inds:
+                    if self._individual_loops:
+                        for loop in self._points_container.points[ind].loops:
+                            if loop.face_index in sel_loop:
+                                loop.set_select(loop_status)
+                    else:
+                        self._points_container.points[ind].set_select(
+                            loop_status)
+                    change = True
 
     return change
 
 
 def path_selection_test(self, shift, radius=6.0):
     change = False
+    self._active_face = None
 
     face_res = ray_cast_to_mouse(self)
     if face_res != None:
@@ -1445,6 +1537,8 @@ def box_selection_test(self, shift, ctrl):
     else:
         if shift:
             add_rem_status = 1
+
+    self._active_face = None
 
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         add_rem_status)
@@ -1507,6 +1601,8 @@ def circle_selection_test(self, shift, ctrl, radius):
         if shift:
             add_rem_status = 1
 
+    self._active_face = None
+
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         add_rem_status)
 
@@ -1551,6 +1647,8 @@ def lasso_selection_test(self, shift, ctrl):
     else:
         if shift:
             add_rem_status = 1
+
+    self._active_face = None
 
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         add_rem_status)

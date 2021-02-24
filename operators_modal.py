@@ -97,6 +97,7 @@ class ABN_OT_normal_editor_modal(Operator):
 
             self._mouse_init = None
             self._active_point = None
+            self._active_face = None
 
             self._mode_cache = []
             self._line_drawing_pos = []
