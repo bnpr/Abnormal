@@ -10,6 +10,7 @@ class prefs(PropertyGroup):
     display_wireframe: BoolProperty(default=True)
     normal_size: FloatProperty(default=0.5, min=0.01, max=10.0)
     point_size: FloatProperty(default=1.0, min=.1, max=10.0)
+    loop_tri_size: FloatProperty(default=0.5, min=0.0, max=1.0)
     line_brightness: FloatProperty(default=1.0, min=.01, max=2.0)
     gizmo_size: IntProperty(default=200, min=10, max=1000)
     ui_scale: FloatProperty(default=0.0, min=0.25, max=3.0)

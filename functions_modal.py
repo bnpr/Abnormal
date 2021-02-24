@@ -839,6 +839,7 @@ def finish_modal(self, restore):
     self._display_prefs.normal_size = self._normal_size
     self._display_prefs.line_brightness = self._line_brightness
     self._display_prefs.point_size = self._point_size
+    self._display_prefs.loop_tri_size = self._loop_tri_size
     self._display_prefs.selected_only = self._selected_only
     self._display_prefs.selected_scale = self._selected_scale
     self._behavior_prefs.individual_loops = self._individual_loops

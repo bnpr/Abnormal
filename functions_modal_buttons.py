@@ -230,6 +230,12 @@ def init_ui_panels(self, rw, rh, scale):
         num.set_value_change_func(change_point_size)
 
         row = box.add_row()
+        num = row.add_number(
+            20, 'Loop Size', self._loop_tri_size, 2, .1, 0.0, 1.0)
+        num.set_slide_factor(2)
+        num.set_value_change_func(change_loop_tri_size)
+
+        row = box.add_row()
         bool = row.add_bool(20, 'Display Wireframe',
                             default=self._use_wireframe_overlay)
         bool.set_click_up_func(toggle_wireframe)
@@ -526,6 +532,14 @@ def change_point_size(self, arguments):
     arguments[0]._point_size = self.value
     arguments[0]._points_container.set_point_size(
         arguments[0]._point_size)
+    return
+
+
+def change_loop_tri_size(self, arguments):
+    arguments[0]._loop_tri_size = self.value
+    arguments[0]._points_container.set_loop_scale(
+        arguments[0]._loop_tri_size)
+    arguments[0].redraw = True
     return
 
 
@@ -838,6 +852,7 @@ def save_preferences(self, arguments):
     arguments[0]._display_prefs.normal_size = arguments[0]._normal_size
     arguments[0]._display_prefs.line_brightness = arguments[0]._line_brightness
     arguments[0]._display_prefs.point_size = arguments[0]._point_size
+    arguments[0]._display_prefs.loop_tri_size = arguments[0]._loop_tri_size
     arguments[0]._display_prefs.selected_only = arguments[0]._selected_only
     arguments[0]._display_prefs.selected_scale = arguments[0]._selected_scale
     arguments[0]._display_prefs.display_wireframe = arguments[0]._use_wireframe_overlay

@@ -13,6 +13,7 @@ class ABNPoints:
         self.points = []
         self.matrix = mat
 
+        self.loop_scale = 1.0
         self.normal_scale = 1.0
         self.brightness = 1.0
         self.size = 1.0
@@ -117,7 +118,13 @@ class ABNPoints:
                         if self.draw_tris:
                             tri_inds.append(
                                 [len(tris), len(tris)+1, len(tris)+2])
-                            tris += loop.tri_verts
+                            vec1 = loop.tri_verts[1]-loop.tri_verts[0]
+                            vec2 = loop.tri_verts[2]-loop.tri_verts[0]
+                            tris.append(loop.tri_verts[0])
+                            tris.append(
+                                loop.tri_verts[0]+vec1 * self.loop_scale)
+                            tris.append(
+                                loop.tri_verts[0]+vec2 * self.loop_scale)
 
                             for i in range(3):
                                 if po.active or loop.active:
@@ -400,6 +407,10 @@ class ABNPoints:
 
     def set_normal_scale(self, scale):
         self.normal_scale = scale
+        return
+
+    def set_loop_scale(self, scale):
+        self.loop_scale = scale
         return
 
     def set_point_size(self, size):

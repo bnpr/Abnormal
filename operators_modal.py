@@ -147,6 +147,7 @@ class ABN_OT_normal_editor_modal(Operator):
             self._normal_size = self._display_prefs.normal_size
             self._line_brightness = self._display_prefs.line_brightness
             self._point_size = self._display_prefs.point_size
+            self._loop_tri_size = self._display_prefs.loop_tri_size
             self._selected_only = self._display_prefs.selected_only
             self._selected_scale = self._display_prefs.selected_scale
             self._individual_loops = self._behavior_prefs.individual_loops
@@ -219,6 +220,7 @@ class ABN_OT_normal_editor_modal(Operator):
             self._points_container.set_brightess(self._line_brightness)
             self._points_container.set_normal_scale(self._normal_size)
             self._points_container.set_point_size(self._point_size)
+            self._points_container.set_loop_scale(self._loop_tri_size)
             self._points_container.set_draw_only_selected(self._selected_only)
             self._points_container.set_draw_tris(self._individual_loops)
 
