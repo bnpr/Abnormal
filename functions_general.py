@@ -346,6 +346,67 @@ def find_path_between_verts(verts, bm):
     return vert_order, edge_order
 
 
+def find_path_between_faces(faces, bm):
+    #
+    # Find shortest path between 2 f. Start at first vertex and expand outward till it reaches the second vertex
+    #
+    f1 = bm.faces[faces[0]]
+    f2 = bm.faces[faces[1]]
+
+    cur_layer = [f1.index]
+    searching, path_completed = True, False
+    face_order, layers, found_inds = [], [], []
+    while searching:
+        found = False
+
+        next_layer = []
+        for ind in cur_layer:
+            f = bm.faces[ind]
+            lfs = []
+            for ed in f.edges:
+                for of in ed.link_faces:
+                    if of.index not in found_inds and of.index != f.index:
+                        lfs.append(of.index)
+
+            if f2.index in lfs:
+                path_completed = True
+
+            next_layer += lfs
+
+        if path_completed:
+            found = False
+        else:
+            next_layer = set(next_layer)
+            if len(next_layer) > 0:
+                found = True
+                found_inds += next_layer
+                cur_layer = next_layer.copy()
+                layers.append(next_layer.copy())
+
+        searching = found
+
+    # Found the second face so construct path
+    if path_completed:
+        face_order.append(f2.index)
+
+        cur_f = bm.faces[f2.index]
+        for l, layer in enumerate(layers[::-1]):
+            cur_len = len(face_order)
+            for ed in cur_f.edges:
+                for of in ed.link_faces:
+                    if of.index != cur_f.index and of.index in layer:
+                        face_order.insert(0, of.index)
+                        cur_f = bm.faces[of.index]
+                        break
+
+                if cur_len != len(face_order):
+                    break
+
+        face_order.insert(0, f1.index)
+
+    return face_order
+
+
 #
 #
 

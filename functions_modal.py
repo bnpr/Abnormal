@@ -1507,7 +1507,6 @@ def loop_selection_test(self, shift, radius=6.0):
 
 def path_selection_test(self, shift, radius=6.0):
     change = False
-    self._active_face = None
 
     face_res = ray_cast_to_mouse(self)
     if face_res != None:
@@ -1515,16 +1514,34 @@ def path_selection_test(self, shift, radius=6.0):
             for po in self._points_container.points:
                 po.set_select(False)
 
-        near_ind = self._object_kd.find(face_res[0])
-        path_v, path_ed = find_path_between_verts(
-            [self._active_point.index, near_ind[1]], self._object_bm)
+        if self._active_face != None:
+            path_f = find_path_between_faces(
+                [self._active_face, face_res[1]], self._object_bm)
 
-        for ind in path_v:
-            self._points_container.points[ind].set_select(True)
+            for ind in path_f:
+                for v in self._object_bm.faces[ind].verts:
+                    if self._individual_loops:
+                        for loop in self._points_container.points[v.index].loops:
+                            if loop.face_index == ind:
+                                loop.set_select(True)
+                    else:
+                        self._points_container.points[v.index].set_select(True)
 
-        self._points_container.points[near_ind[1]].set_select(True)
-        self._points_container.set_active_point(near_ind[1])
-        self._active_point = self._points_container.points[near_ind[1]]
+            self._active_face = face_res[1]
+
+        else:
+            near_ind = self._object_kd.find(face_res[0])
+            path_v, path_ed = find_path_between_verts(
+                [self._active_point.index, near_ind[1]], self._object_bm)
+
+            for ind in path_v:
+                self._points_container.points[ind].set_select(True)
+
+            self._points_container.points[near_ind[1]].set_select(True)
+            self._points_container.set_active_point(near_ind[1])
+            self._active_point = self._points_container.points[near_ind[1]]
+            self._active_face = None
+
         change = True
 
     return change
