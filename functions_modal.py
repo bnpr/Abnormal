@@ -412,6 +412,31 @@ def reset_normals(self, sel_inds):
     return
 
 
+def set_normals_from_faces(self, sel_inds):
+    update_filter_weights(self)
+    for ind in sel_inds:
+        po = self._points_container.points[ind[0]]
+        if po.valid:
+            sel_faces = [
+                loop.face_index for loop in po.loops if loop.select or po.select]
+
+            loop = po.loops[ind[1]]
+
+            poly_norm = mathutils.Vector((0, 0, 0))
+            for f_ind in sel_faces:
+                poly_norm += self._object.data.polygons[f_ind].normal
+
+            if poly_norm.length > 0.0:
+                loop_norm_set(self, loop, loop.normal,
+                              poly_norm/len(sel_faces))
+
+            self.redraw = True
+
+    set_new_normals(self)
+    add_to_undostack(self, 1)
+    return
+
+
 #
 # COPY/PASTE
 #

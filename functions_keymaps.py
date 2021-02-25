@@ -357,6 +357,12 @@ def basic_keymap(self, context, event):
             if len(sel_inds) != 0:
                 average_selected_normals(self, sel_inds)
 
+        # Set Normals from Faces
+        if 'Set Normals From Faces' in keys:
+            sel_inds = self._points_container.get_selected_loops()
+            if len(sel_inds) != 0:
+                set_normals_from_faces(self, sel_inds)
+
     #
     #
 

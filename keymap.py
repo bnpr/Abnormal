@@ -120,6 +120,9 @@ def register():
             km.keymap_items.new('Flip Normals', 'R', 'PRESS', shift=True)
             km.keymap_items.new('Reset Vectors', 'R', 'PRESS', ctrl=True)
 
+            km.keymap_items.new('Set Normals From Faces',
+                                'F', 'PRESS', ctrl=True)
+
             km.keymap_items.new('Average Individual Normals', 'Q', 'PRESS')
             km.keymap_items.new('Average Selected Normals', 'W', 'PRESS')
 

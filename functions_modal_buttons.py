@@ -431,6 +431,9 @@ def init_ui_panels(self, rw, rh, scale):
         but = row.add_button(20, 'Reset Vectors')
         but.set_click_up_func(reset_vectors)
 
+        but = row.add_button(20, 'Set Normals From Faces')
+        but.set_click_up_func(set_from_faces)
+
         box = self._tools_panel.add_box()
         box.add_header(True, 'Manipulate Normals', 20, False)
         box.header.set_draw_box(False)
@@ -735,6 +738,14 @@ def set_direction(self, arguments):
             set_outside_inside(arguments[0], sel_inds, 1)
         if self.custom_id[0] == 1:
             set_outside_inside(arguments[0], sel_inds, -1)
+
+    return
+
+
+def set_from_faces(self, arguments):
+    sel_inds = arguments[0]._points_container.get_selected_loops()
+    if len(sel_inds) != 0:
+        set_normals_from_faces(arguments[0], sel_inds)
 
     return
 

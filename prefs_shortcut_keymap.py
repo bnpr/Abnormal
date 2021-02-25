@@ -123,6 +123,8 @@ def draw(preference, context, layout):
     keymap_row(keymap_items, 'Flip Normals', layout.row(), 'Flip Normals Key')
     keymap_row(keymap_items, 'Reset Vectors',
                layout.row(), 'Reset Vectors Key')
+    keymap_row(keymap_items, 'Set Normals From Faces',
+               layout.row(), 'Set Normals From Faces Key')
 
     #
     layout.separator()
