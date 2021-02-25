@@ -20,7 +20,7 @@ class ABN_OT_normal_editor_modal(Operator):
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
     def modal(self, context, event):
-        start = time.time()
+        # start = time.time()
         self._modal_running = False
         if bpy.context.area == None:
             finish_modal(self, True)
@@ -67,8 +67,8 @@ class ABN_OT_normal_editor_modal(Operator):
         refresh_batches(self, context)
         self._modal_running = True
         loop_time = time.time()-start
-        if loop_time > 0.0:
-            print('FPS: ' + str(60/loop_time))
+        # if loop_time > 0.0:
+        #     print('FPS: ' + str(60/loop_time))
         return status
 
     def invoke(self, context, event):
