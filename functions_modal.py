@@ -1,5 +1,6 @@
 import bpy
 import mathutils
+import numpy as np
 import os
 from bpy_extras import view3d_utils
 from .functions_general import *
@@ -139,16 +140,15 @@ def incremental_rotate_vectors(self, sel_inds, axis, increment):
 
     self.translate_mode = 2
     self.translate_axis = axis
-    rotate_vectors(self, math.radians(increment * self._rot_increment))
+    rotate_vectors(self, sel_inds, math.radians(
+        increment * self._rot_increment))
     self.translate_mode = 0
     self.translate_axis = 2
     self._mode_cache.clear()
     return
 
 
-def rotate_vectors(self, angle):
-    sel_inds = self._points_container.get_selected_loops()
-
+def rotate_vectors(self, sel_inds, angle):
     for i, ind_set in enumerate(sel_inds):
         po = self._points_container.points[ind_set[0]]
         loop = po.loops[ind_set[1]]
@@ -217,6 +217,11 @@ def rotate_vectors(self, angle):
 
     set_new_normals(self)
     self.redraw = True
+
+    # rot_mat = mathutils.Matrix.Rotation(math.radians(45), 3, 'X')
+    # rot = np.array(rot_mat)
+    # print(rot.dot(a.T).T)
+
     return
 
 
@@ -985,8 +990,8 @@ def check_area(self):
 #
 def gizmo_click_init(self, event, giz_status):
     if self._use_gizmo:
+        sel_inds = self._points_container.get_selected_loops()
         if event.alt == False:
-            sel_inds = self._points_container.get_selected_loops()
             if len(sel_inds) == 0:
                 return True
 
@@ -1001,6 +1006,8 @@ def gizmo_click_init(self, event, giz_status):
                 else:
                     gizmo.in_use = True
 
+        orb_mat = self._orbit_ob.matrix_world
+
         view_vec = view3d_utils.region_2d_to_vector_3d(
             self.act_reg, self.act_rv3d, mathutils.Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
         view_orig = view3d_utils.region_2d_to_origin_3d(
@@ -1008,21 +1015,21 @@ def gizmo_click_init(self, event, giz_status):
         line_a = view_orig
         line_b = view_orig + view_vec*10000
         if giz_status[0] == 'ROT_X':
-            x_vec = self._orbit_ob.matrix_world @ mathutils.Vector(
-                (1, 0, 0)) - self._orbit_ob.matrix_world.translation
+            x_vec = orb_mat @ mathutils.Vector(
+                (1, 0, 0)) - orb_mat.translation
             mouse_co_3d = mathutils.geometry.intersect_line_plane(
-                line_a, line_b, self._orbit_ob.matrix_world.translation, x_vec)
+                line_a, line_b, orb_mat.translation, x_vec)
         if giz_status[0] == 'ROT_Y':
-            y_vec = self._orbit_ob.matrix_world @ mathutils.Vector(
-                (0, 1, 0)) - self._orbit_ob.matrix_world.translation
+            y_vec = orb_mat @ mathutils.Vector(
+                (0, 1, 0)) - orb_mat.translation
             mouse_co_3d = mathutils.geometry.intersect_line_plane(
-                line_a, line_b, self._orbit_ob.matrix_world.translation, y_vec)
+                line_a, line_b, orb_mat.translation, y_vec)
         if giz_status[0] == 'ROT_Z':
-            z_vec = self._orbit_ob.matrix_world @ mathutils.Vector(
-                (0, 0, 1)) - self._orbit_ob.matrix_world.translation
+            z_vec = orb_mat @ mathutils.Vector(
+                (0, 0, 1)) - orb_mat.translation
             mouse_co_3d = mathutils.geometry.intersect_line_plane(
-                line_a, line_b, self._orbit_ob.matrix_world.translation, z_vec)
-        mouse_co_local = self._orbit_ob.matrix_world.inverted() @ mouse_co_3d
+                line_a, line_b, orb_mat.translation, z_vec)
+        mouse_co_local = orb_mat.inverted() @ mouse_co_3d
 
         if giz_status[0] == 'ROT_X':
             test_vec = mouse_co_local.yz
@@ -1042,18 +1049,18 @@ def gizmo_click_init(self, event, giz_status):
 
         if event.alt == False:
             self._window.update_gizmo_rot(0, -ang_offset)
+            self._mode_cache.append(sel_inds)
             self._mode_cache.append(giz_status)
             self._mode_cache.append(0)
             self._mode_cache.append(-ang_offset)
-            self._mode_cache.append(
-                self._orbit_ob.matrix_world.copy())
+            self._mode_cache.append(orb_mat.copy())
             self._mode_cache.append(True)
         else:
+            self._mode_cache.append(sel_inds)
             self._mode_cache.append(giz_status)
             self._mode_cache.append(0)
             self._mode_cache.append(-ang_offset)
-            self._mode_cache.append(
-                self._orbit_ob.matrix_world.copy())
+            self._mode_cache.append(orb_mat.copy())
             self._mode_cache.append(False)
 
         self.gizmo_click = True

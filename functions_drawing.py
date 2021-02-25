@@ -259,7 +259,7 @@ def create_selection_drawing_lists(self):
     rot_screen_lines = []
     if self.rotating:
         cent_loc = view3d_utils.location_3d_to_region_2d(
-            self.act_reg, self.act_rv3d, self._mode_cache[1])
+            self.act_reg, self.act_rv3d, self._mode_cache[2])
         cur_loc = mathutils.Vector(
             (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
 

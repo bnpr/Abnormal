@@ -432,7 +432,7 @@ def clear_draw_post_navigate(modal, context, event, func_data):
 # ROTATE NORMALS FUNCS
 def rotate_norms_mouse(modal, context, event, func_data):
     center = view3d_utils.location_3d_to_region_2d(
-        modal.act_reg, modal.act_rv3d, modal._mode_cache[1])
+        modal.act_reg, modal.act_rv3d, modal._mode_cache[2])
 
     start_vec = mathutils.Vector(
         (modal._mode_cache[0][0]-center[0], modal._mode_cache[0][1]-center[1]))
@@ -444,9 +444,9 @@ def rotate_norms_mouse(modal, context, event, func_data):
         ang *= 0.1
 
     if ang != 0.0:
-        modal._mode_cache[2] = modal._mode_cache[2]+ang
+        modal._mode_cache[3] = modal._mode_cache[3]+ang
         rotate_vectors(
-            modal, modal._mode_cache[2]*modal._mode_cache[3])
+            modal, modal._mode_cache[1], modal._mode_cache[3]*modal._mode_cache[4])
         modal._mode_cache.pop(0)
         modal._mode_cache.insert(0, modal._mouse_reg_loc)
 
@@ -511,27 +511,27 @@ def rotate_post_navigate(modal, context, event, func_data):
 
 def rotate_set_x(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'ROTATING', 0)
-    modal._mode_cache[3] = translate_axis_side(modal)
+    modal._mode_cache[4] = translate_axis_side(modal)
     rotate_vectors(
-        modal, modal._mode_cache[2]*modal._mode_cache[3])
+        modal, modal._mode_cache[1], modal._mode_cache[3]*modal._mode_cache[4])
     modal.redraw = True
     return
 
 
 def rotate_set_y(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'ROTATING', 1)
-    modal._mode_cache[3] = translate_axis_side(modal)
+    modal._mode_cache[4] = translate_axis_side(modal)
     rotate_vectors(
-        modal, modal._mode_cache[2]*modal._mode_cache[3])
+        modal, modal._mode_cache[1], modal._mode_cache[3]*modal._mode_cache[4])
     modal.redraw = True
     return
 
 
 def rotate_set_z(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'ROTATING', 2)
-    modal._mode_cache[3] = translate_axis_side(modal)
+    modal._mode_cache[4] = translate_axis_side(modal)
     rotate_vectors(
-        modal, modal._mode_cache[2]*modal._mode_cache[3])
+        modal, modal._mode_cache[1], modal._mode_cache[3]*modal._mode_cache[4])
     modal.redraw = True
     return
 
@@ -777,38 +777,38 @@ def gizmo_mouse(modal, context, event, func_data):
 
     line_a = view_orig
     line_b = view_orig + view_vec*10000
-    if modal._mode_cache[1][0] == 'ROT_X':
-        x_vec = modal._mode_cache[4] @ mathutils.Vector(
-            (1, 0, 0)) - modal._mode_cache[4].translation
+    if modal._mode_cache[2][0] == 'ROT_X':
+        x_vec = modal._mode_cache[5] @ mathutils.Vector(
+            (1, 0, 0)) - modal._mode_cache[5].translation
         mouse_co_3d = mathutils.geometry.intersect_line_plane(
-            line_a, line_b, modal._mode_cache[4].translation, x_vec)
+            line_a, line_b, modal._mode_cache[5].translation, x_vec)
 
-    if modal._mode_cache[1][0] == 'ROT_Y':
-        y_vec = modal._mode_cache[4] @ mathutils.Vector(
-            (0, 1, 0)) - modal._mode_cache[4].translation
+    if modal._mode_cache[2][0] == 'ROT_Y':
+        y_vec = modal._mode_cache[5] @ mathutils.Vector(
+            (0, 1, 0)) - modal._mode_cache[5].translation
         mouse_co_3d = mathutils.geometry.intersect_line_plane(
-            line_a, line_b, modal._mode_cache[4].translation, y_vec)
+            line_a, line_b, modal._mode_cache[5].translation, y_vec)
 
-    if modal._mode_cache[1][0] == 'ROT_Z':
-        z_vec = modal._mode_cache[4] @ mathutils.Vector(
-            (0, 0, 1)) - modal._mode_cache[4].translation
+    if modal._mode_cache[2][0] == 'ROT_Z':
+        z_vec = modal._mode_cache[5] @ mathutils.Vector(
+            (0, 0, 1)) - modal._mode_cache[5].translation
         mouse_co_3d = mathutils.geometry.intersect_line_plane(
-            line_a, line_b, modal._mode_cache[4].translation, z_vec)
+            line_a, line_b, modal._mode_cache[5].translation, z_vec)
 
-    mouse_co_local = modal._mode_cache[4].inverted() @ mouse_co_3d
+    mouse_co_local = modal._mode_cache[5].inverted() @ mouse_co_3d
 
     modal.translate_mode = 2
-    if modal._mode_cache[1][0] == 'ROT_X':
+    if modal._mode_cache[2][0] == 'ROT_X':
         mouse_loc = mouse_co_local.yz
         ang = start_vec.angle_signed(mouse_co_local.yz)*-1
         modal.translate_axis = 0
 
-    if modal._mode_cache[1][0] == 'ROT_Y':
+    if modal._mode_cache[2][0] == 'ROT_Y':
         mouse_loc = mouse_co_local.xz
         ang = start_vec.angle_signed(mouse_co_local.xz)*-1
         modal.translate_axis = 1
 
-    if modal._mode_cache[1][0] == 'ROT_Z':
+    if modal._mode_cache[2][0] == 'ROT_Z':
         mouse_loc = mouse_co_local.xy
         ang = start_vec.angle_signed(mouse_co_local.xy)*-1
         modal.translate_axis = 2
@@ -817,14 +817,14 @@ def gizmo_mouse(modal, context, event, func_data):
         ang *= 0.1
 
     if ang != 0.0:
-        modal._mode_cache[2] = modal._mode_cache[2]+ang
+        modal._mode_cache[3] = modal._mode_cache[3]+ang
         modal._mode_cache.pop(0)
         modal._mode_cache.insert(0, mouse_loc)
 
-        if modal._mode_cache[5]:
-            rotate_vectors(modal, modal._mode_cache[2])
+        if modal._mode_cache[6]:
+            rotate_vectors(modal, modal._mode_cache[1], modal._mode_cache[23])
             modal._window.update_gizmo_rot(
-                modal._mode_cache[2], modal._mode_cache[3])
+                modal._mode_cache[3], modal._mode_cache[4])
             modal.redraw = True
         else:
             if modal.translate_axis == 0:
@@ -846,7 +846,7 @@ def gizmo_confirm(modal, context, event, keys, func_data):
         gizmo.active = True
         gizmo.in_use = False
 
-    if modal._mode_cache[5]:
+    if modal._mode_cache[6]:
         add_to_undostack(modal, 1)
 
     modal.gizmo_click = False
@@ -859,12 +859,12 @@ def gizmo_confirm(modal, context, event, keys, func_data):
 
 
 def gizmo_cancel(modal, context, event, keys, func_data):
-    if modal._mode_cache[5]:
+    if modal._mode_cache[6]:
         modal._points_container.restore_cached_normals()
 
         set_new_normals(modal)
     else:
-        modal._orbit_ob.matrix_world = modal._mode_cache[4].copy()
+        modal._orbit_ob.matrix_world = modal._mode_cache[5].copy()
         modal._window.update_gizmo_orientation(
             modal._orbit_ob.matrix_world)
 

@@ -243,6 +243,7 @@ def basic_keymap(self, context, event):
 
                 self._mode_cache.clear()
                 self._mode_cache.append(self._mouse_reg_loc)
+                self._mode_cache.append(sel_inds)
                 self._mode_cache.append(avg_loc)
                 self._mode_cache.append(0)
                 self._mode_cache.append(1)
