@@ -155,6 +155,7 @@ def rotate_vectors(self, sel_inds, angle):
         po = self._points_container.points[ind_set[0]]
         loop = po.loops[ind_set[1]]
 
+        # Viewspace rotation
         if self.translate_mode == 0:
             mouse_co = Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
             rco = view3d_utils.location_3d_to_region_2d(
@@ -175,11 +176,13 @@ def rotate_vectors(self, sel_inds, angle):
             mat = generate_matrix(co1, co4, co2, True, True)
             mat.translation = po.co
 
+        # World space rotation
         elif self.translate_mode == 1:
             mat = generate_matrix(Vector((0, 0, 0)), Vector(
                 (0, 0, 1)), Vector((0, 1, 0)), False, True)
             mat.translation = po.co
 
+        # Local space roatation
         elif self.translate_mode == 2:
             if self.gizmo_click:
                 mat = self._orbit_ob.matrix_world.normalized()
@@ -191,6 +194,7 @@ def rotate_vectors(self, sel_inds, angle):
         po_local = self._object.matrix_world.inverted() @ po.co
         loop_w = self._object.matrix_world @ (loop.cached_normal+po_local)
 
+        # Rotate based on axis
         vec_local = mat.inverted() @ loop_w
         if self.translate_axis == 0:
             rot_vec = rotate_2d([0, 0], vec_local.yz, angle)
@@ -994,6 +998,7 @@ def gizmo_click_init(self, event, giz_status):
 
         self._mode_cache.clear()
 
+        # Cache current normals before rotation starts and setup gizmo as being used
         if event.alt == False:
             self._points_container.cache_current_normals()
 
@@ -1009,35 +1014,45 @@ def gizmo_click_init(self, event, giz_status):
             (self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
         view_orig = view3d_utils.region_2d_to_origin_3d(
             self.act_reg, self.act_rv3d, Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
+
         line_a = view_orig
         line_b = view_orig + view_vec*10000
+
+        # Project cursor from view onto the rotation axis plane
         if giz_status[0] == 'ROT_X':
             x_vec = orb_mat @ Vector((1, 0, 0)) - orb_mat.translation
             mouse_co_3d = intersect_line_plane(
                 line_a, line_b, orb_mat.translation, x_vec)
+
         if giz_status[0] == 'ROT_Y':
             y_vec = orb_mat @ Vector((0, 1, 0)) - orb_mat.translation
             mouse_co_3d = intersect_line_plane(
                 line_a, line_b, orb_mat.translation, y_vec)
+
         if giz_status[0] == 'ROT_Z':
             z_vec = orb_mat @ Vector((0, 0, 1)) - orb_mat.translation
             mouse_co_3d = intersect_line_plane(
                 line_a, line_b, orb_mat.translation, z_vec)
+
         mouse_co_local = orb_mat.inverted() @ mouse_co_3d
 
+        # Get start angle for rotation
         if giz_status[0] == 'ROT_X':
             test_vec = mouse_co_local.yz
             ang_offset = Vector((0, 1)).angle_signed(test_vec)
             self._mode_cache.append(mouse_co_local.yz)
+
         if giz_status[0] == 'ROT_Y':
             test_vec = mouse_co_local.xz
             ang_offset = Vector((0, 1)).angle_signed(test_vec)
             self._mode_cache.append(mouse_co_local.xz)
+
         if giz_status[0] == 'ROT_Z':
             test_vec = mouse_co_local.xy
             ang_offset = Vector((0, 1)).angle_signed(test_vec)
             self._mode_cache.append(mouse_co_local.xy)
 
+        # Add cache data for tool mode
         if event.alt == False:
             self._window.update_gizmo_rot(0, -ang_offset)
             self._mode_cache.append(sel_inds)
@@ -1047,7 +1062,7 @@ def gizmo_click_init(self, event, giz_status):
             self._mode_cache.append(orb_mat.copy())
             self._mode_cache.append(True)
         else:
-            self._mode_cache.append(sel_inds)
+            self._mode_cache.append([])
             self._mode_cache.append(giz_status)
             self._mode_cache.append(0)
             self._mode_cache.append(-ang_offset)
@@ -1610,6 +1625,14 @@ def box_selection_test(self, shift, ctrl):
         avail_sel_status += avail_loop_sel_status
         avail_inds += avail_loop_inds
 
+    face_switch_pont = len(avail_inds)
+    avail_cos += [f.calc_center_median() for f in self._object_bm.faces]
+    if add_rem_status == 2:
+        avail_sel_status += [True for i in self._object_bm.faces]
+    else:
+        avail_sel_status += [False for i in self._object_bm.faces]
+    avail_inds += [i.index for i in self._object_bm.faces]
+
     change, unselect, new_active, new_sel_add, new_sel_remove = box_points_selection_test(
         avail_cos, avail_sel_status, self._mouse_reg_loc, self._mode_cache[0], self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
 
@@ -1618,26 +1641,25 @@ def box_selection_test(self, shift, ctrl):
             for po in self._points_container.points:
                 po.set_select(False)
 
-        for ind in new_sel_add:
-            if ind < loop_switch_pont:
-                po_ind = avail_inds[ind]
-                self._points_container.points[po_ind].set_select(True)
-            else:
-                sel_ind = avail_inds[ind]
-                self._points_container.points[sel_ind[0]
-                                              ].loops[sel_ind[1]].set_select(True)
-                self._points_container.points[sel_ind[0]
-                                              ].set_selection_from_loops()
+        for i, ind in enumerate(new_sel_add + new_sel_remove):
+            status = True
+            if i >= len(new_sel_add):
+                status = False
 
-        for ind in new_sel_remove:
+            po_ind = avail_inds[ind]
             if ind < loop_switch_pont:
-                po_ind = avail_inds[ind]
-                self._points_container.points[po_ind].set_select(False)
+                self._points_container.points[po_ind].set_select(status)
+            elif ind >= face_switch_pont:
+                if self._individual_loops:
+                    self._points_container.set_face_loops_select(
+                        po_ind, status)
+                else:
+                    self._points_container.set_face_verts_select(
+                        po_ind, status)
             else:
-                sel_ind = avail_inds[ind]
-                self._points_container.points[sel_ind[0]
-                                              ].loops[sel_ind[1]].set_select(False)
-                self._points_container.points[sel_ind[0]
+                self._points_container.points[po_ind[0]
+                                              ].loops[po_ind[1]].set_select(status)
+                self._points_container.points[po_ind[0]
                                               ].set_selection_from_loops()
 
         if self._active_point != None:
@@ -1674,20 +1696,34 @@ def circle_selection_test(self, shift, ctrl, radius):
         avail_sel_status += avail_loop_sel_status
         avail_inds += avail_loop_inds
 
+    face_switch_pont = len(avail_inds)
+    avail_cos += [f.calc_center_median() for f in self._object_bm.faces]
+    if add_rem_status == 2:
+        avail_sel_status += [True for i in self._object_bm.faces]
+    else:
+        avail_sel_status += [False for i in self._object_bm.faces]
+    avail_inds += [i.index for i in self._object_bm.faces]
+
     change, unselect, new_active, new_sel, new_sel_status = circle_points_selection_test(
         avail_cos, avail_sel_status, self._mouse_reg_loc, radius, self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
 
     if change:
         for ind in new_sel:
+            po_ind = avail_inds[ind]
             if ind < loop_switch_pont:
-                po_ind = avail_inds[ind]
                 self._points_container.points[po_ind].set_select(
                     new_sel_status)
+            elif ind >= face_switch_pont:
+                if self._individual_loops:
+                    self._points_container.set_face_loops_select(
+                        po_ind, new_sel_status)
+                else:
+                    self._points_container.set_face_verts_select(
+                        po_ind, new_sel_status)
             else:
-                sel_ind = avail_inds[ind]
-                self._points_container.points[sel_ind[0]
-                                              ].loops[sel_ind[1]].set_select(new_sel_status)
-                self._points_container.points[sel_ind[0]
+                self._points_container.points[po_ind[0]
+                                              ].loops[po_ind[1]].set_select(new_sel_status)
+                self._points_container.points[po_ind[0]
                                               ].set_selection_from_loops()
 
         if self._active_point != None:
@@ -1720,6 +1756,14 @@ def lasso_selection_test(self, shift, ctrl):
         avail_sel_status += avail_loop_sel_status
         avail_inds += avail_loop_inds
 
+    face_switch_pont = len(avail_inds)
+    avail_cos += [f.calc_center_median() for f in self._object_bm.faces]
+    if add_rem_status == 2:
+        avail_sel_status += [True for i in self._object_bm.faces]
+    else:
+        avail_sel_status += [False for i in self._object_bm.faces]
+    avail_inds += [i.index for i in self._object_bm.faces]
+
     change, unselect, new_active, new_sel_add, new_sel_remove = lasso_points_selection_test(
         self._mode_cache, avail_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
 
@@ -1728,26 +1772,25 @@ def lasso_selection_test(self, shift, ctrl):
             for po in self._points_container.points:
                 po.set_select(False)
 
-        for ind in new_sel_add:
-            if ind < loop_switch_pont:
-                po_ind = avail_inds[ind]
-                self._points_container.points[po_ind].set_select(True)
-            else:
-                sel_ind = avail_inds[ind]
-                self._points_container.points[sel_ind[0]
-                                              ].loops[sel_ind[1]].set_select(True)
-                self._points_container.points[sel_ind[0]
-                                              ].set_selection_from_loops()
+        for i, ind in enumerate(new_sel_add + new_sel_remove):
+            status = True
+            if i >= len(new_sel_add):
+                status = False
 
-        for ind in new_sel_remove:
+            po_ind = avail_inds[ind]
             if ind < loop_switch_pont:
-                po_ind = avail_inds[ind]
-                self._points_container.points[po_ind].set_select(False)
+                self._points_container.points[po_ind].set_select(status)
+            elif ind >= face_switch_pont:
+                if self._individual_loops:
+                    self._points_container.set_face_loops_select(
+                        po_ind, status)
+                else:
+                    self._points_container.set_face_verts_select(
+                        po_ind, status)
             else:
-                sel_ind = avail_inds[ind]
-                self._points_container.points[sel_ind[0]
-                                              ].loops[sel_ind[1]].set_select(False)
-                self._points_container.points[sel_ind[0]
+                self._points_container.points[po_ind[0]
+                                              ].loops[po_ind[1]].set_select(status)
+                self._points_container.points[po_ind[0]
                                               ].set_selection_from_loops()
 
         if self._active_point != None:

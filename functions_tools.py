@@ -137,8 +137,10 @@ def setup_tools(modal):
 
     # GIZMO CLICK
     tool = modal.tools.add_tool()
+    tool.set_mouse_function(gizmo_mouse)
     tool.set_confirm_function(gizmo_confirm)
     tool.set_cancel_function(gizmo_cancel)
+    tool.add_confirm_key('Confirm Tool 3')
 
     modal._gizmo_tool = tool
 
@@ -820,7 +822,7 @@ def gizmo_mouse(modal, context, event, func_data):
         modal._mode_cache.insert(0, mouse_loc)
 
         if modal._mode_cache[6]:
-            rotate_vectors(modal, modal._mode_cache[1], modal._mode_cache[23])
+            rotate_vectors(modal, modal._mode_cache[1], modal._mode_cache[3])
             modal._window.update_gizmo_rot(
                 modal._mode_cache[3], modal._mode_cache[4])
             modal.redraw = True

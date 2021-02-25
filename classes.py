@@ -466,6 +466,34 @@ class ABNPoints:
                 self.points[ind].set_active(False)
         return
 
+    def set_face_loops_select(self, face_ind, status, set_active=False):
+        loops = []
+        for po in self.points:
+            for loop in po.loops:
+                if loop.face_index == face_ind:
+                    loops.append([po.index, loop.index])
+
+        for inds in loops:
+            self.points[inds[0]].loops[inds[1]].set_select(status)
+            if set_active or status == False:
+                self.points[inds[0]].loops[inds[1]].set_active(status)
+            self.points[inds[0]].set_selection_from_loops()
+        return
+
+    def set_face_verts_select(self, face_ind, status, set_active=False):
+        pos = []
+        for po in self.points:
+            for loop in po.loops:
+                if loop.face_index == face_ind:
+                    pos.append(po.index)
+                    break
+
+        for ind in pos:
+            self.points[ind].set_select(status)
+            if set_active or status == False:
+                self.points[ind].set_active(status)
+        return
+
     def clear_active(self):
         for po in self.points:
             po.set_active(False)
@@ -537,7 +565,7 @@ class ABNPoint:
         return
 
     def set_select(self, status, include_loops=True):
-        if self.valid:
+        if self.valid and self.hide == False:
             self.select = status
             if include_loops:
                 for loop in self.loops:
@@ -556,7 +584,7 @@ class ABNPoint:
         return
 
     def set_selection_from_loops(self):
-        if self.valid:
+        if self.valid and self.hide == False:
             loop_sel = [loop.select for loop in self.loops]
             if False in loop_sel:
                 self.set_select(False, include_loops=False)
@@ -642,7 +670,8 @@ class ABNLoop:
         return
 
     def set_select(self, status):
-        self.select = status
+        if self.hide == False:
+            self.select = status
         return
 
     def set_active(self, status):
