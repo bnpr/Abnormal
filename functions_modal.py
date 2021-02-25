@@ -1305,6 +1305,14 @@ def move_target(self, shift):
 #
 # SELECTION
 #
+def clear_active_face(self):
+    if self._active_face != None:
+        self._points_container.clear_active()
+
+    self._active_face = None
+    return
+
+
 def get_active_point_index(indeces, active):
     if active == None or active.type != 'POINT':
         return None
@@ -1329,7 +1337,7 @@ def get_active_loop_index(indeces, active):
 
 def selection_test(self, shift, radius=6.0):
     test_face = False
-    self._active_face = None
+    clear_active_face(self)
 
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         0)
@@ -1416,9 +1424,12 @@ def selection_test(self, shift, radius=6.0):
                     po.set_select(False)
 
             if self._individual_loops:
-                self._points_container.select_face_loops(face_res[1])
+                self._points_container.select_face_loops(
+                    face_res[1], set_active=True)
             else:
-                self._points_container.select_face_verts(face_res[1])
+                self._points_container.select_face_verts(
+                    face_res[1], set_active=True)
+
             for po in self._points_container.points:
                 po.set_selection_from_loops()
 
@@ -1430,7 +1441,7 @@ def selection_test(self, shift, radius=6.0):
 
 def loop_selection_test(self, shift, radius=6.0):
     change = False
-    self._active_face = None
+    clear_active_face(self)
 
     face_res = ray_cast_to_mouse(self)
     if face_res != None:
@@ -1543,6 +1554,15 @@ def path_selection_test(self, shift, radius=6.0):
             path_f = find_path_between_faces(
                 [self._active_face, face_res[1]], self._object_bm)
 
+            clear_active_face(self)
+            self._active_face = face_res[1]
+            if self._individual_loops:
+                self._points_container.select_face_loops(
+                    face_res[1], set_active=True)
+            else:
+                self._points_container.select_face_verts(
+                    face_res[1], set_active=True)
+
             for ind in path_f:
                 for v in self._object_bm.faces[ind].verts:
                     if self._individual_loops:
@@ -1551,8 +1571,6 @@ def path_selection_test(self, shift, radius=6.0):
                                 loop.set_select(True)
                     else:
                         self._points_container.points[v.index].set_select(True)
-
-            self._active_face = face_res[1]
 
         else:
             near_ind = self._object_kd.find(face_res[0])
@@ -1565,7 +1583,7 @@ def path_selection_test(self, shift, radius=6.0):
             self._points_container.points[near_ind[1]].set_select(True)
             self._points_container.set_active_point(near_ind[1])
             self._active_point = self._points_container.points[near_ind[1]]
-            self._active_face = None
+            clear_active_face(self)
 
         change = True
 
@@ -1580,7 +1598,7 @@ def box_selection_test(self, shift, ctrl):
         if shift:
             add_rem_status = 1
 
-    self._active_face = None
+    clear_active_face(self)
 
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         add_rem_status)
@@ -1643,7 +1661,7 @@ def circle_selection_test(self, shift, ctrl, radius):
         if shift:
             add_rem_status = 1
 
-    self._active_face = None
+    clear_active_face(self)
 
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         add_rem_status)
@@ -1690,7 +1708,7 @@ def lasso_selection_test(self, shift, ctrl):
         if shift:
             add_rem_status = 1
 
-    self._active_face = None
+    clear_active_face(self)
 
     avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
         add_rem_status)

@@ -425,7 +425,7 @@ class ABNPoints:
         self.draw_tris = status
         return
 
-    def select_face_loops(self, face_ind):
+    def select_face_loops(self, face_ind, set_active=False):
         cur_sel = []
         loops = []
         for po in self.points:
@@ -437,13 +437,15 @@ class ABNPoints:
         if False in cur_sel:
             for inds in loops:
                 self.points[inds[0]].loops[inds[1]].set_select(True)
+                if set_active:
+                    self.points[inds[0]].loops[inds[1]].set_active(True)
         else:
             for inds in loops:
                 self.points[inds[0]].loops[inds[1]].set_select(False)
                 self.points[inds[0]].loops[inds[1]].set_active(False)
         return
 
-    def select_face_verts(self, face_ind):
+    def select_face_verts(self, face_ind, set_active=False):
         cur_sel = []
         pos = []
         for po in self.points:
@@ -456,6 +458,8 @@ class ABNPoints:
         if False in cur_sel:
             for ind in pos:
                 self.points[ind].set_select(True)
+                if set_active:
+                    self.points[ind].set_active(True)
         else:
             for ind in pos:
                 self.points[ind].set_select(False)
