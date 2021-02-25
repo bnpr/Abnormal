@@ -1,7 +1,7 @@
 import bpy
-import mathutils
 import bgl
 import gpu
+from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
 from .functions_general import *
 
@@ -599,7 +599,7 @@ class ABNLoop:
 
         self.tri_verts = vert_cos
 
-        center = mathutils.Vector((0, 0, 0))
+        center = Vector((0, 0, 0))
         for co in vert_cos:
             center += co/len(vert_cos)
 

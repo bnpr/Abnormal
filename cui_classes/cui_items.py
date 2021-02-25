@@ -4,6 +4,7 @@ import bgl
 import gpu
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
+from mathutils import Vector, Euler
 from .cui_functions import *
 from .cui_shapes import *
 
@@ -1385,7 +1386,7 @@ class UIRotateGizmo:
         region = bpy.context.region
         rv3d = bpy.context.region_data
 
-        mouse_co = mathutils.Vector((mouse_co[0], mouse_co[1]))
+        mouse_co = Vector((mouse_co[0], mouse_co[1]))
 
         min_x = 0
         max_x = 0
@@ -1522,7 +1523,7 @@ class UIRotateGizmo:
 
         ang = 180/(int(self.resolution/2)-1)
         co = [0, 1*self.scale]
-        self.fan_points.append(mathutils.Vector((0, 0, 0)))
+        self.fan_points.append(Vector((0, 0, 0)))
         for i in range(int(self.resolution/2)+1):
             new_co = rotate_2d([0, 0], co, math.radians(ang*i)).to_3d()
             new_co *= .01
@@ -1621,18 +1622,18 @@ class UIRotateGizmo:
         co = [0, 1*self.scale]
         self.fan_points.clear()
         self.fan_tris.clear()
-        self.fan_points.append(mathutils.Vector((0, 0, 0)))
+        self.fan_points.append(Vector((0, 0, 0)))
         for i in range(point_num+1):
             new_co = rotate_2d([0, 0], co, ang*i+start_ang).to_3d()
             new_co *= .01
 
             if self.axis == 0:
-                eul = mathutils.Euler(
-                    (math.radians(90.0), 0.0, math.radians(90.0)), 'XYZ')
+                eul = Euler((math.radians(90.0), 0.0,
+                             math.radians(90.0)), 'XYZ')
                 new_co.rotate(eul)
                 self.fan_points.append(new_co)
             if self.axis == 1:
-                eul = mathutils.Euler((math.radians(90.0), 0.0, 0.0), 'XYZ')
+                eul = Euler((math.radians(90.0), 0.0, 0.0), 'XYZ')
                 new_co.rotate(eul)
                 self.fan_points.append(new_co)
             if self.axis == 2:

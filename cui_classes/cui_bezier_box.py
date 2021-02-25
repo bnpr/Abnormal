@@ -1,7 +1,8 @@
 import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
-import mathutils
+from mathutils import Vector
+from mathutils.geometry import interpolate_bezier
 import math
 import copy
 from .cui_functions import *
@@ -44,16 +45,16 @@ class CUIBezierBox(CUIItem):
         if type == 'FCURVE':
             spline = CUIFcurveSpline()
             for c, co in enumerate(points):
-                po = spline.add_point(mathutils.Vector(co))
+                po = spline.add_point(Vector(co))
                 if c == 0 or c == len(points)-1:
                     po.sharpness = 0.0
             self.splines.append(spline)
 
         if type == 'SHAPE':
             spline = CUIShapeSpline()
-            po = spline.add_point(mathutils.Vector((0.5, 0.7)))
-            po = spline.add_point(mathutils.Vector((0.8, 0.3)))
-            po = spline.add_point(mathutils.Vector((0.2, 0.3)))
+            po = spline.add_point(Vector((0.5, 0.7)))
+            po = spline.add_point(Vector((0.8, 0.3)))
+            po = spline.add_point(Vector((0.2, 0.3)))
             self.splines.append(spline)
         return
 
@@ -86,10 +87,10 @@ class CUIBezierBox(CUIItem):
         interval = 1/(self.axis_res+1)
 
         for i in range(self.axis_res):
-            self.axis_lines.append(mathutils.Vector((interval*(i+1), 0)))
-            self.axis_lines.append(mathutils.Vector((interval*(i+1), 1)))
-            self.axis_lines.append(mathutils.Vector((0, interval*(i+1))))
-            self.axis_lines.append(mathutils.Vector((1, interval*(i+1))))
+            self.axis_lines.append(Vector((interval*(i+1), 0)))
+            self.axis_lines.append(Vector((interval*(i+1), 1)))
+            self.axis_lines.append(Vector((0, interval*(i+1))))
+            self.axis_lines.append(Vector((1, interval*(i+1))))
         return
 
     def init_shape_data(self):
@@ -151,13 +152,13 @@ class CUIBezierBox(CUIItem):
                     self.scale_pos_offset[1]-self.height*self.scale]
 
         changed = False
-        cent_co = mathutils.Vector((0, 0))
+        cent_co = Vector((0, 0))
         cnt = 0
         for spline in self.splines:
             mid_co = spline.get_selected_avg_pos()
             mid_co[0] *= self.width * self.scale
             mid_co[1] *= self.height * self.scale
-            mid_co += mathutils.Vector(position)
+            mid_co += Vector(position)
 
             if mid_co.length > 0.0:
                 cent_co += mid_co
@@ -306,7 +307,7 @@ class CUIBezierBox(CUIItem):
                 po_co[0] += position[0]
                 po_co[1] += position[1]
 
-                dist = (mathutils.Vector(mouse_co) - po_co).length
+                dist = (Vector(mouse_co) - po_co).length
                 if dist < test_dist:
                     nearest = po.index
                     small_ind = s
@@ -350,7 +351,7 @@ class CUIBezierBox(CUIItem):
                         ppo_co[1] += position[1]
 
                         ed_vec = po_co - ppo_co
-                        vec = mathutils.Vector(mouse_co) - ppo_co
+                        vec = Vector(mouse_co) - ppo_co
                         if ed_vec.length > 0.0 and vec.length > 0.0:
                             ang = ed_vec.angle(vec)
                             adj_len = math.cos(ang) * vec.length
@@ -360,8 +361,7 @@ class CUIBezierBox(CUIItem):
                                 dist = vec.length
 
                             if adj_len > ed_vec.length:
-                                dist = (mathutils.Vector(
-                                    mouse_co) - po_co).length
+                                dist = (Vector(mouse_co) - po_co).length
 
                             if dist < small_dist:
                                 create_new = True
@@ -370,8 +370,7 @@ class CUIBezierBox(CUIItem):
                                 break
 
             if create_new and small_ind != None and po_index != None:
-                co = mathutils.Vector(mouse_co) - \
-                    mathutils.Vector(position)
+                co = Vector(mouse_co) - Vector(position)
                 co[0] /= self.width
                 co[0] /= self.scale
                 co[1] /= self.height
@@ -400,8 +399,7 @@ class CUIBezierBox(CUIItem):
         position = [pos[0]+self.scale_pos_offset[0], pos[1] +
                     self.scale_pos_offset[1]-self.height*self.scale]
 
-        offset = (mathutils.Vector(mouse_co) -
-                  mathutils.Vector(self.prev_loc)) / self.scale
+        offset = (Vector(mouse_co) - Vector(self.prev_loc)) / self.scale
         offset[0] /= self.width
         offset[1] /= self.height
 
@@ -551,7 +549,7 @@ class CUIBaseSpline:
         for p, po in enumerate(self.points):
             if p > 0:
                 prev_po = self.points[p-1]
-                seg_pos = mathutils.geometry.interpolate_bezier(
+                seg_pos = interpolate_bezier(
                     prev_po.co, prev_po.handle_right, po.handle_left, po.co, self.resolution)
                 self.curve_geo += seg_pos
 
@@ -675,7 +673,7 @@ class CUIBaseSpline:
     #
 
     def get_selected_avg_pos(self):
-        co = mathutils.Vector((0, 0))
+        co = Vector((0, 0))
         cnt = 0
         for po in self.points:
             if po.select:
@@ -874,7 +872,7 @@ class CUIFcurveSpline(CUIBaseSpline):
                         hand_a_vec = po.handle_left-po.co
                         hand_b_vec = hand_a_vec * -1
 
-                        ang = hand_a_vec.angle(mathutils.Vector((-1, 0)))
+                        ang = hand_a_vec.angle(Vector((-1, 0)))
                         fac = (po.handle_right[0]-po.co[0]) / math.cos(ang)
                         po.handle_right = po.co + hand_b_vec.normalized()*fac
                 # If no flattening needed then clip if beyond limits
@@ -902,7 +900,7 @@ class CUIFcurveSpline(CUIBaseSpline):
                         hand_b_vec = po.handle_right-po.co
                         hand_a_vec = hand_b_vec * -1
 
-                        ang = hand_b_vec.angle(mathutils.Vector((1, 0)))
+                        ang = hand_b_vec.angle(Vector((1, 0)))
                         fac = (po.co[0]-po.handle_left[0]) / math.cos(ang)
                         po.handle_left = po.co + hand_a_vec.normalized()*fac
                 # If no flattening needed then clip if beyond limits
@@ -922,7 +920,7 @@ class CUIFcurveSpline(CUIBaseSpline):
                 if po.handle_right[0] > next_co[0]:
                     vec = po.handle_right - po.co
                     if vec.length > 0.0:
-                        ang = vec.angle(mathutils.Vector((1, 0)))
+                        ang = vec.angle(Vector((1, 0)))
                         fac = (next_co[0] - po.co[0]) / math.cos(ang)
                         if fac < vec.length:
                             po.handle_right = po.co + vec.normalized()*fac
@@ -934,7 +932,7 @@ class CUIFcurveSpline(CUIBaseSpline):
                 if po.handle_left[0] < prev_co[0]:
                     vec = po.handle_left - po.co
                     if vec.length > 0.0:
-                        ang = vec.angle(mathutils.Vector((-1, 0)))
+                        ang = vec.angle(Vector((-1, 0)))
                         fac = (po.co[0] - prev_co[0]) / math.cos(ang)
                         if fac < vec.length:
                             po.handle_left = po.co + vec.normalized()*fac
@@ -1015,7 +1013,7 @@ class CUIFcurveSpline(CUIBaseSpline):
             if c > 0:
                 if co[0] >= x_val >= self.curve_geo[c-1][0]:
                     vec = (co - self.curve_geo[c-1]).normalized()
-                    ang = vec.angle(mathutils.Vector((1, 0)))
+                    ang = vec.angle(Vector((1, 0)))
 
                     vec_len = (x_val-self.curve_geo[c-1][0]) / math.cos(ang)
                     y_val = (self.curve_geo[c-1] + vec * vec_len)[1]

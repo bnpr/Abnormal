@@ -1,6 +1,7 @@
 import bpy
 import bgl
 import traceback
+from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
 from bpy_extras import view3d_utils
 from .functions_general import *
@@ -199,11 +200,9 @@ def create_selection_drawing_lists(self):
     circlesel_screen_lines = []
     if self.circle_selecting or self.circle_resizing:
         if self.circle_resizing:
-            cur_loc = mathutils.Vector(
-                (self._mode_cache[0][0], self._mode_cache[0][1]))
+            cur_loc = Vector((self._mode_cache[0][0], self._mode_cache[0][1]))
         else:
-            cur_loc = mathutils.Vector(
-                (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
+            cur_loc = Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
 
         co = cur_loc.copy()
         co[1] += self.circle_radius
@@ -225,15 +224,11 @@ def create_selection_drawing_lists(self):
     boxsel_screen_lines = []
     if self.box_selecting:
 
-        init_loc = mathutils.Vector(
-            (self._mode_cache[0][0], self._mode_cache[0][1]))
-        cur_loc = mathutils.Vector(
-            (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
+        init_loc = Vector((self._mode_cache[0][0], self._mode_cache[0][1]))
+        cur_loc = Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
 
-        top_right = mathutils.Vector(
-            (self._mouse_reg_loc[0], self._mode_cache[0][1]))
-        bot_left = mathutils.Vector(
-            (self._mode_cache[0][0], self._mouse_reg_loc[1]))
+        top_right = Vector((self._mouse_reg_loc[0], self._mode_cache[0][1]))
+        bot_left = Vector((self._mode_cache[0][0], self._mouse_reg_loc[1]))
 
         vec = init_loc-top_right
         start_co = top_right
@@ -260,8 +255,7 @@ def create_selection_drawing_lists(self):
     if self.rotating:
         cent_loc = view3d_utils.location_3d_to_region_2d(
             self.act_reg, self.act_rv3d, self._mode_cache[2])
-        cur_loc = mathutils.Vector(
-            (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
+        cur_loc = Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
 
         vec = cur_loc-cent_loc
         start_co = cent_loc

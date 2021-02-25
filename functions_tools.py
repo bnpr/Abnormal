@@ -1,4 +1,6 @@
 import bpy
+from mathutils import Vector, Euler
+from mathutils.geometry import intersect_line_plane
 from .functions_modal import *
 from .classes_tool import *
 
@@ -181,9 +183,8 @@ def box_sel_start(modal, context, event, keys, func_data):
 
 
 def box_sel_mouse(modal, context, event, func_data):
-    prev_loc = mathutils.Vector(
-        (modal._mode_cache[-1][0], modal._mode_cache[-1][1]))
-    cur_loc = mathutils.Vector(modal._mouse_reg_loc)
+    prev_loc = Vector((modal._mode_cache[-1][0], modal._mode_cache[-1][1]))
+    cur_loc = Vector(modal._mouse_reg_loc)
 
     if event.alt:
         if modal._mouse_init == None:
@@ -252,9 +253,8 @@ def lasso_sel_start(modal, context, event, keys, func_data):
 
 
 def lasso_sel_mouse(modal, context, event, func_data):
-    prev_loc = mathutils.Vector(
-        (modal._mode_cache[-1][0], modal._mode_cache[-1][1]))
-    cur_loc = mathutils.Vector(modal._mouse_reg_loc)
+    prev_loc = Vector((modal._mode_cache[-1][0], modal._mode_cache[-1][1]))
+    cur_loc = Vector(modal._mouse_reg_loc)
 
     if event.alt:
         if modal._mouse_init == None:
@@ -390,10 +390,8 @@ def circle_sel_cancel(modal, context, event, keys, func_data):
 #
 # CIRCLE SELECT RESIZE FUNCS
 def circle_resize_mouse(modal, context, event, func_data):
-    prev_loc = mathutils.Vector(
-        (modal._mode_cache[0][0], modal._mode_cache[0][1]))
-    cur_loc = mathutils.Vector(
-        (modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]))
+    prev_loc = Vector((modal._mode_cache[0][0], modal._mode_cache[0][1]))
+    cur_loc = Vector((modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]))
 
     diff = int((cur_loc-prev_loc).length)
     modal.circle_radius = diff
@@ -434,9 +432,9 @@ def rotate_norms_mouse(modal, context, event, func_data):
     center = view3d_utils.location_3d_to_region_2d(
         modal.act_reg, modal.act_rv3d, modal._mode_cache[2])
 
-    start_vec = mathutils.Vector(
+    start_vec = Vector(
         (modal._mode_cache[0][0]-center[0], modal._mode_cache[0][1]-center[1]))
-    mouse_vec = mathutils.Vector(
+    mouse_vec = Vector(
         (modal._mouse_reg_loc[0]-center[0], modal._mouse_reg_loc[1]-center[1]))
 
     ang = mouse_vec.angle_signed(start_vec)
@@ -771,28 +769,28 @@ def point_move_set_z(modal, context, event, keys, func_data):
 def gizmo_mouse(modal, context, event, func_data):
     start_vec = modal._mode_cache[0]
     view_vec = view3d_utils.region_2d_to_vector_3d(
-        modal.act_reg, modal.act_rv3d, mathutils.Vector((modal._mouse_reg_loc[0], modal._mouse_reg_loc[1])))
+        modal.act_reg, modal.act_rv3d, Vector((modal._mouse_reg_loc[0], modal._mouse_reg_loc[1])))
     view_orig = view3d_utils.region_2d_to_origin_3d(
-        modal.act_reg, modal.act_rv3d, mathutils.Vector((modal._mouse_reg_loc[0], modal._mouse_reg_loc[1])))
+        modal.act_reg, modal.act_rv3d, Vector((modal._mouse_reg_loc[0], modal._mouse_reg_loc[1])))
 
     line_a = view_orig
     line_b = view_orig + view_vec*10000
     if modal._mode_cache[2][0] == 'ROT_X':
-        x_vec = modal._mode_cache[5] @ mathutils.Vector(
-            (1, 0, 0)) - modal._mode_cache[5].translation
-        mouse_co_3d = mathutils.geometry.intersect_line_plane(
+        x_vec = modal._mode_cache[5] @ Vector((1, 0, 0)) - \
+            modal._mode_cache[5].translation
+        mouse_co_3d = intersect_line_plane(
             line_a, line_b, modal._mode_cache[5].translation, x_vec)
 
     if modal._mode_cache[2][0] == 'ROT_Y':
-        y_vec = modal._mode_cache[5] @ mathutils.Vector(
-            (0, 1, 0)) - modal._mode_cache[5].translation
-        mouse_co_3d = mathutils.geometry.intersect_line_plane(
+        y_vec = modal._mode_cache[5] @ Vector((0, 1, 0)) - \
+            modal._mode_cache[5].translation
+        mouse_co_3d = intersect_line_plane(
             line_a, line_b, modal._mode_cache[5].translation, y_vec)
 
     if modal._mode_cache[2][0] == 'ROT_Z':
-        z_vec = modal._mode_cache[5] @ mathutils.Vector(
-            (0, 0, 1)) - modal._mode_cache[5].translation
-        mouse_co_3d = mathutils.geometry.intersect_line_plane(
+        z_vec = modal._mode_cache[5] @ Vector((0, 0, 1)) - \
+            modal._mode_cache[5].translation
+        mouse_co_3d = intersect_line_plane(
             line_a, line_b, modal._mode_cache[5].translation, z_vec)
 
     mouse_co_local = modal._mode_cache[5].inverted() @ mouse_co_3d
@@ -828,12 +826,11 @@ def gizmo_mouse(modal, context, event, func_data):
             modal.redraw = True
         else:
             if modal.translate_axis == 0:
-                rot_mat = mathutils.Euler([ang, 0, 0]).to_matrix().to_4x4()
+                rot_mat = Euler([ang, 0, 0]).to_matrix().to_4x4()
             if modal.translate_axis == 1:
-                rot_mat = mathutils.Euler(
-                    [0, -ang, 0]).to_matrix().to_4x4()
+                rot_mat = Euler([0, -ang, 0]).to_matrix().to_4x4()
             if modal.translate_axis == 2:
-                rot_mat = mathutils.Euler([0, 0, ang]).to_matrix().to_4x4()
+                rot_mat = Euler([0, 0, ang]).to_matrix().to_4x4()
 
             modal._orbit_ob.matrix_world = modal._orbit_ob.matrix_world @ rot_mat
             modal._window.update_gizmo_orientation(

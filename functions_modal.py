@@ -1,5 +1,7 @@
 import bpy
-import mathutils
+from mathutils import Vector, Matrix
+from mathutils.bvhtree import BVHTree
+from mathutils.geometry import intersect_line_plane
 import numpy as np
 import os
 from bpy_extras import view3d_utils
@@ -154,8 +156,7 @@ def rotate_vectors(self, sel_inds, angle):
         loop = po.loops[ind_set[1]]
 
         if self.translate_mode == 0:
-            mouse_co = mathutils.Vector(
-                (self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
+            mouse_co = Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
             rco = view3d_utils.location_3d_to_region_2d(
                 self.act_reg, self.act_rv3d, po.co)
 
@@ -175,8 +176,8 @@ def rotate_vectors(self, sel_inds, angle):
             mat.translation = po.co
 
         elif self.translate_mode == 1:
-            mat = generate_matrix(mathutils.Vector((0, 0, 0)), mathutils.Vector(
-                (0, 0, 1)), mathutils.Vector((0, 1, 0)), False, True)
+            mat = generate_matrix(Vector((0, 0, 0)), Vector(
+                (0, 0, 1)), Vector((0, 1, 0)), False, True)
             mat.translation = po.co
 
         elif self.translate_mode == 2:
@@ -218,7 +219,7 @@ def rotate_vectors(self, sel_inds, angle):
     set_new_normals(self)
     self.redraw = True
 
-    # rot_mat = mathutils.Matrix.Rotation(math.radians(45), 3, 'X')
+    # rot_mat = Matrix.Rotation(math.radians(45), 3, 'X')
     # rot = np.array(rot_mat)
     # print(rot.dot(a.T).T)
 
@@ -249,7 +250,7 @@ def flatten_normals(self, sel_inds, axis):
 
 def align_to_axis_normals(self, sel_inds, axis, dir):
     update_filter_weights(self)
-    vec = mathutils.Vector((0, 0, 0))
+    vec = Vector((0, 0, 0))
 
     vec[axis] = 1.0*dir
     for ind in sel_inds:
@@ -300,7 +301,7 @@ def average_vertex_normals(self, sel_inds):
 
 def average_selected_normals(self, sel_inds):
     update_filter_weights(self)
-    avg_vec = mathutils.Vector((0, 0, 0))
+    avg_vec = Vector((0, 0, 0))
     for ind in sel_inds:
         po = self._points_container.points[ind[0]]
         if po.valid:
@@ -347,7 +348,7 @@ def smooth_normals(self, sel_inds, fac):
                 l_vs = [ed.other_vert(self._object_bm.verts[po.index])
                         for ed in self._object_bm.verts[po.index].link_edges]
 
-                smooth_vec = mathutils.Vector((0, 0, 0))
+                smooth_vec = Vector((0, 0, 0))
                 smooth_vec = average_vecs(
                     [loop.normal.lerp(calc_norms[ov.index], fac) for ov in l_vs])
 
@@ -385,7 +386,7 @@ def set_outside_inside(self, sel_inds, direction):
             loop = po.loops[ind[1]]
 
             if self._object_smooth:
-                poly_norm = mathutils.Vector((0, 0, 0))
+                poly_norm = Vector((0, 0, 0))
                 for bm_loop in self._object_bm.verts[po.index].link_loops:
                     poly_norm += self._object.data.polygons[bm_loop.face.index].normal * direction
 
@@ -427,7 +428,7 @@ def set_normals_from_faces(self, sel_inds):
 
             loop = po.loops[ind[1]]
 
-            poly_norm = mathutils.Vector((0, 0, 0))
+            poly_norm = Vector((0, 0, 0))
             for f_ind in sel_faces:
                 poly_norm += self._object.data.polygons[f_ind].normal
 
@@ -517,8 +518,8 @@ def translate_axis_draw(self):
         self.translate_draw_line.clear()
 
     elif self.translate_mode == 1:
-        mat = generate_matrix(mathutils.Vector((0, 0, 0)), mathutils.Vector(
-            (0, 0, 1)), mathutils.Vector((0, 1, 0)), False, True)
+        mat = generate_matrix(Vector((0, 0, 0)), Vector(
+            (0, 0, 1)), Vector((0, 1, 0)), False, True)
         mat.translation = self._mode_cache[1]
 
     elif self.translate_mode == 2:
@@ -529,19 +530,15 @@ def translate_axis_draw(self):
         self.translate_draw_line.clear()
         if self.translate_axis == 0:
             self.translate_draw_line.append(
-                mat @ mathutils.Vector((1000, 0, 0)))
+                mat @ Vector((1000, 0, 0)))
             self.translate_draw_line.append(
-                mat @ mathutils.Vector((-1000, 0, 0)))
+                mat @ Vector((-1000, 0, 0)))
         if self.translate_axis == 1:
-            self.translate_draw_line.append(
-                mat @ mathutils.Vector((0, 1000, 0)))
-            self.translate_draw_line.append(
-                mat @ mathutils.Vector((0, -1000, 0)))
+            self.translate_draw_line.append(mat @ Vector((0, 1000, 0)))
+            self.translate_draw_line.append(mat @ Vector((0, -1000, 0)))
         if self.translate_axis == 2:
-            self.translate_draw_line.append(
-                mat @ mathutils.Vector((0, 0, 1000)))
-            self.translate_draw_line.append(
-                mat @ mathutils.Vector((0, 0, -1000)))
+            self.translate_draw_line.append(mat @ Vector((0, 0, 1000)))
+            self.translate_draw_line.append(mat @ Vector((0, 0, -1000)))
     self.batch_translate_line = batch_for_shader(
         self.shader_3d, 'LINES', {"pos": self.translate_draw_line})
     return
@@ -579,17 +576,17 @@ def translate_axis_change(self, text, axis):
 
 
 def translate_axis_side(self):
-    view_vec = view3d_utils.region_2d_to_vector_3d(
-        self.act_reg, self.act_rv3d, mathutils.Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
+    view_vec = view3d_utils.region_2d_to_vector_3d(self.act_reg, self.act_rv3d, Vector(
+        (self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
 
     if self.translate_mode == 1:
-        mat = generate_matrix(mathutils.Vector((0, 0, 0)), mathutils.Vector(
-            (0, 0, 1)), mathutils.Vector((0, 1, 0)), False, True)
+        mat = generate_matrix(Vector((0, 0, 0)), Vector(
+            (0, 0, 1)), Vector((0, 1, 0)), False, True)
     else:
         mat = self._object.matrix_world.normalized()
 
-    pos_vec = mathutils.Vector((0, 0, 0))
-    neg_vec = mathutils.Vector((0, 0, 0))
+    pos_vec = Vector((0, 0, 0))
+    neg_vec = Vector((0, 0, 0))
     pos_vec[self.translate_axis] = 1.0
     neg_vec[self.translate_axis] = -1.0
 
@@ -638,7 +635,7 @@ def cache_point_data(self):
 
         else:
             po = self._points_container.add_empty_point(
-                v.co, mathutils.Vector((0, 0, 1)))
+                v.co, Vector((0, 0, 1)))
 
         po.set_hide(v.hide)
 
@@ -779,7 +776,7 @@ def ob_data_structures(self, ob):
 
     bm = create_simple_bm(self, ob)
 
-    bvh = mathutils.bvhtree.BVHTree.FromBMesh(bm)
+    bvh = BVHTree.FromBMesh(bm)
 
     kd = create_kd(bm)
 
@@ -1008,43 +1005,37 @@ def gizmo_click_init(self, event, giz_status):
 
         orb_mat = self._orbit_ob.matrix_world
 
-        view_vec = view3d_utils.region_2d_to_vector_3d(
-            self.act_reg, self.act_rv3d, mathutils.Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
+        view_vec = view3d_utils.region_2d_to_vector_3d(self.act_reg, self.act_rv3d, Vector(
+            (self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
         view_orig = view3d_utils.region_2d_to_origin_3d(
-            self.act_reg, self.act_rv3d, mathutils.Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
+            self.act_reg, self.act_rv3d, Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
         line_a = view_orig
         line_b = view_orig + view_vec*10000
         if giz_status[0] == 'ROT_X':
-            x_vec = orb_mat @ mathutils.Vector(
-                (1, 0, 0)) - orb_mat.translation
-            mouse_co_3d = mathutils.geometry.intersect_line_plane(
+            x_vec = orb_mat @ Vector((1, 0, 0)) - orb_mat.translation
+            mouse_co_3d = intersect_line_plane(
                 line_a, line_b, orb_mat.translation, x_vec)
         if giz_status[0] == 'ROT_Y':
-            y_vec = orb_mat @ mathutils.Vector(
-                (0, 1, 0)) - orb_mat.translation
-            mouse_co_3d = mathutils.geometry.intersect_line_plane(
+            y_vec = orb_mat @ Vector((0, 1, 0)) - orb_mat.translation
+            mouse_co_3d = intersect_line_plane(
                 line_a, line_b, orb_mat.translation, y_vec)
         if giz_status[0] == 'ROT_Z':
-            z_vec = orb_mat @ mathutils.Vector(
-                (0, 0, 1)) - orb_mat.translation
-            mouse_co_3d = mathutils.geometry.intersect_line_plane(
+            z_vec = orb_mat @ Vector((0, 0, 1)) - orb_mat.translation
+            mouse_co_3d = intersect_line_plane(
                 line_a, line_b, orb_mat.translation, z_vec)
         mouse_co_local = orb_mat.inverted() @ mouse_co_3d
 
         if giz_status[0] == 'ROT_X':
             test_vec = mouse_co_local.yz
-            ang_offset = mathutils.Vector(
-                (0, 1)).angle_signed(test_vec)
+            ang_offset = Vector((0, 1)).angle_signed(test_vec)
             self._mode_cache.append(mouse_co_local.yz)
         if giz_status[0] == 'ROT_Y':
             test_vec = mouse_co_local.xz
-            ang_offset = mathutils.Vector(
-                (0, 1)).angle_signed(test_vec)
+            ang_offset = Vector((0, 1)).angle_signed(test_vec)
             self._mode_cache.append(mouse_co_local.xz)
         if giz_status[0] == 'ROT_Z':
             test_vec = mouse_co_local.xy
-            ang_offset = mathutils.Vector(
-                (0, 1)).angle_signed(test_vec)
+            ang_offset = Vector((0, 1)).angle_signed(test_vec)
             self._mode_cache.append(mouse_co_local.xy)
 
         if event.alt == False:
@@ -1297,7 +1288,7 @@ def move_target(self, shift):
         loc_co = self._object.matrix_world.inverted() @ new_co
         def_dist = loc_co[self.translate_axis]
 
-        def_vec = mathutils.Vector((0, 0, 0))
+        def_vec = Vector((0, 0, 0))
         def_vec[self.translate_axis] = def_dist
 
         def_vec = (self._object.matrix_world @ def_vec) - \

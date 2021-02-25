@@ -1,7 +1,8 @@
 import bpy
 import bmesh
 import math
-import mathutils
+from mathutils import Vector, kdtree, Matrix
+from mathutils.geoemtry import intersect_point_tri_2d
 from bpy_extras import view3d_utils
 
 gen_mods = ['ARRAY', 'BEVEL', 'BOOLEAN', 'BUILD', 'DECIMATE',
@@ -16,7 +17,7 @@ def rotate_2d(origin, point, angle):
     y = origin[1] + math.sin(angle) * (point[0] - origin[0]) + \
         math.cos(angle) * (point[1] - origin[1])
 
-    vec = mathutils.Vector((x, y))
+    vec = Vector((x, y))
     return vec
 
 
@@ -29,7 +30,7 @@ def refresh_bm(bm):
 
 def create_kd(bm):
     size = len(bm.verts)
-    kd = mathutils.kdtree.KDTree(size)
+    kd = kdtree.KDTree(size)
 
     for i, v in enumerate(bm.verts):
         kd.insert(v.co, i)
@@ -112,10 +113,10 @@ def generate_matrix(v1, v2, v3, cross, normalized):
     if cross:
         b2 = c.cross(a)
 
-        m = mathutils.Matrix([-c, b2, a]).transposed()
+        m = Matrix([-c, b2, a]).transposed()
     else:
-        m = mathutils.Matrix([-c, b, a]).transposed()
-    matrix = mathutils.Matrix.Translation(v1) @ m.to_4x4()
+        m = Matrix([-c, b, a]).transposed()
+    matrix = Matrix.Translation(v1) @ m.to_4x4()
     #matrix.translation = v1
 
     return matrix
@@ -123,7 +124,7 @@ def generate_matrix(v1, v2, v3, cross, normalized):
 
 def average_vecs(vecs):
     if len(vecs) > 0:
-        vec = mathutils.Vector((0, 0, 0))
+        vec = Vector((0, 0, 0))
         for v in vecs:
             vec += v
 
@@ -515,10 +516,10 @@ def bounding_box_filter(shape_cos, cos):
 def test_point_in_shape(shape_cos, test_co):
     tot_rot = 0
 
-    l_vec = mathutils.Vector((shape_cos[0][0], shape_cos[0][1])) - test_co
+    l_vec = Vector((shape_cos[0][0], shape_cos[0][1])) - test_co
     prev_vec = l_vec.copy()
     for lv in shape_cos:
-        s_co = mathutils.Vector((lv[0], lv[1]))
+        s_co = Vector((lv[0], lv[1]))
 
         c_vec = s_co - test_co
 
@@ -546,46 +547,6 @@ def vec_to_dashed(co, vec, segments):
         cos.append(co+(length_vec*((i*2)+1)))
 
     return cos
-
-    new_cos = coords.copy()
-
-    first_ind = None
-    # smooth geo
-    for x in range(iter):
-        co_changes = []
-        for c, co in enumerate(new_cos):
-            if c in inds:
-                test_cos = []
-                if c > 0 or cyclic:
-                    prev_co = new_cos[c-1]
-                    test_cos.append(prev_co)
-                if c < len(new_cos)-1:
-                    next_co = new_cos[c+1]
-                    test_cos.append(next_co)
-                if cyclic and c == len(new_cos)-1:
-                    next_co = new_cos[0]
-                    test_cos.append(next_co)
-
-                nco = mathutils.Vector((0, 0, 0))
-                for l_co in test_cos:
-                    vec = l_co - co
-
-                    nco += co + vec*fac
-
-                if test_cos == 0:
-                    test_cos += 1
-
-                nco /= len(test_cos)
-
-                co_changes.append(nco)
-
-            else:
-                co_changes.append(co)
-
-        for c, co_change in enumerate(co_changes):
-            new_cos[c] = co_change
-
-    return new_cos
 
 
 def get_linked_geo(bm, inds, vis=None):
@@ -626,7 +587,7 @@ def get_linked_geo(bm, inds, vis=None):
 
 
 def click_points_selection_test(coords, sel_status, mouse_co, region, rv3d, shift, x_ray, bvh, active=None, radius=15):
-    mouse_co = mathutils.Vector(mouse_co)
+    mouse_co = Vector(mouse_co)
 
     if x_ray:
         bvh = None
@@ -682,7 +643,7 @@ def click_points_selection_test(coords, sel_status, mouse_co, region, rv3d, shif
 
 
 def click_tris_selection_test(tris, sel_status, mouse_co, region, rv3d, shift, x_ray, bvh, active=None, radius=15):
-    mouse_co = mathutils.Vector(mouse_co)
+    mouse_co = Vector(mouse_co)
 
     if x_ray:
         bvh = None
@@ -703,7 +664,7 @@ def click_tris_selection_test(tris, sel_status, mouse_co, region, rv3d, shift, x
                 region, rv3d, tri_set[2])
 
             if p1 and p2 and p3:
-                intersect = mathutils.geometry.intersect_point_tri_2d(
+                intersect = intersect_point_tri_2d(
                     mouse_co, p1, p2, p3)
                 if intersect != 0:
                     if bvh:
@@ -755,7 +716,7 @@ def click_tris_selection_test(tris, sel_status, mouse_co, region, rv3d, shift, x
 
 
 def box_points_selection_test(coords, sel_status, mouse_co, corner_co, region, rv3d, add_rem_status, x_ray, bvh, active=None, just_one=False):
-    mouse_co = mathutils.Vector(mouse_co)
+    mouse_co = Vector(mouse_co)
 
     if x_ray:
         bvh = None
@@ -824,7 +785,7 @@ def box_points_selection_test(coords, sel_status, mouse_co, corner_co, region, r
 
 
 def circle_points_selection_test(coords, sel_status, mouse_co, radius, region, rv3d, add_rem_status, x_ray, bvh, active=None, just_one=False):
-    mouse_co = mathutils.Vector(mouse_co)
+    mouse_co = Vector(mouse_co)
 
     if x_ray:
         bvh = None
@@ -873,7 +834,7 @@ def circle_points_selection_test(coords, sel_status, mouse_co, radius, region, r
 
 
 def lasso_points_selection_test(lasso_points, coords, sel_status, mouse_co, region, rv3d, add_rem_status, x_ray, bvh, active=None, just_one=False):
-    mouse_co = mathutils.Vector(mouse_co)
+    mouse_co = Vector(mouse_co)
 
     if x_ray:
         bvh = None

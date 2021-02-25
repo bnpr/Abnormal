@@ -1,4 +1,4 @@
-import mathutils
+from mathutils import Vector
 import math
 
 
@@ -40,7 +40,7 @@ def calc_box(x, y, width, height, bev_inds, bev_width, bev_res):
 def bevel_ui(pos, bevel_inds, ind_offset, fac, res):
     cos = []
     for po in pos:
-        cos.append(mathutils.Vector((po[0], po[1])))
+        cos.append(Vector((po[0], po[1])))
 
     bev_cos = []
     inds = []
@@ -87,7 +87,7 @@ def bevel_ui(pos, bevel_inds, ind_offset, fac, res):
             vec1_rev = vec1_norm * -1
             vec2_rev = vec2_norm * -1
 
-            cross_vec = mathutils.Vector((-vec2_norm[1], vec2_norm[0]))
+            cross_vec = Vector((-vec2_norm[1], vec2_norm[0]))
 
             halfang = math.acos(vec1_rev.dot(vec2_rev))/2
             # TOA tan of corner angle = opposite/adjancent   we don't know opposite len which is the radius
@@ -148,7 +148,7 @@ def rotate_2d(origin, point, angle):
     y = origin[1] + math.sin(angle) * (point[0] - origin[0]) + \
         math.cos(angle) * (point[1] - origin[1])
 
-    vec = mathutils.Vector((x, y))
+    vec = Vector((x, y))
     return vec
 
 
