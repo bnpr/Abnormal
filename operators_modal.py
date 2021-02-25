@@ -11,6 +11,7 @@ from .functions_modal_buttons import *
 from .functions_modal_keymap import *
 from .functions_tools import *
 from .classes import *
+import time
 
 
 class ABN_OT_normal_editor_modal(Operator):
@@ -19,6 +20,7 @@ class ABN_OT_normal_editor_modal(Operator):
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
     def modal(self, context, event):
+        start = time.time()
         self._modal_running = False
         if bpy.context.area == None:
             finish_modal(self, True)
@@ -64,6 +66,9 @@ class ABN_OT_normal_editor_modal(Operator):
         self._prev_mouse_loc = self._mouse_reg_loc.copy()
         refresh_batches(self, context)
         self._modal_running = True
+        loop_time = time.time()-start
+        if loop_time > 0.0:
+            print('FPS: ' + str(60/loop_time))
         return status
 
     def invoke(self, context, event):

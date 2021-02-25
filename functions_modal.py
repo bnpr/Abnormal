@@ -155,32 +155,45 @@ def rotate_vectors(self, sel_inds, angle):
         axis = 'X'
     if self.translate_axis == 1:
         axis = 'Y'
+        # angle *= -1
     if self.translate_axis == 2:
         axis = 'Z'
 
+    rot = np.array(Matrix.Rotation(angle, 3, axis))
+    norm_vecs = np.array([self._points_container.points[ind_set[0]
+                                                        ].loops[ind_set[1]].cached_normal for ind_set in sel_inds])
     # Viewspace rotation matrix
     if self.translate_mode == 0:
-        perspective_matrix = bpy.context.region_data.view_matrix.to_3x3().normalized()
+        persp_mat = bpy.context.region_data.view_matrix.to_3x3().normalized()
+        loc_mat = self._object.matrix_world.to_3x3().normalized()
 
-        norm_vecs = np.array([perspective_matrix @ self._object.matrix_world.to_3x3().normalized() @
-                              self._points_container.points[ind_set[0]].loops[ind_set[1]].cached_normal for ind_set in sel_inds])
-        rot = np.array(perspective_matrix.inverted() @ self._object.matrix_world.to_3x3(
-        ).inverted().normalized() @ Matrix.Rotation(angle, 3, axis))
+        norm_vecs = np.array(loc_mat).dot(norm_vecs.T).T
+        norm_vecs = np.array(persp_mat).dot(norm_vecs.T).T
+        norm_vecs = rot.dot(norm_vecs.T).T
+        norm_vecs = np.array(persp_mat.inverted()).dot(norm_vecs.T).T
+        new_vecs = np.array(loc_mat.inverted()).dot(norm_vecs.T).T
 
     # World space rotation matrix
     elif self.translate_mode == 1:
-        norm_vecs = np.array([self._object.matrix_world.to_3x3().normalized(
-        ) @ self._points_container.points[ind_set[0]].loops[ind_set[1]].cached_normal for ind_set in sel_inds])
-        rot = np.array(self._object.matrix_world.to_3x3().inverted(
-        ).normalized() @ Matrix.Rotation(angle, 3, axis))
+        loc_mat = self._object.matrix_world.to_3x3().normalized()
+        norm_vecs = np.array(loc_mat).dot(norm_vecs.T).T
+        norm_vecs = rot.dot(norm_vecs.T).T
+        new_vecs = np.array(loc_mat.inverted()).dot(norm_vecs.T).T
 
     # Local space roatation matrix
     elif self.translate_mode == 2:
-        norm_vecs = np.array([self._points_container.points[ind_set[0]
-                                                            ].loops[ind_set[1]].cached_normal for ind_set in sel_inds])
-        rot = np.array(Matrix.Rotation(angle, 3, axis))
+        if self.gizmo_click:
+            orb_mat = self._orbit_ob.matrix_world.to_3x3().normalized()
+            loc_mat = self._object.matrix_world.to_3x3().normalized()
 
-    new_vecs = rot.dot(norm_vecs.T).T
+            norm_vecs = np.array(loc_mat).dot(norm_vecs.T).T
+            norm_vecs = np.array(orb_mat.inverted()).dot(norm_vecs.T).T
+            norm_vecs = rot.dot(norm_vecs.T).T
+            norm_vecs = np.array(orb_mat).dot(norm_vecs.T).T
+            new_vecs = np.array(loc_mat.inverted()).dot(norm_vecs.T).T
+
+        else:
+            new_vecs = rot.dot(norm_vecs.T).T
 
     for ind_set, vec in zip(sel_inds, new_vecs):
         loop = self._points_container.points[ind_set[0]].loops[ind_set[1]]
@@ -494,17 +507,17 @@ def translate_axis_draw(self):
 
     if mat != None:
         self.translate_draw_line.clear()
+
         if self.translate_axis == 0:
-            self.translate_draw_line.append(
-                mat @ Vector((1000, 0, 0)))
-            self.translate_draw_line.append(
-                mat @ Vector((-1000, 0, 0)))
+            vec = Vector((1000, 0, 0))
         if self.translate_axis == 1:
-            self.translate_draw_line.append(mat @ Vector((0, 1000, 0)))
-            self.translate_draw_line.append(mat @ Vector((0, -1000, 0)))
+            vec = Vector((0, 1000, 0))
         if self.translate_axis == 2:
-            self.translate_draw_line.append(mat @ Vector((0, 0, 1000)))
-            self.translate_draw_line.append(mat @ Vector((0, 0, -1000)))
+            vec = Vector((0, 0, 1000))
+
+        self.translate_draw_line.append(mat @ vec)
+        self.translate_draw_line.append(mat @ -vec)
+
     self.batch_translate_line = batch_for_shader(
         self.shader_3d, 'LINES', {"pos": self.translate_draw_line})
     return
@@ -542,8 +555,8 @@ def translate_axis_change(self, text, axis):
 
 
 def translate_axis_side(self):
-    view_vec = view3d_utils.region_2d_to_vector_3d(self.act_reg, self.act_rv3d, Vector(
-        (self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
+    view_vec = view3d_utils.region_2d_to_vector_3d(
+        self.act_reg, self.act_rv3d, Vector(self._mouse_reg_loc))
 
     if self.translate_mode == 1:
         mat = generate_matrix(Vector((0, 0, 0)), Vector(
@@ -564,8 +577,8 @@ def translate_axis_side(self):
     else:
         side = 1
 
-    if self.translate_axis == 1:
-        side *= -1
+    # if self.translate_axis == 1:
+    #     side *= -1
     return side
 
 
@@ -982,50 +995,44 @@ def gizmo_click_init(self, event, giz_status):
 
         # Project cursor from view onto the rotation axis plane
         if giz_status[0] == 'ROT_X':
-            x_vec = orb_mat @ Vector((1, 0, 0)) - orb_mat.translation
-            mouse_co_3d = intersect_line_plane(
-                line_a, line_b, orb_mat.translation, x_vec)
+            giz_vec = orb_mat @ Vector((1, 0, 0)) - orb_mat.translation
+            self.translate_axis = 0
 
         if giz_status[0] == 'ROT_Y':
-            y_vec = orb_mat @ Vector((0, 1, 0)) - orb_mat.translation
-            mouse_co_3d = intersect_line_plane(
-                line_a, line_b, orb_mat.translation, y_vec)
+            giz_vec = orb_mat @ Vector((0, 1, 0)) - orb_mat.translation
+            self.translate_axis = 1
 
         if giz_status[0] == 'ROT_Z':
-            z_vec = orb_mat @ Vector((0, 0, 1)) - orb_mat.translation
-            mouse_co_3d = intersect_line_plane(
-                line_a, line_b, orb_mat.translation, z_vec)
+            giz_vec = orb_mat @ Vector((0, 0, 1)) - orb_mat.translation
+            self.translate_axis = 2
 
+        mouse_co_3d = intersect_line_plane(
+            line_a, line_b, orb_mat.translation, giz_vec)
         mouse_co_local = orb_mat.inverted() @ mouse_co_3d
 
         # Get start angle for rotation
         if giz_status[0] == 'ROT_X':
             test_vec = mouse_co_local.yz
-            ang_offset = Vector((0, 1)).angle_signed(test_vec)
-            self._mode_cache.append(mouse_co_local.yz)
 
         if giz_status[0] == 'ROT_Y':
             test_vec = mouse_co_local.xz
-            ang_offset = Vector((0, 1)).angle_signed(test_vec)
-            self._mode_cache.append(mouse_co_local.xz)
 
         if giz_status[0] == 'ROT_Z':
             test_vec = mouse_co_local.xy
-            ang_offset = Vector((0, 1)).angle_signed(test_vec)
-            self._mode_cache.append(mouse_co_local.xy)
 
+        self.translate_mode = 2
+        ang_offset = Vector((0, 1)).angle_signed(test_vec)
+        self._mode_cache.append(test_vec)
         # Add cache data for tool mode
         if event.alt == False:
             self._window.update_gizmo_rot(0, -ang_offset)
             self._mode_cache.append(sel_inds)
-            self._mode_cache.append(giz_status)
             self._mode_cache.append(0)
             self._mode_cache.append(-ang_offset)
             self._mode_cache.append(orb_mat.copy())
             self._mode_cache.append(True)
         else:
             self._mode_cache.append([])
-            self._mode_cache.append(giz_status)
             self._mode_cache.append(0)
             self._mode_cache.append(-ang_offset)
             self._mode_cache.append(orb_mat.copy())

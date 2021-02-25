@@ -147,8 +147,9 @@ def register():
             km.keymap_items.new(
                 'Confirm Tool 3', 'LEFTMOUSE', 'RELEASE', any=True)
 
-            km.keymap_items.new('Cancel Tool 1', 'ESC', 'PRESS')
-            km.keymap_items.new('Cancel Tool 2', 'RIGHTMOUSE', 'PRESS')
+            km.keymap_items.new('Cancel Tool 1', 'ESC', 'PRESS', any=True)
+            km.keymap_items.new(
+                'Cancel Tool 2', 'RIGHTMOUSE', 'PRESS', any=True)
 
         addon_keymaps.append(km)
 

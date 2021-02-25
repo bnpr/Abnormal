@@ -506,6 +506,7 @@ def rotate_post_navigate(modal, context, event, func_data):
     bpy.context.window.cursor_modal_set('DEFAULT')
     modal.rotating = True
     modal.active_drawing = True
+    modal._mode_cache[4] = translate_axis_side(modal)
     return
 
 
@@ -777,54 +778,51 @@ def gizmo_mouse(modal, context, event, func_data):
 
     line_a = view_orig
     line_b = view_orig + view_vec*10000
-    if modal._mode_cache[2][0] == 'ROT_X':
-        x_vec = modal._mode_cache[5] @ Vector((1, 0, 0)) - \
-            modal._mode_cache[5].translation
-        mouse_co_3d = intersect_line_plane(
-            line_a, line_b, modal._mode_cache[5].translation, x_vec)
+    # Get start vector to measure angle of mouse
+    if modal.translate_axis == 0:
+        giz_vec = modal._mode_cache[4] @ Vector((1, 0, 0)) - \
+            modal._mode_cache[4].translation
 
-    if modal._mode_cache[2][0] == 'ROT_Y':
-        y_vec = modal._mode_cache[5] @ Vector((0, 1, 0)) - \
-            modal._mode_cache[5].translation
-        mouse_co_3d = intersect_line_plane(
-            line_a, line_b, modal._mode_cache[5].translation, y_vec)
+    if modal.translate_axis == 1:
+        giz_vec = modal._mode_cache[4] @ Vector((0, 1, 0)) - \
+            modal._mode_cache[4].translation
 
-    if modal._mode_cache[2][0] == 'ROT_Z':
-        z_vec = modal._mode_cache[5] @ Vector((0, 0, 1)) - \
-            modal._mode_cache[5].translation
-        mouse_co_3d = intersect_line_plane(
-            line_a, line_b, modal._mode_cache[5].translation, z_vec)
+    if modal.translate_axis == 2:
+        giz_vec = modal._mode_cache[4] @ Vector((0, 0, 1)) - \
+            modal._mode_cache[4].translation
 
-    mouse_co_local = modal._mode_cache[5].inverted() @ mouse_co_3d
+    mouse_co_3d = intersect_line_plane(
+        line_a, line_b, modal._mode_cache[4].translation, giz_vec)
 
-    modal.translate_mode = 2
-    if modal._mode_cache[2][0] == 'ROT_X':
+    mouse_co_local = modal._mode_cache[4].inverted() @ mouse_co_3d
+
+    # Get angle of current rotation
+    ang_fac = 1.0
+    if modal.translate_axis == 0:
         mouse_loc = mouse_co_local.yz
-        ang = start_vec.angle_signed(mouse_co_local.yz)*-1
-        modal.translate_axis = 0
 
-    if modal._mode_cache[2][0] == 'ROT_Y':
+    elif modal.translate_axis == 1:
         mouse_loc = mouse_co_local.xz
-        ang = start_vec.angle_signed(mouse_co_local.xz)*-1
-        modal.translate_axis = 1
+        ang_fac = -1.0
 
-    if modal._mode_cache[2][0] == 'ROT_Z':
+    elif modal.translate_axis == 2:
         mouse_loc = mouse_co_local.xy
-        ang = start_vec.angle_signed(mouse_co_local.xy)*-1
-        modal.translate_axis = 2
 
+    ang = start_vec.angle_signed(mouse_loc)*-1
     if event.shift:
         ang *= 0.1
 
+    # Apply angle to normals or gizmo
     if ang != 0.0:
-        modal._mode_cache[3] = modal._mode_cache[3]+ang
+        modal._mode_cache[2] = modal._mode_cache[2]+ang
         modal._mode_cache.pop(0)
         modal._mode_cache.insert(0, mouse_loc)
 
-        if modal._mode_cache[6]:
-            rotate_vectors(modal, modal._mode_cache[1], modal._mode_cache[3])
+        if modal._mode_cache[5]:
+            rotate_vectors(
+                modal, modal._mode_cache[1], modal._mode_cache[2]*ang_fac)
             modal._window.update_gizmo_rot(
-                modal._mode_cache[3], modal._mode_cache[4])
+                modal._mode_cache[2], modal._mode_cache[3])
             modal.redraw = True
         else:
             if modal.translate_axis == 0:
@@ -845,7 +843,7 @@ def gizmo_confirm(modal, context, event, keys, func_data):
         gizmo.active = True
         gizmo.in_use = False
 
-    if modal._mode_cache[6]:
+    if modal._mode_cache[5]:
         add_to_undostack(modal, 1)
 
     modal.gizmo_click = False
@@ -858,12 +856,12 @@ def gizmo_confirm(modal, context, event, keys, func_data):
 
 
 def gizmo_cancel(modal, context, event, keys, func_data):
-    if modal._mode_cache[6]:
+    if modal._mode_cache[5]:
         modal._points_container.restore_cached_normals()
 
         set_new_normals(modal)
     else:
-        modal._orbit_ob.matrix_world = modal._mode_cache[5].copy()
+        modal._orbit_ob.matrix_world = modal._mode_cache[4].copy()
         modal._window.update_gizmo_orientation(
             modal._orbit_ob.matrix_world)
 

@@ -3,6 +3,7 @@ from bpy_extras import view3d_utils
 from .functions_drawing import *
 from .functions_modal import *
 from .classes import *
+import time
 
 
 def basic_ui_hover_keymap(self, context, event):
@@ -150,6 +151,39 @@ def basic_keymap(self, context, event):
         else:
             move_undostack(self, 1)
         return status
+
+    if event.type == 'P' and event.value == 'PRESS':
+        update_filter_weights(self)
+        sel_inds = self._points_container.get_selected_loops()
+
+        if len(sel_inds) > 0:
+            sel_cos = self._points_container.get_selected_loop_cos()
+            avg_loc = average_vecs(sel_cos)
+
+            self._points_container.cache_current_normals()
+            self.translate_axis = 2
+            self.translate_mode = 0
+
+            self._mode_cache.clear()
+            self._mode_cache.append(self._mouse_reg_loc)
+            self._mode_cache.append(sel_inds)
+            self._mode_cache.append(avg_loc)
+            self._mode_cache.append(0)
+            self._mode_cache.append(1)
+
+            iters = 200
+            start = time.time()
+            for i in range(iters):
+                old_rotate_vectors(self, sel_inds, 0.25)
+            old_time = (time.time()-start)/iters
+            print(old_time)
+
+            start = time.time()
+            for i in range(iters):
+                rotate_vectors(self, sel_inds, 0.25)
+            new_time = (time.time()-start)/iters
+            print(new_time)
+            print(old_time/new_time)
 
     #
     #
