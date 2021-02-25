@@ -431,6 +431,7 @@ def init_ui_panels(self, rw, rh, scale):
         but = row.add_button(20, 'Reset Vectors')
         but.set_click_up_func(reset_vectors)
 
+        row = box.add_row()
         but = row.add_button(20, 'Set Normals From Faces')
         but.set_click_up_func(set_from_faces)
 
