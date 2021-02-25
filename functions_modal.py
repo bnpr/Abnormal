@@ -151,81 +151,43 @@ def incremental_rotate_vectors(self, sel_inds, axis, increment):
 
 
 def rotate_vectors(self, sel_inds, angle):
-    for i, ind_set in enumerate(sel_inds):
-        po = self._points_container.points[ind_set[0]]
-        loop = po.loops[ind_set[1]]
+    if self.translate_axis == 0:
+        axis = 'X'
+    if self.translate_axis == 1:
+        axis = 'Y'
+    if self.translate_axis == 2:
+        axis = 'Z'
 
-        # Viewspace rotation
-        if self.translate_mode == 0:
-            mouse_co = Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
-            rco = view3d_utils.location_3d_to_region_2d(
-                self.act_reg, self.act_rv3d, po.co)
+    # Viewspace rotation matrix
+    if self.translate_mode == 0:
+        perspective_matrix = bpy.context.region_data.view_matrix.to_3x3().normalized()
 
-            co1 = view3d_utils.region_2d_to_location_3d(
-                self.act_reg, self.act_rv3d, rco, po.co)
-            rco[0] += 10
-            co2 = view3d_utils.region_2d_to_location_3d(
-                self.act_reg, self.act_rv3d, rco, po.co)
-            rco[0] -= 10
-            rco[1] -= 10
-            co3 = view3d_utils.region_2d_to_location_3d(
-                self.act_reg, self.act_rv3d, rco, po.co)
+        norm_vecs = np.array([perspective_matrix @ self._object.matrix_world.to_3x3().normalized() @
+                              self._points_container.points[ind_set[0]].loops[ind_set[1]].cached_normal for ind_set in sel_inds])
+        rot = np.array(perspective_matrix.inverted() @ self._object.matrix_world.to_3x3(
+        ).inverted().normalized() @ Matrix.Rotation(angle, 3, axis))
 
-            co4 = co1 + (co3-co1).cross(co2-co1)
+    # World space rotation matrix
+    elif self.translate_mode == 1:
+        norm_vecs = np.array([self._object.matrix_world.to_3x3().normalized(
+        ) @ self._points_container.points[ind_set[0]].loops[ind_set[1]].cached_normal for ind_set in sel_inds])
+        rot = np.array(self._object.matrix_world.to_3x3().inverted(
+        ).normalized() @ Matrix.Rotation(angle, 3, axis))
 
-            mat = generate_matrix(co1, co4, co2, True, True)
-            mat.translation = po.co
+    # Local space roatation matrix
+    elif self.translate_mode == 2:
+        norm_vecs = np.array([self._points_container.points[ind_set[0]
+                                                            ].loops[ind_set[1]].cached_normal for ind_set in sel_inds])
+        rot = np.array(Matrix.Rotation(angle, 3, axis))
 
-        # World space rotation
-        elif self.translate_mode == 1:
-            mat = generate_matrix(Vector((0, 0, 0)), Vector(
-                (0, 0, 1)), Vector((0, 1, 0)), False, True)
-            mat.translation = po.co
+    new_vecs = rot.dot(norm_vecs.T).T
 
-        # Local space roatation
-        elif self.translate_mode == 2:
-            if self.gizmo_click:
-                mat = self._orbit_ob.matrix_world.normalized()
-                mat.translation = po.co
-            else:
-                mat = self._object.matrix_world.normalized()
-                mat.translation = po.co
-
-        po_local = self._object.matrix_world.inverted() @ po.co
-        loop_w = self._object.matrix_world @ (loop.cached_normal+po_local)
-
-        # Rotate based on axis
-        vec_local = mat.inverted() @ loop_w
-        if self.translate_axis == 0:
-            rot_vec = rotate_2d([0, 0], vec_local.yz, angle)
-
-            vec_local[1] = rot_vec[0]
-            vec_local[2] = rot_vec[1]
-
-        if self.translate_axis == 1:
-            rot_vec = rotate_2d([0, 0], vec_local.xz, angle)
-
-            vec_local[0] = rot_vec[0]
-            vec_local[2] = rot_vec[1]
-
-        if self.translate_axis == 2:
-            rot_vec = rotate_2d([0, 0], vec_local.xy, angle)
-
-            vec_local[0] = rot_vec[0]
-            vec_local[1] = rot_vec[1]
-
-        rot_w = mat @ vec_local
-        loop_local = self._object.matrix_world.inverted() @ rot_w
-
-        loop_norm_set(self, loop, loop.cached_normal,
-                      (loop_local-po_local).normalized())
+    for ind_set, vec in zip(sel_inds, new_vecs):
+        loop = self._points_container.points[ind_set[0]].loops[ind_set[1]]
+        loop_norm_set(self, loop, loop.cached_normal, vec)
 
     set_new_normals(self)
     self.redraw = True
-
-    # rot_mat = Matrix.Rotation(math.radians(45), 3, 'X')
-    # rot = np.array(rot_mat)
-    # print(rot.dot(a.T).T)
 
     return
 
@@ -524,11 +486,11 @@ def translate_axis_draw(self):
     elif self.translate_mode == 1:
         mat = generate_matrix(Vector((0, 0, 0)), Vector(
             (0, 0, 1)), Vector((0, 1, 0)), False, True)
-        mat.translation = self._mode_cache[1]
+        mat.translation = self._mode_cache[2]
 
     elif self.translate_mode == 2:
         mat = self._object.matrix_world.normalized()
-        mat.translation = self._mode_cache[1]
+        mat.translation = self._mode_cache[2]
 
     if mat != None:
         self.translate_draw_line.clear()
