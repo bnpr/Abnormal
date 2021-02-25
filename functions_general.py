@@ -2,7 +2,7 @@ import bpy
 import bmesh
 import math
 from mathutils import Vector, kdtree, Matrix
-from mathutils.geoemtry import intersect_point_tri_2d
+from mathutils.geometry import intersect_point_tri_2d
 from bpy_extras import view3d_utils
 
 gen_mods = ['ARRAY', 'BEVEL', 'BOOLEAN', 'BUILD', 'DECIMATE',
