@@ -179,27 +179,29 @@ def setup_tools(modal):
 #
 # BOX SELECT FUNCS
 def box_sel_start(modal, context, event, keys, func_data):
-    modal._mouse_init = modal._mouse_reg_loc
+    modal._mode_cache.append([modal._mouse_reg_loc, modal._mouse_reg_loc])
     modal.box_selecting = True
     return
 
 
 def box_sel_mouse(modal, context, event, func_data):
     if event.alt:
-        if len(modal._mode_cache) == 0:
-            modal._mode_cache.append(modal._mouse_reg_loc)
+        if modal._mouse_init == None:
+            modal._mouse_init = modal._mouse_reg_loc
         else:
-            offset = [modal._mouse_reg_loc[0]-modal._mode_cache[0][0],
-                      modal._mouse_reg_loc[1]-modal._mode_cache[0][1]]
+            offset = [modal._mouse_reg_loc[0]-modal._mouse_init[0],
+                      modal._mouse_reg_loc[1]-modal._mouse_init[1]]
 
-            modal._mouse_init[0] += offset[0]
-            modal._mouse_init[1] += offset[1]
-            modal._mode_cache.clear()
-            modal._mode_cache.append(modal._mouse_reg_loc)
+            for p in range(len(modal._mode_cache[0])):
+                modal._mode_cache[0][p][0] += offset[0]
+                modal._mode_cache[0][p][1] += offset[1]
+
+            modal._mouse_init = modal._mouse_reg_loc
     else:
-        if len(modal._mode_cache) > 0:
-            modal._mode_cache.clear()
+        modal._mouse_init = None
 
+        modal._mode_cache[0].pop(-1)
+        modal._mode_cache[0].append(modal._mouse_reg_loc)
     return
 
 
@@ -252,22 +254,20 @@ def lasso_sel_start(modal, context, event, keys, func_data):
 
 def lasso_sel_mouse(modal, context, event, func_data):
     if event.alt:
-        if len(modal._mode_cache) == 1:
-            modal._mode_cache.append(modal._mouse_reg_loc)
+        if modal._mouse_init == None:
+            modal._mouse_init = modal._mouse_reg_loc
         else:
-            offset = [modal._mouse_reg_loc[0]-modal._mode_cache[1][0],
-                      modal._mouse_reg_loc[1]-modal._mode_cache[1][1]]
+            offset = [modal._mouse_reg_loc[0]-modal._mouse_init[0],
+                      modal._mouse_reg_loc[1]-modal._mouse_init[1]]
 
             for p in range(len(modal._mode_cache[0])):
                 modal._mode_cache[0][p][0] += offset[0]
                 modal._mode_cache[0][p][1] += offset[1]
 
-            modal._mode_cache.pop(1)
-            modal._mode_cache.append(modal._mouse_reg_loc)
+            modal._mouse_init = modal._mouse_reg_loc
 
     else:
-        if len(modal._mode_cache) > 1:
-            modal._mode_cache.pop(1)
+        modal._mouse_init = None
 
         prev_loc = Vector(modal._mode_cache[0][-1])
         cur_loc = Vector(modal._mouse_reg_loc)
@@ -297,6 +297,7 @@ def lasso_sel_confirm(modal, context, event, keys, func_data):
     modal.tool_mode = False
     modal.lasso_selecting = False
     modal._mode_cache.clear()
+    modal._mouse_init = None
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     keymap_refresh(modal)
@@ -308,6 +309,7 @@ def lasso_sel_cancel(modal, context, event, keys, func_data):
     modal.tool_mode = False
     modal.lasso_selecting = False
     modal._mode_cache.clear()
+    modal._mouse_init = None
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     keymap_refresh(modal)

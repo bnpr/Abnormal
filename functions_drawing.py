@@ -242,11 +242,13 @@ def create_selection_drawing_lists(self):
     boxsel_screen_lines = []
     if self.box_selecting:
 
-        init_loc = Vector(self._mouse_init)
-        cur_loc = Vector(self._mouse_reg_loc)
+        init_loc = Vector(self._mode_cache[0][0])
+        cur_loc = Vector(self._mode_cache[0][1])
 
-        top_right = Vector((self._mouse_reg_loc[0], self._mouse_init[1]))
-        bot_left = Vector((self._mouse_init[0], self._mouse_reg_loc[1]))
+        top_right = Vector(
+            (self._mode_cache[0][1][0], self._mode_cache[0][0][1]))
+        bot_left = Vector(
+            (self._mode_cache[0][0][0], self._mode_cache[0][1][1]))
 
         vec = init_loc-top_right
         start_co = top_right
