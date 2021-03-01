@@ -459,7 +459,6 @@ def rotate_norms_confirm(modal, context, event, keys, func_data):
 
     add_to_undostack(modal, 1)
     modal._mode_cache.clear()
-    modal._mouse_init = None
     modal.translate_axis = 2
     modal.translate_mode = 0
     clear_translate_axis_draw(modal)
@@ -479,7 +478,6 @@ def rotate_norms_cancel(modal, context, event, keys, func_data):
 
     set_new_normals(modal)
     modal._mode_cache.clear()
-    modal._mouse_init = None
     modal.translate_axis = 2
     modal.translate_mode = 0
     clear_translate_axis_draw(modal)
