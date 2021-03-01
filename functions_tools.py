@@ -444,9 +444,9 @@ def rotate_norms_mouse(modal, context, event, func_data):
         ang *= 0.1
 
     if ang != 0.0:
-        modal._mode_cache[3] = modal._mode_cache[3]+ang
+        modal._mode_cache[3] = modal._mode_cache[3]+ang*modal._mode_cache[4]
         rotate_vectors(
-            modal, modal._mode_cache[1], modal._mode_cache[3]*modal._mode_cache[4])
+            modal, modal._mode_cache[1], modal._mode_cache[3])
         modal._mode_cache.pop(0)
         modal._mode_cache.insert(0, modal._mouse_reg_loc)
 
@@ -496,7 +496,8 @@ def rotate_norms_cancel(modal, context, event, keys, func_data):
 
 
 def rotate_pre_navigate(modal, context, event, func_data):
-    modal._mouse_init = modal._mouse_reg_loc
+    modal._mode_cache.pop(0)
+    modal._mode_cache.insert(0, modal._mouse_reg_loc)
     modal.rotating = False
     end_selection_drawing(modal)
     bpy.context.window.cursor_modal_set('NONE')
@@ -504,7 +505,13 @@ def rotate_pre_navigate(modal, context, event, func_data):
 
 
 def rotate_post_navigate(modal, context, event, func_data):
-    modal._mouse_init = modal._mouse_reg_loc
+    if modal.translate_mode == 0:
+        rotate_vectors(
+            modal, modal._mode_cache[1], modal._mode_cache[3])
+        modal.redraw_active = True
+
+    modal._mode_cache.pop(0)
+    modal._mode_cache.insert(0, modal._mouse_reg_loc)
     bpy.context.window.cursor_modal_set('DEFAULT')
     modal.rotating = True
     modal.selection_drawing = True

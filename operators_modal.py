@@ -61,8 +61,7 @@ class ABN_OT_normal_editor_modal(Operator):
                     status = basic_ui_hover_keymap(self, context, event)
                 else:
                     status = basic_keymap(self, context, event)
-
-        self._prev_mouse_loc = self._mouse_reg_loc.copy()
+            self._prev_mouse_loc = self._mouse_reg_loc.copy()
 
         refresh_batches(self, context)
         self._modal_running = True
@@ -86,7 +85,8 @@ class ABN_OT_normal_editor_modal(Operator):
 
         if context.space_data.type == 'VIEW_3D':
             # INITIALIZE PROPERTIES
-            self._addon_prefs = bpy.context.preferences.addons['Abnormal'].preferences
+            self._addon_prefs = bpy.context.preferences.addons[__package__.split('.')[
+                0]].preferences
             self._display_prefs = self._addon_prefs.display
             self._behavior_prefs = self._addon_prefs.behavior
             self._keymap_sel_prefs = self._addon_prefs.keymap_sel
