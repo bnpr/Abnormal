@@ -36,8 +36,7 @@ def match_loops_vecs(self, loop, o_tangs, flip_axis=None):
 
 
 def set_new_normals(self):
-    for ed in self._object.data.edges:
-        ed.use_edge_sharp = self.og_sharp_edges[ed.index]
+    self._object.data.edges.foreach_set('use_edge_sharp', self.og_sharp_edges)
 
     new_l_norms = [None for l in self._object.data.loops]
     for po in self._points_container.points:
@@ -200,7 +199,7 @@ def rotate_vectors(self, sel_inds, angle):
         loop_norm_set(self, loop, loop.cached_normal, vec)
 
     set_new_normals(self)
-    self.redraw = True
+    self.redraw_active = True
 
     return
 
@@ -588,7 +587,10 @@ def translate_axis_side(self):
 def cache_point_data(self):
     self._object.data.calc_normals_split()
 
-    self.og_sharp_edges = [ed.use_edge_sharp for ed in self._object.data.edges]
+    self.og_sharp_edges = np.zeros(len(self._object.data.edges), dtype=np.bool)
+    self.og_seam_edges = np.zeros(self.og_sharp_edges.size, dtype=np.bool)
+    self._object.data.edges.foreach_get('use_edge_sharp', self.og_sharp_edges)
+    self._object.data.edges.foreach_get('use_seam', self.og_seam_edges)
 
     for v in self._object_bm.verts:
         ed_inds = [ed.index for ed in v.link_edges]
@@ -901,8 +903,8 @@ def finish_modal(self, restore):
                 if o_ob.as_pointer() == self._object_pointer:
                     ob = o_ob
 
-        for ed in self._object.data.edges:
-            ed.use_edge_sharp = self.og_sharp_edges[ed.index]
+        self._object.data.edges.foreach_set(
+            'use_edge_sharp', self.og_sharp_edges)
 
         # restore normals
         og_norms = [None for l in ob.data.loops]
@@ -1041,6 +1043,7 @@ def gizmo_click_init(self, event, giz_status):
         self.gizmo_click = True
         self._current_tool = self._gizmo_tool
         self.tool_mode = True
+        start_active_drawing(self)
 
         return False
     return True
@@ -1127,7 +1130,6 @@ def end_sphereize_mode(self, keep_normals):
     self.translate_axis = 2
     self.translate_mode = 0
     clear_translate_axis_draw(self)
-    self.redraw = True
     self._target_emp.empty_display_size = 0.0
     self._target_emp.select_set(False)
     self._orbit_ob.select_set(True)
@@ -1154,7 +1156,7 @@ def sphereize_normals(self, sel_inds):
             loop_norm_set(
                 self, loop, loop.cached_normal, loop.cached_normal.lerp(vec, self.target_strength))
 
-            self.redraw = True
+            self.redraw_active = True
 
     set_new_normals(self)
     return
@@ -1208,7 +1210,6 @@ def end_point_mode(self, keep_normals):
     self.translate_axis = 2
     self.translate_mode = 0
     clear_translate_axis_draw(self)
-    self.redraw = True
     self._target_emp.empty_display_size = 0.0
     self._target_emp.select_set(False)
     self._orbit_ob.select_set(True)
@@ -1242,7 +1243,7 @@ def point_normals(self, sel_inds):
             loop_norm_set(
                 self, loop, loop.cached_normal, loop.cached_normal.lerp(vec, self.target_strength))
 
-            self.redraw = True
+            self.redraw_active = True
 
     set_new_normals(self)
     return

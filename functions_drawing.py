@@ -9,13 +9,17 @@ from .functions_general import *
 
 def refresh_batches(self, context):
     # ACTIVELY DRAWING DATA LISTS
-    if self.active_drawing:
+    if self.selection_drawing:
         create_selection_drawing_lists(self)
 
     if self.redraw:
-        self._points_container.update()
+        self._points_container.update_static()
+
+    if self.redraw_active:
+        self._points_container.update_active()
 
     self.redraw = False
+    self.redraw_active = False
     force_scene_update()
     return
 
@@ -28,6 +32,7 @@ def draw_callback_3d(self, context):
             clear_draw = True
 
         bgl.glEnable(bgl.GL_BLEND)
+        bgl.glEnable(bgl.GL_VERTEX_PROGRAM_POINT_SIZE)
         if self._x_ray_mode == False:
             bgl.glEnable(bgl.GL_DEPTH_TEST)
 
@@ -53,6 +58,7 @@ def draw_callback_3d(self, context):
             self._window.gizmo_draw()
 
         bgl.glDisable(bgl.GL_BLEND)
+        bgl.glDisable(bgl.GL_VERTEX_PROGRAM_POINT_SIZE)
 
     except Exception:
         print()
@@ -183,9 +189,21 @@ def viewport_change_cache(self, context):
 #
 
 
+def start_active_drawing(self):
+    self._points_container.update_active()
+    self._points_container.update_static(exclude_active=True)
+    return
+
+
 def end_active_drawing(self):
-    self.active_drawing = False
-    create_selection_drawing_lists(self)
+    self._points_container.clear_active_batches()
+    self._points_container.update_static()
+    return
+
+
+def end_selection_drawing(self):
+    self.selection_drawing = False
+    empty_selection_drawing_lists(self)
     return
 
 

@@ -536,6 +536,7 @@ def change_point_size(self, arguments):
     arguments[0]._point_size = self.value
     arguments[0]._points_container.set_point_size(
         arguments[0]._point_size)
+    arguments[0].redraw = True
     return
 
 

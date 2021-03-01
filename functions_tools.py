@@ -232,7 +232,7 @@ def box_sel_confirm(modal, context, event, keys, func_data):
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     keymap_refresh(modal)
-    end_active_drawing(modal)
+    end_selection_drawing(modal)
     return
 
 
@@ -242,7 +242,7 @@ def box_sel_cancel(modal, context, event, keys, func_data):
     modal._mode_cache.clear()
     bpy.context.window.cursor_modal_set('DEFAULT')
     keymap_refresh(modal)
-    end_active_drawing(modal)
+    end_selection_drawing(modal)
     return
 
 
@@ -301,7 +301,7 @@ def lasso_sel_confirm(modal, context, event, keys, func_data):
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     keymap_refresh(modal)
-    end_active_drawing(modal)
+    end_selection_drawing(modal)
     return
 
 
@@ -311,7 +311,7 @@ def lasso_sel_cancel(modal, context, event, keys, func_data):
     modal._mode_cache.clear()
     bpy.context.window.cursor_modal_set('DEFAULT')
     keymap_refresh(modal)
-    end_active_drawing(modal)
+    end_selection_drawing(modal)
     return
 
 
@@ -385,7 +385,7 @@ def circle_sel_cancel(modal, context, event, keys, func_data):
     modal._mode_cache.clear()
     bpy.context.window.cursor_modal_set('DEFAULT')
     keymap_refresh(modal)
-    end_active_drawing(modal)
+    end_selection_drawing(modal)
     return
 
 
@@ -418,13 +418,13 @@ def circle_resize_cancel(modal, context, event, keys, func_data):
 #
 # NAVIGATE CLEAR DRAWING
 def clear_draw_pre_navigate(modal, context, event, func_data):
-    modal.active_drawing = False
+    modal.selection_drawing = False
     empty_selection_drawing_lists(modal)
     return
 
 
 def clear_draw_post_navigate(modal, context, event, func_data):
-    modal.active_drawing = True
+    modal.selection_drawing = True
     return
 
 
@@ -450,7 +450,7 @@ def rotate_norms_mouse(modal, context, event, func_data):
         modal._mode_cache.pop(0)
         modal._mode_cache.insert(0, modal._mouse_reg_loc)
 
-        modal.redraw = True
+        modal.redraw_active = True
     return
 
 
@@ -469,6 +469,7 @@ def rotate_norms_confirm(modal, context, event, keys, func_data):
     keymap_refresh(modal)
     gizmo_update_hide(modal, True)
     modal.tool_mode = False
+    end_selection_drawing(modal)
     end_active_drawing(modal)
     return
 
@@ -489,6 +490,7 @@ def rotate_norms_cancel(modal, context, event, keys, func_data):
     keymap_refresh(modal)
     gizmo_update_hide(modal, True)
     modal.tool_mode = False
+    end_selection_drawing(modal)
     end_active_drawing(modal)
     return
 
@@ -496,7 +498,7 @@ def rotate_norms_cancel(modal, context, event, keys, func_data):
 def rotate_pre_navigate(modal, context, event, func_data):
     modal._mouse_init = modal._mouse_reg_loc
     modal.rotating = False
-    end_active_drawing(modal)
+    end_selection_drawing(modal)
     bpy.context.window.cursor_modal_set('NONE')
     return
 
@@ -505,7 +507,7 @@ def rotate_post_navigate(modal, context, event, func_data):
     modal._mouse_init = modal._mouse_reg_loc
     bpy.context.window.cursor_modal_set('DEFAULT')
     modal.rotating = True
-    modal.active_drawing = True
+    modal.selection_drawing = True
     modal._mode_cache[4] = translate_axis_side(modal)
     return
 
@@ -515,7 +517,7 @@ def rotate_set_x(modal, context, event, keys, func_data):
     modal._mode_cache[4] = translate_axis_side(modal)
     rotate_vectors(
         modal, modal._mode_cache[1], modal._mode_cache[3]*modal._mode_cache[4])
-    modal.redraw = True
+    modal.redraw_active = True
     return
 
 
@@ -524,7 +526,7 @@ def rotate_set_y(modal, context, event, keys, func_data):
     modal._mode_cache[4] = translate_axis_side(modal)
     rotate_vectors(
         modal, modal._mode_cache[1], modal._mode_cache[3]*modal._mode_cache[4])
-    modal.redraw = True
+    modal.redraw_active = True
     return
 
 
@@ -533,7 +535,7 @@ def rotate_set_z(modal, context, event, keys, func_data):
     modal._mode_cache[4] = translate_axis_side(modal)
     rotate_vectors(
         modal, modal._mode_cache[1], modal._mode_cache[3]*modal._mode_cache[4])
-    modal.redraw = True
+    modal.redraw_active = True
     return
 
 
@@ -595,7 +597,7 @@ def sphereize_move_mouse(modal, context, event, func_data):
     modal._mode_cache.pop(2)
     modal._mode_cache.insert(2, modal._mouse_reg_loc)
 
-    modal.redraw = True
+    modal.redraw_active = True
     return
 
 
@@ -609,6 +611,7 @@ def sphereize_move_confirm(modal, context, event, keys, func_data):
     modal._mode_cache.pop(3)
     modal._mode_cache.pop(2)
     modal._current_tool = modal._sphereize_tool
+    end_active_drawing(modal)
     return
 
 
@@ -625,6 +628,7 @@ def sphereize_move_cancel(modal, context, event, keys, func_data):
     modal._mode_cache.pop(3)
     modal._mode_cache.pop(2)
     modal._current_tool = modal._sphereize_tool
+    end_active_drawing(modal)
     return
 
 
@@ -633,7 +637,7 @@ def sphereize_move_set_x(modal, context, event, keys, func_data):
     move_target(modal, event.shift)
     sphereize_normals(modal, modal._mode_cache[0])
 
-    modal.redraw = True
+    modal.redraw_active = True
     return
 
 
@@ -642,7 +646,7 @@ def sphereize_move_set_y(modal, context, event, keys, func_data):
     move_target(modal, event.shift)
     sphereize_normals(modal, modal._mode_cache[0])
 
-    modal.redraw = True
+    modal.redraw_active = True
     return
 
 
@@ -651,7 +655,7 @@ def sphereize_move_set_z(modal, context, event, keys, func_data):
     move_target(modal, event.shift)
     sphereize_normals(modal, modal._mode_cache[0])
 
-    modal.redraw = True
+    modal.redraw_active = True
     return
 
 
@@ -707,7 +711,7 @@ def point_move_mouse(modal, context, event, func_data):
     modal._mode_cache.pop(2)
     modal._mode_cache.insert(2, modal._mouse_reg_loc)
 
-    modal.redraw = True
+    modal.redraw_active = True
     return
 
 
@@ -721,6 +725,7 @@ def point_move_confirm(modal, context, event, keys, func_data):
     modal._mode_cache.pop(3)
     modal._mode_cache.pop(2)
     modal._current_tool = modal._point_tool
+    end_active_drawing(modal)
     return
 
 
@@ -729,7 +734,6 @@ def point_move_cancel(modal, context, event, keys, func_data):
     modal.translate_mode = 0
     clear_translate_axis_draw(modal)
     modal._window.clear_status()
-    modal.redraw = True
     modal._target_emp.location = modal._mode_cache[3].copy()
     keymap_target(modal)
     point_normals(modal, modal._mode_cache[0])
@@ -737,6 +741,7 @@ def point_move_cancel(modal, context, event, keys, func_data):
     modal._mode_cache.pop(3)
     modal._mode_cache.pop(2)
     modal._current_tool = modal._point_tool
+    end_active_drawing(modal)
     return
 
 
@@ -745,7 +750,7 @@ def point_move_set_x(modal, context, event, keys, func_data):
     move_target(modal, event.shift)
     point_normals(modal, modal._mode_cache[0])
 
-    modal.redraw = True
+    modal.redraw_active = True
     return
 
 
@@ -754,7 +759,7 @@ def point_move_set_y(modal, context, event, keys, func_data):
     move_target(modal, event.shift)
     point_normals(modal, modal._mode_cache[0])
 
-    modal.redraw = True
+    modal.redraw_active = True
     return
 
 
@@ -763,7 +768,7 @@ def point_move_set_z(modal, context, event, keys, func_data):
     move_target(modal, event.shift)
     point_normals(modal, modal._mode_cache[0])
 
-    modal.redraw = True
+    modal.redraw_active = True
     return
 
 
@@ -823,7 +828,7 @@ def gizmo_mouse(modal, context, event, func_data):
                 modal, modal._mode_cache[1], modal._mode_cache[2]*ang_fac)
             modal._window.update_gizmo_rot(
                 modal._mode_cache[2], modal._mode_cache[3])
-            modal.redraw = True
+            modal.redraw_active = True
         else:
             if modal.translate_axis == 0:
                 rot_mat = Euler([ang, 0, 0]).to_matrix().to_4x4()
@@ -852,6 +857,7 @@ def gizmo_confirm(modal, context, event, keys, func_data):
     modal.translate_axis = 2
     modal._mode_cache.clear()
     modal.click_hold = False
+    end_active_drawing(modal)
     return
 
 
@@ -874,7 +880,7 @@ def gizmo_cancel(modal, context, event, keys, func_data):
     modal.translate_mode = 0
     modal.translate_axis = 2
     modal._mode_cache.clear()
-    modal.redraw = True
+    end_active_drawing(modal)
     modal.click_hold = False
     return
 

@@ -253,7 +253,8 @@ def basic_keymap(self, context, event):
                 self.tool_mode = True
                 keymap_rotating(self)
                 gizmo_update_hide(self, False)
-                self.active_drawing = True
+                self.selection_drawing = True
+                start_active_drawing(self)
             return status
 
         # toggle xray
@@ -392,7 +393,7 @@ def basic_keymap(self, context, event):
             bpy.context.window.cursor_modal_set('CROSSHAIR')
             self._current_tool = self._box_sel_tool
             self.tool_mode = True
-            self.active_drawing = True
+            self.selection_drawing = True
             keymap_box_selecting(self)
             gizmo_update_hide(self, False)
             return status
@@ -402,7 +403,7 @@ def basic_keymap(self, context, event):
             bpy.context.window.cursor_modal_set('CROSSHAIR')
             self._current_tool = self._circle_sel_tool
             self.tool_mode = True
-            self.active_drawing = True
+            self.selection_drawing = True
             self.circle_selecting = True
             keymap_circle_selecting(self)
             gizmo_update_hide(self, False)
@@ -413,7 +414,7 @@ def basic_keymap(self, context, event):
             bpy.context.window.cursor_modal_set('CROSSHAIR')
             self._current_tool = self._lasso_sel_tool
             self.tool_mode = True
-            self.active_drawing = True
+            self.selection_drawing = True
             keymap_lasso_selecting(self)
             gizmo_update_hide(self, False)
             return status

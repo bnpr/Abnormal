@@ -20,7 +20,6 @@ class ABN_OT_normal_editor_modal(Operator):
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
     def modal(self, context, event):
-        # start = time.time()
         self._modal_running = False
         if bpy.context.area == None:
             finish_modal(self, True)
@@ -64,18 +63,15 @@ class ABN_OT_normal_editor_modal(Operator):
                     status = basic_keymap(self, context, event)
 
         self._prev_mouse_loc = self._mouse_reg_loc.copy()
+
         refresh_batches(self, context)
         self._modal_running = True
-        loop_time = time.time()-start
-        # if loop_time > 0.0:
-        #     print('FPS: ' + str(60/loop_time))
         return status
 
     def invoke(self, context, event):
         self.act_reg, self.act_rv3d = check_area(self)
         rh = self.act_reg.height
         rw = self.act_reg.width
-        data = bpy.data
 
         if context.active_object == None:
             self.report({'WARNING'}, "No valid active object selected")
@@ -90,7 +86,7 @@ class ABN_OT_normal_editor_modal(Operator):
 
         if context.space_data.type == 'VIEW_3D':
             # INITIALIZE PROPERTIES
-            self._addon_prefs = bpy.context.preferences.addons[__package__].preferences
+            self._addon_prefs = bpy.context.preferences.addons['Abnormal'].preferences
             self._display_prefs = self._addon_prefs.display
             self._behavior_prefs = self._addon_prefs.behavior
             self._keymap_sel_prefs = self._addon_prefs.keymap_sel
@@ -141,7 +137,8 @@ class ABN_OT_normal_editor_modal(Operator):
 
             self._draw_area = context.area
             self._modal_running = True
-            self.redraw = True
+            self.redraw = False
+            self.redraw_active = False
             self.circle_radius = 50
 
             context.scene.abnormal_props.object = context.active_object.name
@@ -186,7 +183,7 @@ class ABN_OT_normal_editor_modal(Operator):
             self.tool_mode = False
 
             self.click_hold = False
-            self.active_drawing = True
+            self.selection_drawing = True
             self.typing = False
             self.bezier_changing = False
             self.ui_hover = False
@@ -246,7 +243,9 @@ class ABN_OT_normal_editor_modal(Operator):
             setup_tools(self)
 
             # SETUP BATCHES
+            self._points_container.clear_batches()
             refresh_batches(self, context)
+
             # OPENGL DRAWING HANDLER
             args = (self, context)
             self._draw_handle_2d = bpy.types.SpaceView3D.draw_handler_add(

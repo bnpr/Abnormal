@@ -9,6 +9,7 @@ from .functions_general import *
 class ABNPoints:
     def __init__(self, mat):
         self.create_shader()
+        self.create_point_shader()
 
         self.points = []
         self.matrix = mat
@@ -66,33 +67,48 @@ class ABNPoints:
         self.shader = gpu.types.GPUShader(vertex_shader, fragment_shader)
         return
 
-    def update(self):
-        points = []
+    def create_point_shader(self):
+        vertex_shader = '''
+            uniform mat4 viewProjectionMatrix;
+
+            in float size;
+            in vec3 pos;
+            in vec4 colors;
+            out vec4 rgba;
+
+            void main()
+            {
+                rgba = colors;
+                gl_PointSize = size;
+                gl_Position = viewProjectionMatrix * vec4(pos, 1.0f);
+            }
+        '''
+
+        fragment_shader = '''
+            uniform float brightness;
+
+            in vec4 rgba;
+
+            void main()
+            {
+                gl_FragColor = vec4(rgba.xyz * brightness, rgba.a);
+            }
+        '''
+
+        self.point_shader = gpu.types.GPUShader(vertex_shader, fragment_shader)
+        return
+
+    def update_active(self):
         norms = []
-        tris = []
 
-        tri_inds = []
-
-        po_colors = []
-        tri_colors = []
         norm_colors = []
 
-        po_co = None
-        line_co = None
         for po in self.points:
             if po.hide == False and po.valid:
                 po_co = po.co
 
-                points.append(po_co)
-                if po.active:
-                    po_colors.append(self.rcol_po_act)
-                elif po.select:
-                    po_colors.append(self.rcol_po_sel)
-                else:
-                    po_colors.append(self.rcol_po)
-
                 for loop in po.loops:
-                    if loop.hide == False:
+                    if loop.hide == False and (loop.active or loop.select):
                         fac = 1.0
                         if self.scale_selection and po.active == False and loop.active == False:
                             fac = 0.666
@@ -115,6 +131,78 @@ class ABNPoints:
                                 else:
                                     norm_colors.append(self.rcol_normal)
 
+        self.batch_active_normal = batch_for_shader(
+            self.shader, 'LINES', {"pos": norms, "colors": norm_colors})
+        return
+
+    def clear_batches(self):
+        self.batch_po = batch_for_shader(
+            self.point_shader, 'POINTS', {"pos": [], "size": [], "colors": []})
+        self.batch_normal = batch_for_shader(
+            self.shader, 'LINES', {"pos": [], "colors": []})
+        self.batch_tri = batch_for_shader(
+            self.shader, 'TRIS', {"pos": [], "colors": []})
+        self.batch_active_normal = batch_for_shader(
+            self.shader, 'LINES', {"pos": [], "colors": []})
+        return
+
+    def clear_active_batches(self):
+        self.batch_active_normal = batch_for_shader(
+            self.shader, 'LINES', {"pos": [], "colors": []})
+        return
+
+    def update_static(self, exclude_active=False):
+        points = []
+        norms = []
+        tris = []
+        sizes = []
+
+        tri_inds = []
+
+        po_colors = []
+        tri_colors = []
+        norm_colors = []
+
+        for po in self.points:
+            if po.hide == False and po.valid:
+                po_co = po.co
+
+                points.append(po_co)
+                if po.active:
+                    sizes.append(11*self.size)
+                    po_colors.append(self.rcol_po_act)
+                elif po.select:
+                    sizes.append(8*self.size)
+                    po_colors.append(self.rcol_po_sel)
+                else:
+                    sizes.append(5*self.size)
+                    po_colors.append(self.rcol_po)
+
+                for loop in po.loops:
+                    if loop.hide == False:
+                        fac = 1.0
+                        if self.scale_selection and po.active == False and loop.active == False:
+                            fac = 0.666
+                            if po.select == False and loop.select == False:
+                                fac = 0.333
+
+                        world_norm = self.get_world_norm(loop.normal, po_co)
+                        line_co = po_co + world_norm * self.normal_scale * fac
+
+                        if po.active or po.select or loop.active or loop.select or not self.draw_only_selected:
+                            if exclude_active == False or (po.select == False and po.active == False and loop.active == False and loop.select == False):
+                                norms.append(po_co)
+                                norms.append(line_co)
+                                for i in range(2):
+                                    if po.active or loop.active:
+                                        norm_colors.append(
+                                            self.rcol_normal_act)
+                                    elif po.select or loop.select:
+                                        norm_colors.append(
+                                            self.rcol_normal_sel)
+                                    else:
+                                        norm_colors.append(self.rcol_normal)
+
                         if self.draw_tris:
                             tri_inds.append(
                                 [len(tris), len(tris)+1, len(tris)+2])
@@ -135,7 +223,7 @@ class ABNPoints:
                                     tri_colors.append(self.rcol_tri)
 
         self.batch_po = batch_for_shader(
-            self.shader, 'POINTS', {"pos": points, "colors": po_colors})
+            self.point_shader, 'POINTS', {"pos": points, "size": sizes, "colors": po_colors})
         self.batch_normal = batch_for_shader(
             self.shader, 'LINES', {"pos": norms, "colors": norm_colors})
         self.batch_tri = batch_for_shader(
@@ -160,7 +248,7 @@ class ABNPoints:
         matrix = bpy.context.region_data.perspective_matrix
 
         if self.draw_tris:
-            # Tris
+            # Static Tris
             self.shader.bind()
             self.shader.uniform_float("viewProjectionMatrix", matrix)
             self.shader.uniform_float("brightness", self.brightness)
@@ -168,23 +256,29 @@ class ABNPoints:
             # self.shader.uniform_float("color", tri_color)
             self.batch_tri.draw(self.shader)
 
-        # Points
-        bgl.glPointSize(5*self.size)
-        self.shader.bind()
-        self.shader.uniform_float("viewProjectionMatrix", matrix)
-        self.shader.uniform_float("brightness", self.brightness)
-        # self.shader.uniform_float("opacity", self.opacity)
-        # self.shader.uniform_float("color", po_color)
-        self.batch_po.draw(self.shader)
+        # Static Points
+        self.point_shader.bind()
+        self.point_shader.uniform_float("viewProjectionMatrix", matrix)
+        self.point_shader.uniform_float("brightness", self.brightness)
+        # self.point_shader.uniform_float("opacity", self.opacity)
+        # self.point_shader.uniform_float("color", po_color)
+        self.batch_po.draw(self.point_shader)
 
-        # Normals
-        bgl.glLineWidth(1)
+        # Static Normals
         self.shader.bind()
         self.shader.uniform_float("viewProjectionMatrix", matrix)
         self.shader.uniform_float("brightness", self.brightness)
         # self.shader.uniform_float("opacity", self.opacity)
         # self.shader.uniform_float("color", line_color)
         self.batch_normal.draw(self.shader)
+
+        # Active Normals
+        self.shader.bind()
+        self.shader.uniform_float("viewProjectionMatrix", matrix)
+        self.shader.uniform_float("brightness", self.brightness)
+        # self.shader.uniform_float("opacity", self.opacity)
+        # self.shader.uniform_float("color", line_color)
+        self.batch_active_normal.draw(self.shader)
 
         return
 
@@ -683,3 +777,45 @@ class ABNLoop:
 
     def __str__(self):
         return 'Object Vertex Loop'
+
+
+class ABNFace:
+    def __init__(self, index, point, norm, loop_ind, face_ind, vert_cos):
+        self.index = index
+        self.points = []
+        self.loops = []
+
+        self.type = 'FACE'
+
+        center = Vector((0, 0, 0))
+        for co in vert_cos:
+            center += co/len(vert_cos)
+
+        self.center = center
+
+        self.select = False
+        self.active = False
+        self.hide = False
+        return
+
+    #
+    #
+
+    def set_hide(self, status):
+        self.hide = status
+        return
+
+    def set_select(self, status):
+        if self.hide == False:
+            self.select = status
+        return
+
+    def set_active(self, status):
+        self.active = status
+        return
+
+    #
+    #
+
+    def __str__(self):
+        return 'Object Face'
