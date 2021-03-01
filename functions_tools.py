@@ -179,34 +179,27 @@ def setup_tools(modal):
 #
 # BOX SELECT FUNCS
 def box_sel_start(modal, context, event, keys, func_data):
-    modal._mode_cache.append(modal._mouse_reg_loc)
+    modal._mouse_init = modal._mouse_reg_loc
     modal.box_selecting = True
     return
 
 
 def box_sel_mouse(modal, context, event, func_data):
-    prev_loc = Vector((modal._mode_cache[-1][0], modal._mode_cache[-1][1]))
-    cur_loc = Vector(modal._mouse_reg_loc)
-
     if event.alt:
-        if modal._mouse_init == None:
-            modal._mouse_init = modal._mouse_reg_loc
-
-        else:
-            offset = [modal._mouse_reg_loc[0]-modal._mouse_init[0],
-                      modal._mouse_reg_loc[1]-modal._mouse_init[1]]
-            for p in range(len(modal._mode_cache)):
-                modal._mode_cache.append(
-                    [modal._mode_cache[0][0]+offset[0], modal._mode_cache[0][1]+offset[1]])
-                modal._mode_cache.pop(0)
-            modal._mouse_init = modal._mouse_reg_loc
-
-    else:
-        if modal._mouse_init:
-            modal._mouse_init = None
-
-        if (cur_loc-prev_loc).length > 10.0:
+        if len(modal._mode_cache) == 0:
             modal._mode_cache.append(modal._mouse_reg_loc)
+        else:
+            offset = [modal._mouse_reg_loc[0]-modal._mode_cache[0][0],
+                      modal._mouse_reg_loc[1]-modal._mode_cache[0][1]]
+
+            modal._mouse_init[0] += offset[0]
+            modal._mouse_init[1] += offset[1]
+            modal._mode_cache.clear()
+            modal._mode_cache.append(modal._mouse_reg_loc)
+    else:
+        if len(modal._mode_cache) > 0:
+            modal._mode_cache.clear()
+
     return
 
 
@@ -229,6 +222,7 @@ def box_sel_confirm(modal, context, event, keys, func_data):
     modal.tool_mode = False
     modal.box_selecting = False
     modal._mode_cache.clear()
+    modal._mouse_init = None
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     keymap_refresh(modal)
@@ -240,7 +234,9 @@ def box_sel_cancel(modal, context, event, keys, func_data):
     modal.tool_mode = False
     modal.box_selecting = False
     modal._mode_cache.clear()
+    modal._mouse_init = None
     bpy.context.window.cursor_modal_set('DEFAULT')
+    update_orbit_empty(modal)
     keymap_refresh(modal)
     end_selection_drawing(modal)
     return
@@ -249,33 +245,36 @@ def box_sel_cancel(modal, context, event, keys, func_data):
 #
 # LASSO SELECT FUNCS
 def lasso_sel_start(modal, context, event, keys, func_data):
-    modal._mode_cache.append(modal._mouse_reg_loc)
+    modal._mode_cache.append([modal._mouse_reg_loc])
     modal.lasso_selecting = True
     return
 
 
 def lasso_sel_mouse(modal, context, event, func_data):
-    prev_loc = Vector((modal._mode_cache[-1][0], modal._mode_cache[-1][1]))
-    cur_loc = Vector(modal._mouse_reg_loc)
-
     if event.alt:
-        if modal._mouse_init == None:
-            modal._mouse_init = modal._mouse_reg_loc
-
+        if len(modal._mode_cache) == 1:
+            modal._mode_cache.append(modal._mouse_reg_loc)
         else:
-            offset = cur_loc - prev_loc
-            for p in range(len(modal._mode_cache)):
-                modal._mode_cache.append(
-                    [modal._mode_cache[0][0]+offset[0], modal._mode_cache[0][1]+offset[1]])
-                modal._mode_cache.pop(0)
-            modal._mouse_init = modal._mouse_reg_loc
+            offset = [modal._mouse_reg_loc[0]-modal._mode_cache[1][0],
+                      modal._mouse_reg_loc[1]-modal._mode_cache[1][1]]
+
+            for p in range(len(modal._mode_cache[0])):
+                modal._mode_cache[0][p][0] += offset[0]
+                modal._mode_cache[0][p][1] += offset[1]
+
+            modal._mode_cache.pop(1)
+            modal._mode_cache.append(modal._mouse_reg_loc)
 
     else:
-        if modal._mouse_init:
-            modal._mouse_init = None
+        if len(modal._mode_cache) > 1:
+            modal._mode_cache.pop(1)
 
-        if (cur_loc-prev_loc).length > 10.0:
-            modal._mode_cache.append(modal._mouse_reg_loc)
+        prev_loc = Vector(modal._mode_cache[0][-1])
+        cur_loc = Vector(modal._mouse_reg_loc)
+        offset = cur_loc - prev_loc
+
+        if offset.length > 5.0:
+            modal._mode_cache[0].append(modal._mouse_reg_loc)
     return
 
 
@@ -310,6 +309,7 @@ def lasso_sel_cancel(modal, context, event, keys, func_data):
     modal.lasso_selecting = False
     modal._mode_cache.clear()
     bpy.context.window.cursor_modal_set('DEFAULT')
+    update_orbit_empty(modal)
     keymap_refresh(modal)
     end_selection_drawing(modal)
     return
@@ -392,8 +392,8 @@ def circle_sel_cancel(modal, context, event, keys, func_data):
 #
 # CIRCLE SELECT RESIZE FUNCS
 def circle_resize_mouse(modal, context, event, func_data):
-    prev_loc = Vector((modal._mode_cache[0][0], modal._mode_cache[0][1]))
-    cur_loc = Vector((modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]))
+    prev_loc = Vector(modal._mouse_init)
+    cur_loc = Vector(modal._mouse_reg_loc)
 
     diff = int((cur_loc-prev_loc).length)
     modal.circle_radius = diff
@@ -435,7 +435,7 @@ def rotate_norms_mouse(modal, context, event, func_data):
         modal.act_reg, modal.act_rv3d, modal._mode_cache[2])
 
     start_vec = Vector(
-        (modal._mode_cache[0][0]-center[0], modal._mode_cache[0][1]-center[1]))
+        (modal._mouse_init[0][0]-center[0], modal._mouse_init[0][1]-center[1]))
     mouse_vec = Vector(
         (modal._mouse_reg_loc[0]-center[0], modal._mouse_reg_loc[1]-center[1]))
 
@@ -459,6 +459,8 @@ def rotate_norms_confirm(modal, context, event, keys, func_data):
 
     add_to_undostack(modal, 1)
     modal._mode_cache.clear()
+    modal._mouse_init = None
+
     modal.translate_axis = 2
     modal.translate_mode = 0
     clear_translate_axis_draw(modal)
@@ -478,6 +480,8 @@ def rotate_norms_cancel(modal, context, event, keys, func_data):
 
     set_new_normals(modal)
     modal._mode_cache.clear()
+    modal._mouse_init = None
+
     modal.translate_axis = 2
     modal.translate_mode = 0
     clear_translate_axis_draw(modal)

@@ -243,11 +243,12 @@ def basic_keymap(self, context, event):
                 self._window.set_status('VIEW ROTATION')
 
                 self._mode_cache.clear()
-                self._mode_cache.append(self._mouse_reg_loc)
                 self._mode_cache.append(sel_inds)
                 self._mode_cache.append(avg_loc)
                 self._mode_cache.append(0)
                 self._mode_cache.append(1)
+                self._mouse_init = self._mouse_reg_leg
+
                 self.rotating = True
                 self._current_tool = self._rotate_norms_tool
                 self.tool_mode = True

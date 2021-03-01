@@ -1604,7 +1604,7 @@ def box_selection_test(self, shift, ctrl):
     avail_inds += [i.index for i in self._object_bm.faces]
 
     change, unselect, new_active, new_sel_add, new_sel_remove = box_points_selection_test(
-        avail_cos, avail_sel_status, self._mouse_reg_loc, self._mode_cache[0], self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
+        avail_cos, avail_sel_status, self._mouse_reg_loc, self._mouse_init, self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
 
     if change:
         if unselect:
@@ -1735,7 +1735,7 @@ def lasso_selection_test(self, shift, ctrl):
     avail_inds += [i.index for i in self._object_bm.faces]
 
     change, unselect, new_active, new_sel_add, new_sel_remove = lasso_points_selection_test(
-        self._mode_cache, avail_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
+        self._mode_cache[0], avail_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
 
     if change:
         if unselect:

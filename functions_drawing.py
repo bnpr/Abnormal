@@ -218,9 +218,9 @@ def create_selection_drawing_lists(self):
     circlesel_screen_lines = []
     if self.circle_selecting or self.circle_resizing:
         if self.circle_resizing:
-            cur_loc = Vector((self._mode_cache[0][0], self._mode_cache[0][1]))
+            cur_loc = Vector(self._mouse_init)
         else:
-            cur_loc = Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
+            cur_loc = Vector(self._mouse_reg_loc)
 
         co = cur_loc.copy()
         co[1] += self.circle_radius
@@ -234,19 +234,19 @@ def create_selection_drawing_lists(self):
     # LASSO SELECTION LINES
     lassosel_screen_lines = []
     if self.lasso_selecting:
-        for i in range(len(self._mode_cache)):
-            lassosel_screen_lines.append(self._mode_cache[i-1])
-            lassosel_screen_lines.append(self._mode_cache[i])
+        for i in range(len(self._mode_cache[0])):
+            lassosel_screen_lines.append(self._mode_cache[0][i-1])
+            lassosel_screen_lines.append(self._mode_cache[0][i])
 
     # BOX SELECTION LINES
     boxsel_screen_lines = []
     if self.box_selecting:
 
-        init_loc = Vector((self._mode_cache[0][0], self._mode_cache[0][1]))
-        cur_loc = Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
+        init_loc = Vector(self._mouse_init)
+        cur_loc = Vector(self._mouse_reg_loc)
 
-        top_right = Vector((self._mouse_reg_loc[0], self._mode_cache[0][1]))
-        bot_left = Vector((self._mode_cache[0][0], self._mouse_reg_loc[1]))
+        top_right = Vector((self._mouse_reg_loc[0], self._mouse_init[1]))
+        bot_left = Vector((self._mouse_init[0], self._mouse_reg_loc[1]))
 
         vec = init_loc-top_right
         start_co = top_right
