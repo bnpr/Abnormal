@@ -369,11 +369,12 @@ def circle_sel_start_resize(modal, context, event, keys, func_data):
     modal._current_tool = modal._circle_resize_tool
 
     if modal._mouse_reg_loc[0]-modal.circle_radius < 0:
-        modal._mode_cache.append(
-            [modal._mouse_reg_loc[0]+modal.circle_radius, modal._mouse_reg_loc[1]])
+        modal._mouse_init = [modal._mouse_reg_loc[0] +
+                             modal.circle_radius, modal._mouse_reg_loc[1]]
     else:
-        modal._mode_cache.append(
-            [modal._mouse_reg_loc[0]-modal.circle_radius, modal._mouse_reg_loc[1]])
+        modal._mouse_init = [modal._mouse_reg_loc[0] -
+                             modal.circle_radius, modal._mouse_reg_loc[1]]
+
     modal._mode_cache.append(modal.circle_radius)
     return
 
@@ -410,7 +411,7 @@ def circle_resize_confirm(modal, context, event, keys, func_data):
 
 
 def circle_resize_cancel(modal, context, event, keys, func_data):
-    modal.circle_radius = modal._mode_cache[1]
+    modal.circle_radius = modal._mode_cache[0]
     modal._mode_cache.clear()
     modal.circle_resizing = False
     modal._current_tool = modal._circle_sel_tool
