@@ -592,6 +592,10 @@ def cache_point_data(self):
     self._object.data.edges.foreach_get('use_edge_sharp', self.og_sharp_edges)
     self._object.data.edges.foreach_get('use_seam', self.og_seam_edges)
 
+    self.og_loop_norms = np.zeros(
+        len(self._object.data.loops)*3, dtype=np.float32)
+    self._object.data.loops.foreach_get('normal', self.og_loop_norms)
+
     for v in self._object_bm.verts:
         ed_inds = [ed.index for ed in v.link_edges]
         if len(v.link_loops) > 0:
