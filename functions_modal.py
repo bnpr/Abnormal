@@ -498,11 +498,11 @@ def translate_axis_draw(self):
     elif self.translate_mode == 1:
         mat = generate_matrix(Vector((0, 0, 0)), Vector(
             (0, 0, 1)), Vector((0, 1, 0)), False, True)
-        mat.translation = self._mode_cache[2]
+        mat.translation = self._mode_cache[1]
 
     elif self.translate_mode == 2:
         mat = self._object.matrix_world.normalized()
-        mat.translation = self._mode_cache[2]
+        mat.translation = self._mode_cache[1]
 
     if mat != None:
         self.translate_draw_line.clear()
