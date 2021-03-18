@@ -1491,53 +1491,96 @@ def selection_test(self, shift, radius=6.0):
 
             change = True
 
-    # No point selection so try loop tri selection if available as an option
-    elif self._individual_loops:
-        change = True
-
-    # No valid selection so try test face
+    # Face/Loop Tri selection
     if change == False:
         face_res = ray_cast_to_mouse(self)
+
         if face_res != None:
-            # Only test loops of the face
+            # If using individual loops first test for loop a tri selection
             if self._individual_loops:
                 f_ls = self._container.face_link_ls
                 mask = f_ls[face_res[1]]
                 mask = mask[mask >= 0]
-            # Test each verts loops of the face
-            else:
-                f_vs = self._container.face_link_vs
-                mask = v_ls[f_vs[face_res[1]]]
-                mask = mask[mask >= 0]
 
-            # New selection so clear act and sel and set current as sel/act
-            if shift == False:
-                self._container.sel_status[:] = False
-                self._container.act_status[:] = False
+                tri_cos = self._container.loop_tri_coords[mask]
+                tri_cos.shape = [tri_cos.shape[0] *
+                                 tri_cos.shape[1], tri_cos.shape[2]]
 
-                self._container.sel_status[mask] = True
-                self._container.act_status[mask] = True
+                rcos = get_np_region_cos(tri_cos, self.act_reg, self.act_rv3d)
+                rcos.shape = [mask.size, 3, 3]
 
-            # Adding to selection
-            else:
-                l_sel = self._container.sel_status[mask]
-                l_act = self._container.act_status[mask]
+                for c, co_set in enumerate(rcos):
+                    intersect = intersect_point_tri_2d(
+                        self._mouse_reg_loc, Vector(co_set[0]), Vector(co_set[1]), Vector(co_set[2]))
+                    if intersect:
+                        # New selection so clear act and sel and set current as sel/act
+                        if shift == False:
+                            self._container.sel_status[:] = False
+                            self._container.act_status[:] = False
 
-                # Check if any face loops are not sel/act if so make all sel/act
-                if l_sel.all() == False or l_act.all() == False:
-                    self._container.sel_status[mask] = True
+                            self._container.sel_status[mask[c]] = True
+                            self._container.act_status[mask[c]] = True
+
+                        # Adding to selection
+                        else:
+                            l_sel = self._container.sel_status[mask[c]]
+                            l_act = self._container.act_status[mask[c]]
+
+                            # Check if any face loops are not sel/act if so make all sel/act
+                            if l_sel.all() == False or l_act.all() == False:
+                                self._container.sel_status[mask[c]] = True
+                                self._container.act_status[:] = False
+                                self._container.act_status[mask[c]] = True
+
+                            # If all loops neither act/sel then all loops are sel/act so clear both
+                            else:
+                                self._container.sel_status[mask[c]] = False
+                                self._container.act_status[:] = False
+
+                        change = True
+                        break
+
+            # If still haven't gotten a selection then select the face loops/verts
+            if change == False:
+                # Only test loops of the face
+                if self._individual_loops:
+                    f_ls = self._container.face_link_ls
+                    mask = f_ls[face_res[1]]
+                    mask = mask[mask >= 0]
+                # Test each verts loops of the face
+                else:
+                    f_vs = self._container.face_link_vs
+                    mask = v_ls[f_vs[face_res[1]]]
+                    mask = mask[mask >= 0]
+
+                # New selection so clear act and sel and set current as sel/act
+                if shift == False:
+                    self._container.sel_status[:] = False
                     self._container.act_status[:] = False
+
+                    self._container.sel_status[mask] = True
                     self._container.act_status[mask] = True
 
-                # If all loops neither act/sel then all loops are sel/act so clear both
+                # Adding to selection
                 else:
-                    self._container.sel_status[mask] = False
-                    self._container.act_status[:] = False
+                    l_sel = self._container.sel_status[mask]
+                    l_act = self._container.act_status[mask]
 
-            #
+                    # Check if any face loops are not sel/act if so make all sel/act
+                    if l_sel.all() == False or l_act.all() == False:
+                        self._container.sel_status[mask] = True
+                        self._container.act_status[:] = False
+                        self._container.act_status[mask] = True
 
-            self._active_face = face_res[1]
-            change = True
+                    # If all loops neither act/sel then all loops are sel/act so clear both
+                    else:
+                        self._container.sel_status[mask] = False
+                        self._container.act_status[:] = False
+
+                #
+
+                self._active_face = face_res[1]
+                change = True
 
     return change
 
