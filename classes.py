@@ -1,23 +1,48 @@
 import bpy
 import bgl
 import gpu
+import numpy as np
 from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
 from .functions_general import *
 
 
-class ABNPoints:
+class ABNContainer:
     def __init__(self, mat):
         self.create_shader()
         self.create_point_shader()
 
         self.points = []
-        self.matrix = mat
+        self.matrix = np.array(mat)
 
         self.loop_scale = 1.0
         self.normal_scale = 1.0
         self.brightness = 1.0
         self.size = 1.0
+
+        self.og_sharp = None
+        self.og_seam = None
+
+        self.po_coords = None
+        self.loop_coords = None
+        self.loop_tri_coords = None
+
+        self.og_norms = None
+        self.new_norms = None
+        self.cache_norms = None
+
+        self.hide_status = None
+        self.sel_status = None
+        self.act_status = None
+        self.filter_weights = None
+
+        self.active_inds = []
+        self.static_inds = []
+
+        self.vert_link_vs = None
+        self.vert_link_ls = None
+        self.face_link_vs = None
+        self.face_link_ls = None
 
         self.draw_tris = False
         self.draw_only_selected = False
@@ -98,43 +123,6 @@ class ABNPoints:
         self.point_shader = gpu.types.GPUShader(vertex_shader, fragment_shader)
         return
 
-    def update_active(self):
-        norms = []
-
-        norm_colors = []
-
-        for po in self.points:
-            if po.hide == False and po.valid:
-                po_co = po.co
-
-                for loop in po.loops:
-                    if loop.hide == False and (loop.active or loop.select):
-                        fac = 1.0
-                        if self.scale_selection and po.active == False and loop.active == False:
-                            fac = 0.666
-                            if po.select == False and loop.select == False:
-                                fac = 0.333
-
-                        world_norm = self.get_world_norm(loop.normal, po_co)
-                        line_co = po_co + world_norm * self.normal_scale * fac
-
-                        if po.active or po.select or loop.active or loop.select or not self.draw_only_selected:
-                            norms.append(po_co)
-                            norms.append(line_co)
-                            for i in range(2):
-                                if po.active or loop.active:
-                                    norm_colors.append(
-                                        self.rcol_normal_act)
-                                elif po.select or loop.select:
-                                    norm_colors.append(
-                                        self.rcol_normal_sel)
-                                else:
-                                    norm_colors.append(self.rcol_normal)
-
-        self.batch_active_normal = batch_for_shader(
-            self.shader, 'LINES', {"pos": norms, "colors": norm_colors})
-        return
-
     def clear_batches(self):
         self.batch_po = batch_for_shader(
             self.point_shader, 'POINTS', {"pos": [], "size": [], "colors": []})
@@ -151,83 +139,132 @@ class ABNPoints:
             self.shader, 'LINES', {"pos": [], "colors": []})
         return
 
+    def update_active(self):
+        po_cos = self.loop_coords[self.sel_status]
+        po_norms = self.new_norms[self.sel_status]
+        act_status = self.act_status[self.sel_status]
+
+        if self.scale_selection:
+            world_norms = po_cos + \
+                (po_norms * 0.666 * self.normal_scale) @ self.matrix[:3, :3].T
+            world_norms[act_status] = po_cos[act_status] + \
+                (po_norms[act_status] *
+                 self.normal_scale) @ self.matrix[:3, :3].T
+        else:
+            world_norms = po_cos + \
+                (po_norms * self.normal_scale) @ self.matrix[:3, :3].T
+
+        norm_lines = np.array(list(zip(po_cos, world_norms)))
+        norm_lines.ravel()
+        norm_lines.shape = [po_cos.shape[0] * 2, 3]
+
+        #
+
+        cols = np.array([self.rcol_normal_sel] * po_cos.shape[0])
+        cols.shape = [po_cos.shape[0], 4]
+        cols[act_status] = self.rcol_normal_act
+
+        norm_colors = np.array(list(zip(cols, cols)))
+        norm_colors.ravel()
+        norm_colors.shape = [po_cos.shape[0] * 2, 4]
+
+        #
+
+        self.batch_active_normal = batch_for_shader(
+            self.shader, 'LINES', {"pos": list(norm_lines), "colors": list(norm_colors)})
+        return
+
     def update_static(self, exclude_active=False):
-        points = []
-        norms = []
+        # POINTS
+        # all points are static
+        sel_mask = self.sel_status[~self.hide_status]
+        act_mask = self.act_status[~self.hide_status]
+
+        points = self.loop_coords[~self.hide_status]
+
+        sizes = np.array([5*self.size]*points.shape[0])
+        sizes[sel_mask] = 8*self.size
+        sizes[act_mask] = 11*self.size
+
+        po_colors = np.array([self.rcol_po]*points.shape[0])
+        po_colors.shape = [points.shape[0], 4]
+        po_colors[sel_mask] = self.rcol_po_sel
+        po_colors[act_mask] = self.rcol_po_act
+
+        #
+
         tris = []
-        sizes = []
-
-        tri_inds = []
-
-        po_colors = []
         tri_colors = []
-        norm_colors = []
+        # LOOP TRIS
+        # all loop tris are static if used
+        if self.draw_tris:
+            tris = self.loop_tri_coords[~self.hide_status]
+            tris[:, 1] = (tris[:, 1]-tris[:, 0]) * self.loop_scale + tris[:, 0]
+            tris[:, 2] = (tris[:, 2]-tris[:, 0]) * self.loop_scale + tris[:, 0]
 
-        for po in self.points:
-            if po.hide == False and po.valid:
-                po_co = po.co
+            t_colors = np.array([self.rcol_tri]*tris.shape[0])
+            t_colors.shape = [tris.shape[0], 4]
+            t_colors[sel_mask] = self.rcol_tri_sel
+            t_colors[act_mask] = self.rcol_tri_act
 
-                points.append(po_co)
-                if po.active:
-                    sizes.append(11*self.size)
-                    po_colors.append(self.rcol_po_act)
-                elif po.select:
-                    sizes.append(8*self.size)
-                    po_colors.append(self.rcol_po_sel)
-                else:
-                    sizes.append(5*self.size)
-                    po_colors.append(self.rcol_po)
+            tri_colors = np.array(list(zip(t_colors, t_colors, t_colors)))
+            tri_colors.ravel()
+            tri_colors.shape = [tris.shape[0]*3, 4]
 
-                for loop in po.loops:
-                    if loop.hide == False:
-                        fac = 1.0
-                        if self.scale_selection and po.active == False and loop.active == False:
-                            fac = 0.666
-                            if po.select == False and loop.select == False:
-                                fac = 0.333
+            tris.shape = [tris.shape[0]*3, 3]
 
-                        world_norm = self.get_world_norm(loop.normal, po_co)
-                        line_co = po_co + world_norm * self.normal_scale * fac
+        #
 
-                        if po.active or po.select or loop.active or loop.select or not self.draw_only_selected:
-                            if exclude_active == False or (po.select == False and po.active == False and loop.active == False and loop.select == False):
-                                norms.append(po_co)
-                                norms.append(line_co)
-                                for i in range(2):
-                                    if po.active or loop.active:
-                                        norm_colors.append(
-                                            self.rcol_normal_act)
-                                    elif po.select or loop.select:
-                                        norm_colors.append(
-                                            self.rcol_normal_sel)
-                                    else:
-                                        norm_colors.append(self.rcol_normal)
+        # NORMALS
+        # only non selected loop normals are static if exclude_active is true otherwise all loop normals are static
+        if exclude_active:
+            non_sel_status = np.ones(self.loop_coords.shape[0], dtype=bool)
+            non_sel_status[self.sel_status] = False
+            non_sel_status = non_sel_status[~self.hide_status]
 
-                        if self.draw_tris:
-                            tri_inds.append(
-                                [len(tris), len(tris)+1, len(tris)+2])
-                            vec1 = loop.tri_verts[1]-loop.tri_verts[0]
-                            vec2 = loop.tri_verts[2]-loop.tri_verts[0]
-                            tris.append(loop.tri_verts[0])
-                            tris.append(
-                                loop.tri_verts[0]+vec1 * self.loop_scale)
-                            tris.append(
-                                loop.tri_verts[0]+vec2 * self.loop_scale)
+            po_cos = self.loop_coords[~self.hide_status][non_sel_status]
+            po_norms = self.new_norms[~self.hide_status][non_sel_status]
+            sel_mask = []
+            act_mask = []
 
-                            for i in range(3):
-                                if po.active or loop.active:
-                                    tri_colors.append(self.rcol_tri_act)
-                                elif po.select or loop.select:
-                                    tri_colors.append(self.rcol_tri_sel)
-                                else:
-                                    tri_colors.append(self.rcol_tri)
+        else:
+            po_cos = self.loop_coords[~self.hide_status]
+            po_norms = self.new_norms[~self.hide_status]
+
+        if self.scale_selection:
+            world_norms = po_cos + \
+                (po_norms * 0.333 * self.normal_scale) @ self.matrix[:3, :3].T
+            world_norms[sel_mask] = po_cos[sel_mask] + \
+                (po_norms[sel_mask] * 0.666 *
+                 self.normal_scale) @ self.matrix[:3, :3].T
+            world_norms[act_mask] = po_cos[act_mask] + \
+                (po_norms[act_mask] *
+                 self.normal_scale) @ self.matrix[:3, :3].T
+        else:
+            world_norms = po_cos + \
+                (po_norms * self.normal_scale) @ self.matrix[:3, :3].T
+
+        norms = np.array(list(zip(po_cos, world_norms)))
+        norms.ravel()
+        norms.shape = [po_cos.shape[0] * 2, 3]
+
+        n_colors = np.array([self.rcol_normal]*po_cos.shape[0])
+        n_colors.shape = [po_cos.shape[0], 4]
+        n_colors[sel_mask] = self.rcol_normal_sel
+        n_colors[act_mask] = self.rcol_normal_act
+
+        norm_colors = np.array(list(zip(n_colors, n_colors)))
+        norm_colors.ravel()
+        norm_colors.shape = [n_colors.shape[0] * 2, 4]
+
+        #
 
         self.batch_po = batch_for_shader(
-            self.point_shader, 'POINTS', {"pos": points, "size": sizes, "colors": po_colors})
+            self.point_shader, 'POINTS', {"pos": list(points), "size": list(sizes), "colors": list(po_colors)})
         self.batch_normal = batch_for_shader(
-            self.shader, 'LINES', {"pos": norms, "colors": norm_colors})
+            self.shader, 'LINES', {"pos": list(norms), "colors": list(norm_colors)})
         self.batch_tri = batch_for_shader(
-            self.shader, 'TRIS', {"pos": tris, "colors": tri_colors})
+            self.shader, 'TRIS', {"pos": list(tris), "colors": list(tri_colors)})
         return
 
     def update_color_render(self):
@@ -282,6 +319,10 @@ class ABNPoints:
 
         return
 
+    def cache_current_normals(self):
+        self.cache_norms = self.new_norms.copy()
+        return
+
     #
     #
 
@@ -315,6 +356,7 @@ class ABNPoints:
             for loop in po.loops:
                 loop.clear_cached()
         return
+
     #
     #
 
@@ -409,17 +451,6 @@ class ABNPoints:
             cache_norms.append(loop.normal)
 
         return cache_norms
-
-    def get_world_norm(self, norm, world_co):
-        local_co = self.matrix.inverted() @ world_co
-
-        norm_co = local_co+norm
-
-        world_norm = self.matrix @ norm_co
-
-        new_norm = (world_norm - world_co).normalized()
-
-        return new_norm
 
     def get_selection_available(self, add_rem_status):
         avail_cos = []
@@ -710,10 +741,6 @@ class ABNLoop:
         self.point = point
 
         self.type = 'LOOP'
-
-        self.x_mirror = None
-        self.y_mirror = None
-        self.z_mirror = None
 
         self.normal = norm
         self.cached_normal = None

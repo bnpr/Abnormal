@@ -457,7 +457,7 @@ def rotate_norms_mouse(modal, context, event, func_data):
 
 
 def rotate_norms_confirm(modal, context, event, keys, func_data):
-    modal._points_container.clear_cached_normals()
+    modal._container.clear_cached_normals()
 
     add_to_undostack(modal, 1)
     modal._mode_cache.clear()
@@ -478,7 +478,7 @@ def rotate_norms_confirm(modal, context, event, keys, func_data):
 
 
 def rotate_norms_cancel(modal, context, event, keys, func_data):
-    modal._points_container.restore_cached_normals()
+    modal._container.restore_cached_normals()
 
     set_new_normals(modal)
     modal._mode_cache.clear()
@@ -871,7 +871,7 @@ def gizmo_confirm(modal, context, event, keys, func_data):
 
 def gizmo_cancel(modal, context, event, keys, func_data):
     if modal._mode_cache[5]:
-        modal._points_container.restore_cached_normals()
+        modal._container.restore_cached_normals()
 
         set_new_normals(modal)
     else:

@@ -315,25 +315,6 @@ def init_ui_panels(self, rw, rh, scale):
         # num.set_slide_factor(2)
         # num.set_value_change_func(change_mirror_range)
 
-        row = box.add_row()
-        label = row.add_label(20, 'Lock Axis: ')
-        label.set_width_min_max(max=100)
-
-        bool = row.add_bool(20, 'X', default=self._lock_x)
-        bool.set_custom_id([0])
-        bool.set_width_min_max(max=50)
-        bool.set_click_up_func(toggle_lock_axis)
-
-        bool = row.add_bool(20, 'Y', default=self._lock_y)
-        bool.set_custom_id([1])
-        bool.set_width_min_max(max=50)
-        bool.set_click_up_func(toggle_lock_axis)
-
-        bool = row.add_bool(20, 'Z', default=self._lock_z)
-        bool.set_custom_id([2])
-        bool.set_width_min_max(max=50)
-        bool.set_click_up_func(toggle_lock_axis)
-
         box = self._tools_panel.add_box()
         box.add_header(True, 'Axis Alignment', 20, False)
         box.header.set_draw_box(False)
@@ -534,7 +515,7 @@ def change_gizmo_size(self, arguments):
 
 def change_point_size(self, arguments):
     arguments[0]._point_size = self.value
-    arguments[0]._points_container.set_point_size(
+    arguments[0]._container.set_point_size(
         arguments[0]._point_size)
     arguments[0].redraw = True
     return
@@ -542,7 +523,7 @@ def change_point_size(self, arguments):
 
 def change_loop_tri_size(self, arguments):
     arguments[0]._loop_tri_size = self.value
-    arguments[0]._points_container.set_loop_scale(
+    arguments[0]._container.set_loop_scale(
         arguments[0]._loop_tri_size)
     arguments[0].redraw = True
     return
@@ -556,14 +537,14 @@ def change_mirror_range(self, arguments):
 
 def change_line_brightness(self, arguments):
     arguments[0]._line_brightness = self.value
-    arguments[0]._points_container.set_brightess(
+    arguments[0]._container.set_brightess(
         arguments[0]._line_brightness)
     return
 
 
 def change_normal_size(self, arguments):
     arguments[0]._normal_size = self.value
-    arguments[0]._points_container.set_normal_scale(
+    arguments[0]._container.set_normal_scale(
         arguments[0]._normal_size)
     arguments[0].redraw = True
     return
@@ -572,7 +553,7 @@ def change_normal_size(self, arguments):
 def change_target_strength(self, arguments):
     arguments[0].target_strength = self.value
 
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         if arguments[0].sphereize_mode:
             sphereize_normals(arguments[0], sel_inds)
@@ -638,7 +619,7 @@ def toggle_wireframe(self, arguments):
 
 def toggle_selected_scale(self, arguments):
     arguments[0]._selected_scale = self.bool_val
-    arguments[0]._points_container.set_scale_selection(
+    arguments[0]._container.set_scale_selection(
         arguments[0]._selected_scale)
     arguments[0].redraw = True
     return
@@ -646,19 +627,9 @@ def toggle_selected_scale(self, arguments):
 
 def toggle_show_only_selected(self, arguments):
     arguments[0]._selected_only = self.bool_val
-    arguments[0]._points_container.set_draw_only_selected(
+    arguments[0]._container.set_draw_only_selected(
         arguments[0]._selected_only)
     arguments[0].redraw = True
-    return
-
-
-def toggle_lock_axis(self, arguments):
-    if self.custom_id[0] == 0:
-        arguments[0]._lock_x = self.bool_val
-    if self.custom_id[0] == 1:
-        arguments[0]._lock_y = self.bool_val
-    if self.custom_id[0] == 2:
-        arguments[0]._lock_z = self.bool_val
     return
 
 
@@ -675,7 +646,7 @@ def toggle_mirror_axis(self, arguments):
 def toggle_align_vectors(self, arguments):
     arguments[0].point_align = self.bool_val
 
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         point_normals(arguments[0], sel_inds)
     return
@@ -683,7 +654,7 @@ def toggle_align_vectors(self, arguments):
 
 def toggle_individual_loops(self, arguments):
     arguments[0]._individual_loops = self.bool_val
-    arguments[0]._points_container.set_draw_tris(
+    arguments[0]._container.set_draw_tris(
         arguments[0]._individual_loops)
 
     arguments[0].redraw = True
@@ -694,21 +665,21 @@ def toggle_individual_loops(self, arguments):
 
 
 def mirror_selection(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         mirror_normals(arguments[0], sel_inds, self.custom_id[0])
     return
 
 
 def flatten_axis(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         flatten_normals(arguments[0], sel_inds, self.custom_id[0])
     return
 
 
 def algin_to_axis(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         if self.custom_id[0] == 0:
             align_to_axis_normals(arguments[0], sel_inds, 0, 1)
@@ -727,14 +698,14 @@ def algin_to_axis(self, arguments):
 
 
 def flip_selection(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         flip_normals(arguments[0], sel_inds)
     return
 
 
 def set_direction(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         if self.custom_id[0] == 0:
             set_outside_inside(arguments[0], sel_inds, 1)
@@ -745,7 +716,7 @@ def set_direction(self, arguments):
 
 
 def set_from_faces(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         set_normals_from_faces(arguments[0], sel_inds)
 
@@ -753,21 +724,21 @@ def set_from_faces(self, arguments):
 
 
 def average_individual(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         average_vertex_normals(arguments[0], sel_inds)
     return
 
 
 def average_selection(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         average_selected_normals(arguments[0], sel_inds)
     return
 
 
 def smooth_selection(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         smooth_normals(
             arguments[0], sel_inds, 0.5)
@@ -790,14 +761,14 @@ def change_shading(self, arguments):
 
 
 def active_to_selection(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         copy_active_to_selected(arguments[0], sel_inds)
     return
 
 
 def store_active(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         arguments[0]._copy_normals, arguments[0]._copy_normals_tangs = get_po_loop_data(
             arguments[0], arguments[0]._active_point)
@@ -805,14 +776,14 @@ def store_active(self, arguments):
 
 
 def paste_stored(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         paste_normal(arguments[0], sel_inds)
     return
 
 
 def begin_sphereize_mode(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         start_sphereize_mode(arguments[0])
     return
@@ -827,7 +798,7 @@ def finish_sphereize_mode(self, arguments):
 
 
 def begin_point_mode(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         start_point_mode(arguments[0])
     return
@@ -853,7 +824,7 @@ def end_modal(self, arguments):
 
 
 def reset_vectors(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) != 0:
         reset_normals(arguments[0], sel_inds)
     return
@@ -876,7 +847,7 @@ def save_preferences(self, arguments):
 
 
 def rotate_normals_incremental(self, arguments):
-    sel_inds = arguments[0]._points_container.get_selected_loops()
+    sel_inds = arguments[0]._container.get_selected_loops()
     if len(sel_inds) > 0:
         incremental_rotate_vectors(
             arguments[0], sel_inds, self.custom_id[0], self.custom_id[1])

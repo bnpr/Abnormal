@@ -138,7 +138,7 @@ def basic_keymap(self, context, event):
         self.prev_view = context.region_data.view_matrix.copy()
         self.waiting = False
 
-        sel_inds = self._points_container.get_selected_loops()
+        sel_inds = self._container.get_selected_loops()
         if len(sel_inds) > 0:
             gizmo_update_hide(self, True)
         else:
@@ -167,17 +167,17 @@ def basic_keymap(self, context, event):
     if True:
         # hide unselected normals
         if 'Hide Unselected' in keys:
-            sel_inds = self._points_container.get_unselected_loops()
+            sel_inds = self._container.get_unselected_loops()
             if sel_inds:
                 for ind in sel_inds:
-                    self._points_container.points[ind[0]
-                                                  ].loops[ind[1]].set_hide(True)
-                    self._points_container.points[ind[0]
-                                                  ].loops[ind[1]].set_select(False)
-                    self._points_container.points[ind[0]
-                                                  ].set_selection_from_loops()
-                    self._points_container.points[ind[0]
-                                                  ].set_hidden_from_loops()
+                    self._container.points[ind[0]
+                                           ].loops[ind[1]].set_hide(True)
+                    self._container.points[ind[0]
+                                           ].loops[ind[1]].set_select(False)
+                    self._container.points[ind[0]
+                                           ].set_selection_from_loops()
+                    self._container.points[ind[0]
+                                           ].set_hidden_from_loops()
 
                 self._active_face = None
                 add_to_undostack(self, 0)
@@ -185,17 +185,17 @@ def basic_keymap(self, context, event):
 
         # hide selected normals
         if 'Hide Selected' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if sel_inds:
                 for ind_set in sel_inds:
-                    self._points_container.points[ind_set[0]
-                                                  ].loops[ind_set[1]].set_hide(True)
-                    self._points_container.points[ind_set[0]
-                                                  ].loops[ind_set[1]].set_select(False)
-                    self._points_container.points[ind_set[0]
-                                                  ].set_selection_from_loops()
-                    self._points_container.points[ind_set[0]
-                                                  ].set_hidden_from_loops()
+                    self._container.points[ind_set[0]
+                                           ].loops[ind_set[1]].set_hide(True)
+                    self._container.points[ind_set[0]
+                                           ].loops[ind_set[1]].set_select(False)
+                    self._container.points[ind_set[0]
+                                           ].set_selection_from_loops()
+                    self._container.points[ind_set[0]
+                                           ].set_hidden_from_loops()
 
                 self._active_face = None
                 add_to_undostack(self, 0)
@@ -204,7 +204,7 @@ def basic_keymap(self, context, event):
         # unhide normals
         if 'Unhide' in keys:
             change = False
-            for po in self._points_container.points:
+            for po in self._container.points:
                 if po.hide:
                     change = True
                     po.set_hide(False)
@@ -232,13 +232,13 @@ def basic_keymap(self, context, event):
         # Rotate Normals
         if 'Rotate Normals' in keys:
             update_filter_weights(self)
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
 
             if len(sel_inds) > 0:
-                sel_cos = self._points_container.get_selected_loop_cos()
+                sel_cos = self._container.get_selected_loop_cos()
                 avg_loc = average_vecs(sel_cos)
 
-                self._points_container.cache_current_normals()
+                self._container.cache_current_normals()
 
                 self._window.set_status('VIEW ROTATION')
 
@@ -248,6 +248,8 @@ def basic_keymap(self, context, event):
                 self._mode_cache.append(0)
                 self._mode_cache.append(1)
                 self._mouse_init = self._mouse_reg_loc
+
+                self._container.cache_current_normals()
 
                 self.rotating = True
                 self._current_tool = self._rotate_norms_tool
@@ -269,7 +271,7 @@ def basic_keymap(self, context, event):
             self._use_gizmo = not self._use_gizmo
             self._gizmo_bool.toggle_bool()
             update_orbit_empty(self)
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) > 0:
                 gizmo_update_hide(self, True)
             else:
@@ -278,7 +280,7 @@ def basic_keymap(self, context, event):
 
         # Mirror Normals
         if 'Mirror Normals Start' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 self._mode_cache.append(sel_inds)
                 self.tool_mode = True
@@ -286,13 +288,13 @@ def basic_keymap(self, context, event):
 
         # Smooth Normals
         if 'Smooth Normals' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 smooth_normals(self, sel_inds, 0.5)
 
         # Flatten Normals
         if 'Flatten Normals Start' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 self._mode_cache.append(sel_inds)
                 self.tool_mode = True
@@ -300,7 +302,7 @@ def basic_keymap(self, context, event):
 
         # Align Normals
         if 'Align Normals Start' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 self._mode_cache.append(sel_inds)
                 self.tool_mode = True
@@ -308,62 +310,62 @@ def basic_keymap(self, context, event):
 
         # Copy Active Normal
         if 'Copy Active Normal' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 self._copy_normals, self._copy_normals_tangs = get_po_loop_data(
                     self, self._active_point)
 
         # Paste Stored Normal
         if 'Paste Stored Normal' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 paste_normal(self, sel_inds)
 
         # Paste Active Normal to Selected
         if 'Paste Active Normal to Selected' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 copy_active_to_selected(self, sel_inds)
 
         # Set Normals Outside
         if 'Set Normals Outside' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 set_outside_inside(self, sel_inds, 1)
 
         # Set Normals Inside
         if 'Set Normals Inside' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 set_outside_inside(self, sel_inds, -1)
 
         # Flip Normals
         if 'Flip Normals' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 flip_normals(self, sel_inds)
 
         # Reset Vectors
         if 'Reset Vectors' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 reset_normals(self, sel_inds)
 
         # Average Individual Normals
         if 'Average Individual Normals' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 average_vertex_normals(self, sel_inds)
 
         # Average Selected Normals
         if 'Average Selected Normals' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 average_selected_normals(self, sel_inds)
 
         # Set Normals from Faces
         if 'Set Normals From Faces' in keys:
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if len(sel_inds) != 0:
                 set_normals_from_faces(self, sel_inds)
 
@@ -375,7 +377,7 @@ def basic_keymap(self, context, event):
         # invert selection
         if 'Invert Selection' in keys:
             change = False
-            for po in self._points_container.points:
+            for po in self._container.points:
                 if po.hide == False:
                     for loop in po.loops:
                         if loop.hide == False:
@@ -422,38 +424,21 @@ def basic_keymap(self, context, event):
 
         # select all normals
         if 'Select All' in keys:
-            for po in self._points_container.points:
-                if po.select == False:
-                    po.set_select(True)
-                    change = True
-                else:
-                    for loop in po.loops:
-                        if loop.select:
-                            loop.set_select(True)
-                            change = True
-
+            change = not self._container.sel_status.all()
             if change:
+                self._container.sel_status[:] = True
                 self._active_face = None
                 add_to_undostack(self, 0)
             return status
 
         # unselect all normals
         if 'Unselect All' in keys:
-            change = False
-            for po in self._points_container.points:
-                if po.select:
-                    po.set_select(False)
-                    change = True
-                else:
-                    for loop in po.loops:
-                        if loop.select:
-                            loop.set_select(False)
-                            change = True
-
-            self._points_container.clear_active()
-            self._active_point = None
-
+            change = self._container.sel_status.any()
             if change:
+                self._container.sel_status[:] = False
+                self._container.act_status[:] = False
+
+                self._active_point = None
                 self._active_face = None
                 add_to_undostack(self, 0)
             return status
@@ -461,19 +446,19 @@ def basic_keymap(self, context, event):
         # select linked normals
         if 'Select Linked' in keys:
             change = False
-            sel_inds = self._points_container.get_selected_loops()
+            sel_inds = self._container.get_selected_loops()
             if sel_inds:
                 po_inds = []
                 for ind_set in sel_inds:
                     if ind_set[0] not in po_inds:
                         po_inds.append(ind_set[0])
 
-                vis_pos = self._points_container.get_visible()
+                vis_pos = self._container.get_visible()
                 new_sel = get_linked_geo(self._object_bm, po_inds, vis=vis_pos)
 
                 for ind in new_sel:
-                    if self._points_container.points[ind].select == False:
-                        self._points_container.points[ind].set_select(True)
+                    if self._container.points[ind].select == False:
+                        self._container.points[ind].set_select(True)
                         change = True
 
                 if change:
@@ -488,13 +473,13 @@ def basic_keymap(self, context, event):
             if face_res != None:
                 sel_ind = self._object_bm.faces[face_res[1]].verts[0].index
 
-                vis_pos = self._points_container.get_visible()
+                vis_pos = self._container.get_visible()
                 new_sel = get_linked_geo(
                     self._object_bm, [sel_ind], vis=vis_pos)
 
                 for ind in new_sel:
-                    if self._points_container.points[ind].select == False:
-                        self._points_container.points[ind].set_select(True)
+                    if self._container.points[ind].select == False:
+                        self._container.points[ind].set_select(True)
                         change = True
 
                 if change:

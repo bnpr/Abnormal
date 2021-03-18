@@ -1,6 +1,7 @@
 import bpy
 import bmesh
 import math
+import numpy as np
 from mathutils import Vector, kdtree, Matrix
 from mathutils.geometry import intersect_point_tri_2d
 from bpy_extras import view3d_utils
@@ -55,9 +56,7 @@ def ob_to_bm_world(ob):
     bm.from_mesh(ob.data)
     refresh_bm(bm)
 
-    # bm in world space
-    for v in bm.verts:
-        v.co = ob.matrix_world @ v.co
+    bm.transform(ob.matrix_world)
 
     bm.normal_update()
 
@@ -583,63 +582,86 @@ def get_linked_geo(bm, inds, vis=None):
 
 #
 #
+
+
+def get_np_region_cos(coords, region, region_data):
+    #
+    # Use numpy to get coords in region space
+    # Bottom Left of region is 0,0
+    #
+
+    # If less than 3 coords then just use basic function to calculate it
+    # since the first 2 are already calculated with this function in the other method
+    if len(coords) < 3:
+        r_cos = []
+        for co in coords:
+            reg_co = view3d_utils.location_3d_to_region_2d(
+                region, region_data, co)
+            r_cos.append(reg_co.to_3d())
+
+    else:
+        r_cos = np.array(coords)
+        r_cos.shape = [len(coords), 3]
+
+        mat = region_data.view_matrix
+
+        m = np.array(mat)
+        pmat = m[:3, :3].T  # rotates backwards without T
+        loc = m[:3, 3]
+        r_cos = r_cos @ pmat + loc
+
+        # Scale sscos to be on a flat plane 1.5 from view matrix
+        # -1.5 / r_cos[:,2] Gets a scale factor for each coord based on its depth in comparison with the value used
+        # [:,None] rebroadcasts the single scale value into a column to scale along the rows or coords of the ss cos
+        r_cos *= (-1.5 / r_cos[:, 2])[:, None]
+
+        # CONVERT INTO REGION SPACE USING FIRST 2 COORDS AS SCALE AND OFFSET DETECTION
+        reg_a = view3d_utils.location_3d_to_region_2d(
+            region, region_data, coords[0])
+        reg_b = view3d_utils.location_3d_to_region_2d(
+            region, region_data, coords[1])
+
+        # Get scale value based on distance between region coords and current ss coords of first 2 points
+        reg_dist = (reg_a-reg_b).length
+        ss_dist = Vector(r_cos[0]-r_cos[1]).length
+        scale = reg_dist/ss_dist
+
+        # Scale up the sscords and offset them
+        r_cos *= scale
+        r_cos[:, 0] += reg_a[0] - r_cos[0][0]
+        r_cos[:, 1] += reg_a[1] - r_cos[0][1]
+        r_cos[:, 2] = 0.0
+
+    return r_cos
+
+
+def get_np_vec_dists(array, test_co):
+    #
+    # Given a vector numpy array get distance to test coord
+    # Subtract test_co from array, Square each axis,
+    # get the square root of each axis, and sum the axis of each vector for a distance
+    #
+    dists = np.sqrt(np.sum(np.square(array-test_co), axis=1))
+    return dists
+
+
+def get_np_vec_ordered_dists(array, test_co, threshold=None):
+    #
+    # Given a vector numpy array get distance to test coord
+    # Subtract test_co from array, Square each axis,
+    # get the square root of each axis, and sum the axis of each vector for a distance
+    #
+    dists = get_np_vec_dists(array, test_co)
+    dist_inds = np.argsort(dists)
+    if threshold != None:
+        mask = dists < threshold
+        dist_inds = dist_inds[mask[dist_inds]]
+
+    return dist_inds
+
+
 #
-
-
-def click_points_selection_test(coords, sel_status, mouse_co, region, rv3d, shift, x_ray, bvh, active=None, radius=15):
-    mouse_co = Vector(mouse_co)
-
-    if x_ray:
-        bvh = None
-
-    change = False
-    nearest_dist = -1
-    nearest_point = None
-    nearest_sel_point = None
-    # Test selection of points
-    for c, co in enumerate(coords):
-        rco = view3d_utils.location_3d_to_region_2d(
-            region, rv3d, co)
-        if rco:
-            status = sel_status[c]
-            dist = (rco - mouse_co).length
-            if (nearest_point == None or dist < nearest_dist) and dist < radius:
-                # make sure co is valid. test occlusion if it is enabled
-                valid_po = True
-                if bvh:
-                    valid_po = not ray_cast_view_occlude_test(
-                        co, mouse_co, bvh, region, rv3d)
-
-                if valid_po:
-                    if status:
-                        nearest_sel_point = c
-                    else:
-                        nearest_dist = dist
-                        nearest_point = c
-
-    # If no points to select then go with nearest already selected point as active
-    if nearest_point == None and nearest_sel_point != None:
-        nearest_point = nearest_sel_point
-
-    # Make selection changes if a point is in range
-    unselect = False
-    new_active = None
-    new_sel = None
-    new_sel_status = False
-    if nearest_point != None:
-        # Unselect all and clear active point if shift not held
-        unselect = not shift
-        new_sel = nearest_point
-        new_active = nearest_point
-        new_sel_status = True
-
-        if active != None and nearest_point == active and shift:
-            new_active = None
-            new_sel_status = False
-
-        change = True
-
-    return change, unselect, new_active, new_sel, new_sel_status
+#
 
 
 def click_tris_selection_test(tris, sel_status, mouse_co, region, rv3d, shift, x_ray, bvh, active=None, radius=15):

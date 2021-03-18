@@ -36,74 +36,64 @@ def match_loops_vecs(self, loop, o_tangs, flip_axis=None):
 
 
 def set_new_normals(self):
-    self._object.data.edges.foreach_set('use_edge_sharp', self.og_sharp_edges)
+    self._object.data.edges.foreach_set(
+        'use_edge_sharp', self._container.og_sharp)
 
-    new_l_norms = [None for l in self._object.data.loops]
-    for po in self._points_container.points:
-        for loop in po.loops:
-            new_l_norms[loop.loop_index] = loop.normal.normalized()
+    # Lerp between cached and new normals by the filter weights
+    self._container.new_norms = self._container.cache_norms * \
+        (1.0-self._container.filter_weights) + \
+        self._container.new_norms * self._container.filter_weights
 
-    self._object.data.normals_split_custom_set(new_l_norms)
+    # Get the scale factor to normalized new normals
+    scale = 1 / np.sqrt(np.sum(np.square(self._container.new_norms), axis=1))
+    self._container.new_norms = self._container.new_norms*scale[:, None]
+
+    # self._container.new_norms.shape = [len(self._object.data.loops), 3]
+    self._object.data.normals_split_custom_set(self._container.new_norms)
 
     return
 
 
 def loop_norm_set(self, loop, og_vec, to_vec):
-    weight = None
-    if self._filter_weights != None:
-        weight = self._filter_weights[loop.point.index]
+    # weight = None
+    # if self._container.filter_weights != None:
+    #     weight = self._container.filter_weights[loop.point.index]
 
-    if weight == None:
-        new_vec = get_locked_normal(
-            self, loop.normal, to_vec).normalized()
-    else:
-        new_vec = get_locked_normal(
-            self, loop.normal, og_vec.lerp(to_vec, weight)).normalized()
+    # if weight == None:
+    #     new_vec = to_vec
+    # else:
+    #     new_vec = og_vec.lerp(to_vec, weight)
 
-    loop.normal = new_vec
+    # loop.normal = new_vec
 
-    axis = []
-    if self._mirror_x:
-        axis.append(0)
-    if self._mirror_y:
-        axis.append(1)
-    if self._mirror_z:
-        axis.append(2)
+    # axis = []
+    # if self._mirror_x:
+    #     axis.append(0)
+    # if self._mirror_y:
+    #     axis.append(1)
+    # if self._mirror_z:
+    #     axis.append(2)
 
-    for ind in axis:
-        if ind == 0:
-            mir_loop = loop.x_mirror
-        if ind == 1:
-            mir_loop = loop.y_mirror
-        if ind == 2:
-            mir_loop = loop.z_mirror
+    # for ind in axis:
+    #     if ind == 0:
+    #         mir_loop = loop.x_mirror
+    #     if ind == 1:
+    #         mir_loop = loop.y_mirror
+    #     if ind == 2:
+    #         mir_loop = loop.z_mirror
 
-        if mir_loop != None:
-            mir_norm = loop.normal.copy()
-            mir_norm[ind] *= -1
+    #     if mir_loop != None:
+    #         mir_norm = loop.normal.copy()
+    #         mir_norm[ind] *= -1
 
-            mir_loop.normal = get_locked_normal(
-                self, mir_loop.normal, mir_norm)
+    #         mir_loop.normal = mir_norm
     return
-
-
-def get_locked_normal(self, cur_vec, tar_vec):
-    new_vec = cur_vec.copy()
-
-    if self._lock_x == False:
-        new_vec[0] = tar_vec[0]
-    if self._lock_y == False:
-        new_vec[1] = tar_vec[1]
-    if self._lock_z == False:
-        new_vec[2] = tar_vec[2]
-
-    return new_vec
 
 
 def mirror_normals(self, sel_inds, axis):
 
     for ind in sel_inds:
-        po = self._points_container.points[ind[0]]
+        po = self._container.points[ind[0]]
         if po.valid:
             loop = po.loops[ind[1]]
 
@@ -118,8 +108,7 @@ def mirror_normals(self, sel_inds, axis):
                 mir_norm = loop.normal.copy()
                 mir_norm[axis] *= -1
 
-                mir_loop.normal = get_locked_normal(
-                    self, mir_loop.normal, mir_norm)
+                mir_loop.normal = mir_norm
 
                 self.redraw = True
 
@@ -129,10 +118,10 @@ def mirror_normals(self, sel_inds, axis):
 
 
 def incremental_rotate_vectors(self, sel_inds, axis, increment):
-    sel_cos = self._points_container.get_selected_loop_cos()
+    sel_cos = self._container.get_selected_loop_cos()
     avg_loc = average_vecs(sel_cos)
 
-    self._points_container.cache_current_normals()
+    self._container.cache_current_normals()
 
     self._mode_cache.clear()
     self._mode_cache.append(self._mouse_reg_loc)
@@ -154,30 +143,37 @@ def rotate_vectors(self, sel_inds, angle):
         axis = 'X'
     if self.translate_axis == 1:
         axis = 'Y'
-        # angle *= -1
     if self.translate_axis == 2:
         axis = 'Z'
 
     rot = np.array(Matrix.Rotation(angle, 3, axis))
-    norm_vecs = np.array([self._points_container.points[ind_set[0]
-                                                        ].loops[ind_set[1]].cached_normal for ind_set in sel_inds])
+
     # Viewspace rotation matrix
     if self.translate_mode == 0:
         persp_mat = bpy.context.region_data.view_matrix.to_3x3().normalized()
         loc_mat = self._object.matrix_world.to_3x3().normalized()
 
-        norm_vecs = np.array(loc_mat).dot(norm_vecs.T).T
-        norm_vecs = np.array(persp_mat).dot(norm_vecs.T).T
-        norm_vecs = rot.dot(norm_vecs.T).T
-        norm_vecs = np.array(persp_mat.inverted()).dot(norm_vecs.T).T
-        new_vecs = np.array(loc_mat.inverted()).dot(norm_vecs.T).T
+        self._container.new_norms[self._container.sel_status] = np.array(
+            loc_mat).dot(self._container.cache_norms[self._container.sel_status].T).T
+        self._container.new_norms[self._container.sel_status] = np.array(
+            persp_mat).dot(self._container.new_norms[self._container.sel_status].T).T
+        self._container.new_norms[self._container.sel_status] = rot.dot(
+            self._container.new_norms[self._container.sel_status].T).T
+        self._container.new_norms[self._container.sel_status] = np.array(
+            persp_mat.inverted()).dot(self._container.new_norms[self._container.sel_status].T).T
+        self._container.new_norms[self._container.sel_status] = np.array(
+            loc_mat.inverted()).dot(self._container.new_norms[self._container.sel_status].T).T
 
     # World space rotation matrix
     elif self.translate_mode == 1:
         loc_mat = self._object.matrix_world.to_3x3().normalized()
-        norm_vecs = np.array(loc_mat).dot(norm_vecs.T).T
-        norm_vecs = rot.dot(norm_vecs.T).T
-        new_vecs = np.array(loc_mat.inverted()).dot(norm_vecs.T).T
+
+        self._container.new_norms[self._container.sel_status] = np.array(
+            loc_mat).dot(self._container.cache_norms[self._container.sel_status].T).T
+        self._container.new_norms[self._container.sel_status] = rot.dot(
+            self._container.new_norms[self._container.sel_status].T).T
+        self._container.new_norms[self._container.sel_status] = np.array(
+            loc_mat.inverted()).dot(self._container.new_norms[self._container.sel_status].T).T
 
     # Local space roatation matrix
     elif self.translate_mode == 2:
@@ -185,18 +181,20 @@ def rotate_vectors(self, sel_inds, angle):
             orb_mat = self._orbit_ob.matrix_world.to_3x3().normalized()
             loc_mat = self._object.matrix_world.to_3x3().normalized()
 
-            norm_vecs = np.array(loc_mat).dot(norm_vecs.T).T
-            norm_vecs = np.array(orb_mat.inverted()).dot(norm_vecs.T).T
-            norm_vecs = rot.dot(norm_vecs.T).T
-            norm_vecs = np.array(orb_mat).dot(norm_vecs.T).T
-            new_vecs = np.array(loc_mat.inverted()).dot(norm_vecs.T).T
+            self._container.new_norms[self._container.sel_status] = np.array(
+                loc_mat).dot(self._container.cache_norms[self._container.sel_status].T).T
+            self._container.new_norms[self._container.sel_status] = np.array(
+                orb_mat.inverted()).dot(self._container.new_norms[self._container.sel_status].T).T
+            self._container.new_norms[self._container.sel_status] = rot.dot(
+                self._container.new_norms[self._container.sel_status].T).T
+            self._container.new_norms[self._container.sel_status] = np.array(
+                orb_mat).dot(self._container.new_norms[self._container.sel_status].T).T
+            self._container.new_norms[self._container.sel_status] = np.array(
+                loc_mat.inverted()).dot(self._container.new_norms[self._container.sel_status].T).T
 
         else:
-            new_vecs = rot.dot(norm_vecs.T).T
-
-    for ind_set, vec in zip(sel_inds, new_vecs):
-        loop = self._points_container.points[ind_set[0]].loops[ind_set[1]]
-        loop_norm_set(self, loop, loop.cached_normal, vec)
+            self._container.new_norms[self._container.sel_status] = rot.dot(
+                self._container.cache_norms[self._container.sel_status].T).T
 
     set_new_normals(self)
     self.redraw_active = True
@@ -210,7 +208,7 @@ def rotate_vectors(self, sel_inds, angle):
 def flatten_normals(self, sel_inds, axis):
     update_filter_weights(self)
     for ind in sel_inds:
-        po = self._points_container.points[ind[0]]
+        po = self._container.points[ind[0]]
         if po.valid:
             loop = po.loops[ind[1]]
 
@@ -232,7 +230,7 @@ def align_to_axis_normals(self, sel_inds, axis, dir):
 
     vec[axis] = 1.0*dir
     for ind in sel_inds:
-        po = self._points_container.points[ind[0]]
+        po = self._container.points[ind[0]]
         if po.valid:
             loop = po.loops[ind[1]]
 
@@ -253,7 +251,7 @@ def average_vertex_normals(self, sel_inds):
 
     new_norms = []
     for ind in sel_inds:
-        po = self._points_container.points[ind[0]]
+        po = self._container.points[ind[0]]
         if po.valid:
             loop = po.loops[ind[1]]
 
@@ -265,7 +263,7 @@ def average_vertex_normals(self, sel_inds):
             new_norms.append(None)
 
     for i, ind in enumerate(sel_inds):
-        po = self._points_container.points[ind[0]]
+        po = self._container.points[ind[0]]
         if po.valid:
             loop = po.loops[ind[1]]
             loop_norm_set(self, loop, loop.normal, new_norms[i])
@@ -281,7 +279,7 @@ def average_selected_normals(self, sel_inds):
     update_filter_weights(self)
     avg_vec = Vector((0, 0, 0))
     for ind in sel_inds:
-        po = self._points_container.points[ind[0]]
+        po = self._container.points[ind[0]]
         if po.valid:
             vec = average_vecs(
                 [loop.normal for loop in po.loops if loop.select])
@@ -293,7 +291,7 @@ def average_selected_normals(self, sel_inds):
 
     if avg_vec.length > 0.0:
         for ind in sel_inds:
-            po = self._points_container.points[ind[0]]
+            po = self._container.points[ind[0]]
             if po.valid:
                 loop = po.loops[ind[1]]
 
@@ -311,7 +309,7 @@ def smooth_normals(self, sel_inds, fac):
     calc_norms = None
     for i in range(self._smooth_iterations):
         calc_norms = []
-        for po in self._points_container.points:
+        for po in self._container.points:
             if len(po.loops) > 0 and po.valid:
                 vec = average_vecs([loop.normal for loop in po.loops])
                 calc_norms.append(vec)
@@ -319,7 +317,7 @@ def smooth_normals(self, sel_inds, fac):
                 calc_norms.append(None)
 
         for ind in sel_inds:
-            po = self._points_container.points[ind[0]]
+            po = self._container.points[ind[0]]
             if po.valid:
                 loop = po.loops[ind[1]]
 
@@ -345,7 +343,7 @@ def smooth_normals(self, sel_inds, fac):
 #
 def flip_normals(self, sel_inds):
     for ind in sel_inds:
-        po = self._points_container.points[ind[0]]
+        po = self._container.points[ind[0]]
         if po.valid:
             loop = po.loops[ind[1]]
             loop.normal *= -1
@@ -359,7 +357,7 @@ def flip_normals(self, sel_inds):
 def set_outside_inside(self, sel_inds, direction):
     update_filter_weights(self)
     for ind in sel_inds:
-        po = self._points_container.points[ind[0]]
+        po = self._container.points[ind[0]]
         if po.valid:
             loop = po.loops[ind[1]]
 
@@ -385,7 +383,7 @@ def set_outside_inside(self, sel_inds, direction):
 
 def reset_normals(self, sel_inds):
     for ind in sel_inds:
-        po = self._points_container.points[ind[0]]
+        po = self._container.points[ind[0]]
         if po.valid:
             loop = po.loops[ind[1]]
             loop.reset_normal()
@@ -399,7 +397,7 @@ def reset_normals(self, sel_inds):
 def set_normals_from_faces(self, sel_inds):
     update_filter_weights(self)
     for ind in sel_inds:
-        po = self._points_container.points[ind[0]]
+        po = self._container.points[ind[0]]
         if po.valid:
             sel_faces = [
                 loop.face_index for loop in po.loops if loop.select or po.select]
@@ -430,7 +428,7 @@ def copy_active_to_selected(self, sel_inds):
         norms, tangs = get_po_loop_data(self, self._active_point)
 
         for ind in sel_inds:
-            po = self._points_container.points[ind[0]]
+            po = self._container.points[ind[0]]
             if po.valid:
                 loop = po.loops[ind[1]]
 
@@ -470,7 +468,7 @@ def paste_normal(self, sel_inds):
     update_filter_weights(self)
     if self._copy_normals != None and self._copy_normals_tangs != None:
         for ind in sel_inds:
-            po = self._points_container.points[ind[0]]
+            po = self._container.points[ind[0]]
             if po.valid:
                 loop = po.loops[ind[1]]
 
@@ -548,8 +546,8 @@ def translate_axis_change(self, text, axis):
 
     translate_axis_draw(self)
 
-    self._points_container.restore_cached_normals()
-    self._points_container.cache_current_normals()
+    self._container.restore_cached_normals()
+    self._container.cache_current_normals()
     return
 
 
@@ -587,15 +585,99 @@ def translate_axis_side(self):
 def cache_point_data(self):
     self._object.data.calc_normals_split()
 
-    self.og_sharp_edges = np.zeros(len(self._object.data.edges), dtype=np.bool)
-    self.og_seam_edges = np.zeros(self.og_sharp_edges.size, dtype=np.bool)
-    self._object.data.edges.foreach_get('use_edge_sharp', self.og_sharp_edges)
-    self._object.data.edges.foreach_get('use_seam', self.og_seam_edges)
+    vert_amnt = len(self._object.data.vertices)
+    edge_amnt = len(self._object.data.edges)
+    loop_amnt = len(self._object.data.loops)
+    face_amnt = len(self._object.data.polygons)
 
-    self.og_loop_norms = np.zeros(
-        len(self._object.data.loops)*3, dtype=np.float32)
-    self._object.data.loops.foreach_get('normal', self.og_loop_norms)
+    self._container.og_sharp = np.zeros(edge_amnt, dtype=bool)
+    self._object.data.edges.foreach_get(
+        'use_edge_sharp', self._container.og_sharp)
 
+    self._container.og_seam = np.zeros(edge_amnt, dtype=bool)
+    self._object.data.edges.foreach_get('use_seam', self._container.og_seam)
+
+    self._container.og_norms = np.zeros(loop_amnt*3, dtype=np.float32)
+    self._object.data.loops.foreach_get('normal', self._container.og_norms)
+    self._container.og_norms.shape = [loop_amnt, 3]
+
+    self._container.new_norms = self._container.og_norms.copy()
+    self._container.cache_norms = self._container.og_norms.copy()
+
+    max_link_eds = max([len(v.link_edges) for v in self._object_bm.verts])
+    max_link_loops = max([len(v.link_loops) for v in self._object_bm.verts])
+    max_link_f_vs = max([len(f.verts) for f in self._object_bm.faces])
+    max_link_f_loops = max([len(f.loops) for f in self._object_bm.faces])
+
+    link_vs = []
+    link_ls = []
+    for v in self._object_bm.verts:
+        l_v_inds = [-1] * max_link_eds
+        l_l_inds = [-1] * max_link_loops
+
+        for e, ed in enumerate(v.link_edges):
+            l_v_inds[e] = ed.other_vert(v).index
+
+        for l, loop in enumerate(v.link_loops):
+            l_l_inds[l] = loop.index
+
+        link_vs += l_v_inds
+        link_ls += l_l_inds
+
+    self._container.vert_link_vs = np.array(link_vs, dtype=np.int32)
+    self._container.vert_link_vs.shape = [vert_amnt, max_link_eds]
+
+    self._container.vert_link_ls = np.array(link_ls, dtype=np.int32)
+    self._container.vert_link_ls.shape = [vert_amnt, max_link_loops]
+
+    link_f_vs = []
+    link_f_ls = []
+    for f in self._object_bm.faces:
+        l_v_inds = [-1] * max_link_f_vs
+        l_l_inds = [-1] * max_link_f_loops
+
+        for v, vert in enumerate(f.verts):
+            l_v_inds[v] = vert.index
+
+        for l, loop in enumerate(f.loops):
+            l_l_inds[l] = loop.index
+
+        link_f_vs += l_v_inds
+        link_f_ls += l_l_inds
+
+    self._container.face_link_vs = np.array(link_f_vs, dtype=np.int32)
+    self._container.face_link_vs.shape = [face_amnt, max_link_f_vs]
+
+    self._container.face_link_ls = np.array(link_f_ls, dtype=np.int32)
+    self._container.face_link_ls.shape = [face_amnt, max_link_f_loops]
+
+    self._container.po_coords = np.array(
+        [v.co for v in self._object_bm.verts], dtype=np.float32)
+    self._container.loop_coords = np.array(
+        [self._object_bm.verts[l.vertex_index].co for l in self._object.data.loops], dtype=np.float32)
+
+    loop_tri_cos = [[] for i in range(loop_amnt)]
+    for v in self._object_bm.verts:
+        ed_inds = [ed.index for ed in v.link_edges]
+        for loop in v.link_loops:
+            loop_cos = [v.co+v.normal*.001]
+            for ed in loop.face.edges:
+                if ed.index in ed_inds:
+                    ov = ed.other_vert(v)
+                    vec = (ov.co+ov.normal*.001) - (v.co+v.normal*.001)
+
+                    loop_cos.append((v.co+v.normal*.001) + vec * 0.5)
+
+            loop_tri_cos[loop.index] = loop_cos
+
+    self._container.loop_tri_coords = np.array(loop_tri_cos, dtype=np.float32)
+
+    #
+    #
+
+    loop_sel = [False] * loop_amnt
+    loop_hide = [True] * loop_amnt
+    loop_act = [False] * loop_amnt
     for v in self._object_bm.verts:
         ed_inds = [ed.index for ed in v.link_edges]
         if len(v.link_loops) > 0:
@@ -615,18 +697,23 @@ def cache_point_data(self):
                         loop_cos.append((v.co+v.normal*.001) + vec * 0.5)
                 loop_tri_cos.append(loop_cos)
 
-            po = self._points_container.add_point(
+            po = self._container.add_point(
                 v.co, v.normal, loop_norms, loop_inds, loop_f_inds, loop_tri_cos)
 
+            # Vertex selection
+            if bpy.context.tool_settings.mesh_select_mode[0]:
+                po.set_select(v.select)
+
+                for l_ind in loop_inds:
+                    loop_sel[l_ind] = v.select
+
         else:
-            po = self._points_container.add_empty_point(
+            po = self._container.add_empty_point(
                 v.co, Vector((0, 0, 1)))
 
+        for loop in po.loops:
+            loop_hide[loop.loop_index] = v.hide
         po.set_hide(v.hide)
-
-        # Vertex selection
-        if bpy.context.tool_settings.mesh_select_mode[0]:
-            po.set_select(v.select)
 
     # Edge selection
     if bpy.context.tool_settings.mesh_select_mode[1]:
@@ -634,11 +721,15 @@ def cache_point_data(self):
             if ed.select:
                 for v in ed.verts:
                     if self._individual_loops:
-                        for loop in self._points_container.points[v.index].loops:
+                        for loop in self._container.points[v.index].loops:
                             if loop.face_index in [ed.link_faces[0].index, ed.link_faces[1].index]:
                                 loop.set_select(True)
+                                loop_sel[loop.loop_index] = True
+
                     else:
-                        self._points_container.points[v.index].set_select(True)
+                        self._container.points[v.index].set_select(True)
+                        for loop in self._container.points[v.index].loops:
+                            loop_sel[loop.loop_index] = True
 
     # Face selection
     if bpy.context.tool_settings.mesh_select_mode[2]:
@@ -646,74 +737,97 @@ def cache_point_data(self):
             if f.select:
                 for v in f.verts:
                     if self._individual_loops:
-                        for loop in self._points_container.points[v.index].loops:
+                        for loop in self._container.points[v.index].loops:
                             if loop.face_index == f.index:
                                 loop.set_select(True)
+                                loop_sel[loop.loop_index] = True
                     else:
-                        self._points_container.points[v.index].set_select(True)
+                        self._container.points[v.index].set_select(True)
+                        for loop in self._container.points[v.index].loops:
+                            loop_sel[loop.loop_index] = True
+
+    self._container.hide_status = np.array(loop_hide, dtype=bool)
+    self._container.sel_status = np.array(loop_sel, dtype=bool)
+    self._container.act_status = np.array(loop_act, dtype=bool)
 
     cache_mirror_data(self)
     return
 
 
 def cache_mirror_data(self):
-    for po in self._points_container.points:
-        if po.valid:
-            mir_pos = []
-            for i in range(3):
-                co = self._object.matrix_world.inverted() @ po.co
-                co[i] *= -1
-                co = self._object.matrix_world @ co
+    x_mirs = []
+    y_mirs = []
+    z_mirs = []
 
-                result = self._object_kd.find_range(co, self._mirror_range)
+    for loop in self._object.data.loops:
+        po = self._container.points[loop.vertex_index]
 
-                m_po = None
-                for res in result:
-                    o_po = self._points_container.points[res[1]]
-                    if o_po.valid:
-                        m_po = o_po
-                        break
+        for i in range(3):
+            # Get mirrored coordinate converting to local, mirroring, then going back to world
+            co = self._object.matrix_world.inverted() @ po.co
+            co[i] *= -1
+            co = self._object.matrix_world @ co
 
-                mir_pos.append(m_po)
+            result = self._object_kd.find_range(co, self._mirror_range)
 
-            norms, tangs = get_po_loop_data(self, po)
+            m_po = None
+            for res in result:
+                o_po = self._container.points[res[1]]
+                if o_po.valid:
+                    m_po = o_po
+                    break
 
-            for i in range(3):
-                if mir_pos[i] != None:
-                    for m_loop in mir_pos[i].loops:
-                        m_ind = match_loops_vecs(
-                            self, m_loop, tangs, flip_axis=i)
+            if m_po != None:
+                norms, tangs = get_po_loop_data(self, m_po)
 
-                        if i == 0:
-                            m_loop.x_mirror = po.loops[m_ind]
-                        if i == 1:
-                            m_loop.y_mirror = po.loops[m_ind]
-                        if i == 2:
-                            m_loop.z_mirror = po.loops[m_ind]
+                cur_loop = po.loops[[
+                    l.index for l in po.loops if l.loop_index == loop.index][0]]
 
+                m_ind = match_loops_vecs(
+                    self, cur_loop, tangs, flip_axis=i)
+
+                if i == 0:
+                    x_mirs.append(m_po.loops[m_ind].loop_index)
+                if i == 1:
+                    y_mirs.append(m_po.loops[m_ind].loop_index)
+                if i == 2:
+                    z_mirs.append(m_po.loops[m_ind].loop_index)
+
+            else:
+                if i == 0:
+                    x_mirs.append(loop.index)
+                if i == 1:
+                    y_mirs.append(loop.index)
+                if i == 2:
+                    z_mirs.append(loop.index)
+
+    self.mir_loops_x = np.array(x_mirs, dtype=np.float32)
+    self.mir_loops_x = np.array(y_mirs, dtype=np.float32)
+    self.mir_loops_x = np.array(z_mirs, dtype=np.float32)
     return
 
 
 def update_filter_weights(self):
     abn_props = bpy.context.scene.abnormal_props
-    weights = None
+
+    weights = [1.0] * len(self._object.data.loops)
     if abn_props.vertex_group != '':
         if abn_props.vertex_group in self._object.vertex_groups:
-            weights = []
-
-            for ind in range(len(self._points_container.points)):
+            for po in self._container.points:
                 vg = self._object.vertex_groups[abn_props.vertex_group]
 
                 try:
-                    weights.append(vg.weight(ind))
+                    for loop in po.loops:
+                        weights[loop.loop_index] = vg.weight(po.index)
 
                 except:
-                    weights.append(0.0)
+                    for loop in po.loops:
+                        weights[loop.loop_index] = 0.0
 
         else:
             abn_props.vertex_group = ''
 
-    self._filter_weights = weights
+    self._container.filter_weights = np.array(weights)[:, None]
     return
 
 
@@ -770,8 +884,8 @@ def ob_data_structures(self, ob):
 
 def add_to_undostack(self, stack_type):
     if stack_type == 0:
-        sel_status = self._points_container.get_selected_loops()
-        vis_status = self._points_container.get_visible_loops()
+        sel_status = self._container.get_selected_loops()
+        vis_status = self._container.get_visible_loops()
 
         if self._history_position > 0:
             while self._history_position > 0:
@@ -786,7 +900,7 @@ def add_to_undostack(self, stack_type):
         update_orbit_empty(self)
 
     else:
-        cur_normals = self._points_container.get_current_normals()
+        cur_normals = self._container.get_current_normals()
         if self._history_position > 0:
             while self._history_position > 0:
                 self._history_stack.pop(0)
@@ -808,22 +922,22 @@ def move_undostack(self, dir):
 
         if state_type == 0:
             vis_state = self._history_stack[self._history_position][2]
-            for po in self._points_container.points:
+            for po in self._container.points:
                 po.set_hide(True)
 
             for ind in vis_state:
-                po = self._points_container.points[ind[0]]
+                po = self._container.points[ind[0]]
                 if po.valid:
                     loop = po.loops[ind[1]]
                     loop.set_hide(False)
 
                 po.set_hidden_from_loops()
 
-            for po in self._points_container.points:
+            for po in self._container.points:
                 po.set_select(False)
 
             for ind in state:
-                po = self._points_container.points[ind[0]]
+                po = self._container.points[ind[0]]
                 if po.hide == False and po.valid:
                     loop = po.loops[ind[1]]
                     if loop.hide == False:
@@ -833,14 +947,14 @@ def move_undostack(self, dir):
 
             if self._active_point != None:
                 if self._active_point.select == False:
-                    self._points_container.clear_active()
+                    self._container.clear_active()
                     self._active_point = None
 
             update_orbit_empty(self)
             self.redraw = True
 
         if state_type == 1:
-            for po in self._points_container.points:
+            for po in self._container.points:
                 for loop in po.loops:
                     loop.normal = state[po.index][loop.index].copy()
 
@@ -908,11 +1022,11 @@ def finish_modal(self, restore):
                     ob = o_ob
 
         self._object.data.edges.foreach_set(
-            'use_edge_sharp', self.og_sharp_edges)
+            'use_edge_sharp', self._container.og_sharp)
 
         # restore normals
         og_norms = [None for l in ob.data.loops]
-        for po in self._points_container.points:
+        for po in self._container.points:
             for loop in po.loops:
                 og_norms[loop.loop_index] = loop.og_normal.normalized()
         ob.data.normals_split_custom_set(og_norms)
@@ -972,7 +1086,7 @@ def check_area(self):
 #
 def gizmo_click_init(self, event, giz_status):
     if self._use_gizmo:
-        sel_inds = self._points_container.get_selected_loops()
+        sel_inds = self._container.get_selected_loops()
         if event.alt == False:
             if len(sel_inds) == 0:
                 return True
@@ -981,7 +1095,7 @@ def gizmo_click_init(self, event, giz_status):
 
         # Cache current normals before rotation starts and setup gizmo as being used
         if event.alt == False:
-            self._points_container.cache_current_normals()
+            self._container.cache_current_normals()
 
             for gizmo in self._window.gizmo_sets[giz_status[1]].gizmos:
                 if gizmo.index != giz_status[2]:
@@ -1092,18 +1206,18 @@ def start_sphereize_mode(self):
     for i in range(len(bpy.context.selected_objects)):
         bpy.context.selected_objects[0].select_set(False)
 
-    sel_cos = self._points_container.get_selected_loop_cos()
+    sel_cos = self._container.get_selected_loop_cos()
     avg_loc = average_vecs(sel_cos)
     self._target_emp.location = avg_loc
     self._target_emp.empty_display_size = 0.5
     self._target_emp.select_set(True)
     bpy.context.view_layer.objects.active = self._target_emp
 
-    sel_inds = self._points_container.get_selected_loops()
+    sel_inds = self._container.get_selected_loops()
     self._mode_cache.append(sel_inds)
     self._mode_cache.append(avg_loc)
 
-    self._points_container.cache_current_normals()
+    self._container.cache_current_normals()
 
     gizmo_update_hide(self, False)
     self.sphereize_mode = True
@@ -1123,7 +1237,7 @@ def start_sphereize_mode(self):
 
 def end_sphereize_mode(self, keep_normals):
     if keep_normals == False:
-        self._points_container.restore_cached_normals()
+        self._container.restore_cached_normals()
         set_new_normals(self)
 
     # self._export_panel.set_visibility(True)
@@ -1150,7 +1264,7 @@ def end_sphereize_mode(self, keep_normals):
 
 def sphereize_normals(self, sel_inds):
     for i, ind in enumerate(sel_inds):
-        po = self._points_container.points[ind[0]]
+        po = self._container.points[ind[0]]
         loop = po.loops[ind[1]]
 
         if po.valid:
@@ -1172,18 +1286,18 @@ def start_point_mode(self):
     for i in range(len(bpy.context.selected_objects)):
         bpy.context.selected_objects[0].select_set(False)
 
-    sel_cos = self._points_container.get_selected_loop_cos()
+    sel_cos = self._container.get_selected_loop_cos()
     avg_loc = average_vecs(sel_cos)
     self._target_emp.location = avg_loc
     self._target_emp.empty_display_size = 0.5
     self._target_emp.select_set(True)
     bpy.context.view_layer.objects.active = self._target_emp
 
-    sel_inds = self._points_container.get_selected_loops()
+    sel_inds = self._container.get_selected_loops()
     self._mode_cache.append(sel_inds)
     self._mode_cache.append(avg_loc)
 
-    self._points_container.cache_current_normals()
+    self._container.cache_current_normals()
 
     gizmo_update_hide(self, False)
     self.point_mode = True
@@ -1203,7 +1317,7 @@ def start_point_mode(self):
 
 def end_point_mode(self, keep_normals):
     if keep_normals == False:
-        self._points_container.restore_cached_normals()
+        self._container.restore_cached_normals()
         set_new_normals(self)
 
     # self._export_panel.set_visibility(True)
@@ -1230,13 +1344,13 @@ def end_point_mode(self, keep_normals):
 
 def point_normals(self, sel_inds):
     if self.point_align:
-        sel_cos = self._points_container.get_selected_loop_cos()
+        sel_cos = self._container.get_selected_loop_cos()
         avg_loc = average_vecs(sel_cos)
         vec = (self._object.matrix_world.inverted() @ self._target_emp.location) - \
             (self._object.matrix_world.inverted() @ avg_loc)
 
     for i, ind in enumerate(sel_inds):
-        po = self._points_container.points[ind[0]]
+        po = self._container.points[ind[0]]
         loop = po.loops[ind[1]]
 
         if po.valid:
@@ -1294,7 +1408,7 @@ def move_target(self, shift):
 #
 def clear_active_face(self):
     if self._active_face != None:
-        self._points_container.clear_active()
+        self._container.clear_active()
 
     self._active_face = None
     return
@@ -1323,102 +1437,104 @@ def get_active_loop_index(indeces, active):
 
 
 def selection_test(self, shift, radius=6.0):
-    test_face = False
-    clear_active_face(self)
+    # Get coords in region space
+    rcos = get_np_region_cos(self._container.po_coords,
+                             self.act_reg, self.act_rv3d)
 
-    avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
-        0)
+    # Get ordered list of closest points within the threshold
+    d_order = get_np_vec_ordered_dists(
+        rcos, [self._mouse_reg_loc[0], self._mouse_reg_loc[1], 0.0], threshold=15.0)
 
-    active_ind = get_active_point_index(avail_inds, self._active_point)
-
-    change, unselect, new_active, new_sel, new_sel_status = click_points_selection_test(
-        avail_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, shift, self._x_ray_mode, self._object_bvh, active=active_ind)
-
-    sel_ind = None
-    new_act = None
-    if new_sel != None:
-        sel_ind = avail_inds[new_sel]
-    if new_active != None:
-        new_act = avail_inds[new_active]
-
-    # Vertex selection
-    if change:
-        if unselect:
-            for po in self._points_container.points:
-                po.set_select(False)
-
-        self._points_container.points[sel_ind].set_select(new_sel_status)
-
-        if new_act != None:
-            self._points_container.set_active_point(new_act)
-            self._active_point = self._points_container.points[new_act]
+    change = False
+    v_ls = self._container.vert_link_ls
+    # Point selection
+    if d_order.size > 0:
+        # Test for first point that is non occluded if xray off
+        if self._x_ray_mode == False:
+            po_ind = None
+            for ind in d_order:
+                valid_po = not ray_cast_view_occlude_test(
+                    Vector(self._container.po_coords[ind]), self._mouse_reg_loc, self._object_bvh, self.act_reg, self.act_rv3d)
+                if valid_po:
+                    po_ind = ind
+                    break
         else:
-            self._points_container.clear_active()
-            self._active_point = None
+            po_ind = d_order[0]
 
-    # No vertex selection so test loop triangle selection
-    else:
-        if self._individual_loops:
-            avail_tri_cos, avail_sel_status, avail_inds = self._points_container.get_loop_tri_selection_available(
-                0)
+        if po_ind != None:
+            mask = v_ls[po_ind]
+            mask = mask[mask >= 0]
 
-            active_ind = get_active_loop_index(avail_inds, self._active_point)
+            # Clear all selection and set points loops as sel and active
+            if shift == False:
+                self._container.sel_status[:] = False
+                self._container.act_status[:] = False
 
-            change, unselect, new_active, new_sel, new_sel_status = click_tris_selection_test(
-                avail_tri_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, shift, self._x_ray_mode, self._object_bvh, active=active_ind)
+                self._container.sel_status[mask] = True
+                self._container.act_status[mask] = True
 
-            sel_ind = None
-            new_act = None
-            if new_sel != None:
-                sel_ind = avail_inds[new_sel]
-            if new_active != None:
-                new_act = avail_inds[new_active]
-
-            # If selection change made then do it
-            if change:
-                if unselect:
-                    for po in self._points_container.points:
-                        po.set_select(False)
-
-                self._points_container.points[sel_ind[0]].set_loop_select(
-                    sel_ind[1], new_sel_status)
-                self._points_container.points[sel_ind[0]
-                                              ].set_selection_from_loops()
-
-                if new_act != None:
-                    self._points_container.set_active_loop(
-                        new_act[0], new_act[1])
-                    self._active_point = self._points_container.points[new_act[0]
-                                                                       ].loops[new_act[1]]
-                else:
-                    self._points_container.clear_active()
-                    self._active_point = None
-
-            # No vertex or loop selection so try for selecting a face with ray cast
+            # Adding to selection
             else:
-                test_face = True
+                po_sel = self._container.sel_status[mask]
+                po_act = self._container.act_status[mask]
 
-        # No vertex selection or loop testing so try for selecting a face with ray cast
-        else:
-            test_face = True
+                # Check if any point loops are not sel/act if so make all sel/act
+                if po_sel.all() == False or po_act.all() == False:
+                    self._container.sel_status[mask] = True
+                    self._container.act_status[:] = False
+                    self._container.act_status[mask] = True
 
-    if test_face:
+                # If all loops neither act/sel then all loops are sel/act so clear both
+                else:
+                    self._container.sel_status[mask] = False
+                    self._container.act_status[:] = False
+
+            change = True
+
+    # No point selection so try loop tri selection if available as an option
+    elif self._individual_loops:
+        change = True
+
+    # No valid selection so try test face
+    if change == False:
         face_res = ray_cast_to_mouse(self)
         if face_res != None:
-            if shift == False:
-                self._points_container.clear_active()
-                for po in self._points_container.points:
-                    po.set_select(False)
-
+            # Only test loops of the face
             if self._individual_loops:
-                self._points_container.select_face_loops(
-                    face_res[1], set_active=True)
+                f_ls = self._container.face_link_ls
+                mask = f_ls[face_res[1]]
+                mask = mask[mask >= 0]
+            # Test each verts loops of the face
             else:
-                self._points_container.select_face_verts(
-                    face_res[1], set_active=True)
+                f_vs = self._container.face_link_vs
+                mask = v_ls[f_vs[face_res[1]]]
+                mask = mask[mask >= 0]
 
-            for po in self._points_container.points:
-                po.set_selection_from_loops()
+            # New selection so clear act and sel and set current as sel/act
+            if shift == False:
+                self._container.sel_status[:] = False
+                self._container.act_status[:] = False
+
+                self._container.sel_status[mask] = True
+                self._container.act_status[mask] = True
+
+            # Adding to selection
+            else:
+                l_sel = self._container.sel_status[mask]
+                l_act = self._container.act_status[mask]
+
+                # Check if any face loops are not sel/act if so make all sel/act
+                if l_sel.all() == False or l_act.all() == False:
+                    self._container.sel_status[mask] = True
+                    self._container.act_status[:] = False
+                    self._container.act_status[mask] = True
+
+                # If all loops neither act/sel then all loops are sel/act so clear both
+                else:
+                    self._container.sel_status[mask] = False
+                    self._container.act_status[:] = False
+
+            #
 
             self._active_face = face_res[1]
             change = True
@@ -1433,7 +1549,7 @@ def loop_selection_test(self, shift, radius=6.0):
     face_res = ray_cast_to_mouse(self)
     if face_res != None:
         if shift == False:
-            for po in self._points_container.points:
+            for po in self._container.points:
                 po.set_select(False)
 
         face_rco = view3d_utils.location_3d_to_region_2d(
@@ -1460,7 +1576,7 @@ def loop_selection_test(self, shift, radius=6.0):
             # Edge loop selection
             if dist_2d < 12.0:
                 skip_vs = [
-                    po.index for po in self._points_container.points if po.hide and po.valid]
+                    po.index for po in self._container.points if po.hide and po.valid]
 
                 sel_loop = get_edge_loop(
                     self._object_bm, sel_ed, skip_verts=skip_vs)
@@ -1472,11 +1588,11 @@ def loop_selection_test(self, shift, radius=6.0):
                             v_inds.append(v.index)
 
                 cur_sel = [
-                    self._points_container.points[ind].select for ind in v_inds]
+                    self._container.points[ind].select for ind in v_inds]
 
                 loop_status = False in cur_sel
                 for ind in v_inds:
-                    self._points_container.points[ind].set_select(
+                    self._container.points[ind].set_select(
                         loop_status)
                     change = True
 
@@ -1484,13 +1600,13 @@ def loop_selection_test(self, shift, radius=6.0):
             else:
                 skip_fs = set()
                 if self._individual_loops:
-                    for po in self._points_container.points:
+                    for po in self._container.points:
                         if po.valid:
                             for loop in po.loops:
                                 if loop.hide or po.hide:
                                     skip_fs.add(loop.face_index)
                 else:
-                    for po in self._points_container.points:
+                    for po in self._container.points:
                         if po.hide and po.valid:
                             for loop in po.loops:
                                 skip_fs.add(loop.face_index)
@@ -1507,21 +1623,21 @@ def loop_selection_test(self, shift, radius=6.0):
                 if self._individual_loops:
                     cur_sel = []
                     for ind in v_inds:
-                        for loop in self._points_container.points[ind].loops:
+                        for loop in self._container.points[ind].loops:
                             if loop.face_index in sel_loop:
                                 cur_sel.append(loop.select)
                 else:
                     cur_sel = [
-                        self._points_container.points[ind].select for ind in v_inds]
+                        self._container.points[ind].select for ind in v_inds]
 
                 loop_status = False in cur_sel
                 for ind in v_inds:
                     if self._individual_loops:
-                        for loop in self._points_container.points[ind].loops:
+                        for loop in self._container.points[ind].loops:
                             if loop.face_index in sel_loop:
                                 loop.set_select(loop_status)
                     else:
-                        self._points_container.points[ind].set_select(
+                        self._container.points[ind].set_select(
                             loop_status)
                     change = True
 
@@ -1534,7 +1650,7 @@ def path_selection_test(self, shift, radius=6.0):
     face_res = ray_cast_to_mouse(self)
     if face_res != None:
         if shift == False:
-            for po in self._points_container.points:
+            for po in self._container.points:
                 po.set_select(False)
 
         if self._active_face != None:
@@ -1544,20 +1660,20 @@ def path_selection_test(self, shift, radius=6.0):
             clear_active_face(self)
             self._active_face = face_res[1]
             if self._individual_loops:
-                self._points_container.select_face_loops(
+                self._container.select_face_loops(
                     face_res[1], set_active=True)
             else:
-                self._points_container.select_face_verts(
+                self._container.select_face_verts(
                     face_res[1], set_active=True)
 
             for ind in path_f:
                 for v in self._object_bm.faces[ind].verts:
                     if self._individual_loops:
-                        for loop in self._points_container.points[v.index].loops:
+                        for loop in self._container.points[v.index].loops:
                             if loop.face_index == ind:
                                 loop.set_select(True)
                     else:
-                        self._points_container.points[v.index].set_select(True)
+                        self._container.points[v.index].set_select(True)
 
         else:
             near_ind = self._object_kd.find(face_res[0])
@@ -1565,11 +1681,11 @@ def path_selection_test(self, shift, radius=6.0):
                 [self._active_point.index, near_ind[1]], self._object_bm)
 
             for ind in path_v:
-                self._points_container.points[ind].set_select(True)
+                self._container.points[ind].set_select(True)
 
-            self._points_container.points[near_ind[1]].set_select(True)
-            self._points_container.set_active_point(near_ind[1])
-            self._active_point = self._points_container.points[near_ind[1]]
+            self._container.points[near_ind[1]].set_select(True)
+            self._container.set_active_point(near_ind[1])
+            self._active_point = self._container.points[near_ind[1]]
             clear_active_face(self)
 
         change = True
@@ -1587,13 +1703,13 @@ def box_selection_test(self, shift, ctrl):
 
     clear_active_face(self)
 
-    avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
+    avail_cos, avail_sel_status, avail_inds = self._container.get_selection_available(
         add_rem_status)
 
     loop_switch_pont = len(avail_inds)
     # Add in loop selection data if enabled
     if self._individual_loops:
-        avail_tri_cos, avail_loop_sel_status, avail_loop_inds = self._points_container.get_loop_selection_available(
+        avail_tri_cos, avail_loop_sel_status, avail_loop_inds = self._container.get_loop_selection_available(
             add_rem_status)
         avail_cos += avail_tri_cos
         avail_sel_status += avail_loop_sel_status
@@ -1612,7 +1728,7 @@ def box_selection_test(self, shift, ctrl):
 
     if change:
         if unselect:
-            for po in self._points_container.points:
+            for po in self._container.points:
                 po.set_select(False)
 
         for i, ind in enumerate(new_sel_add + new_sel_remove):
@@ -1622,26 +1738,26 @@ def box_selection_test(self, shift, ctrl):
 
             po_ind = avail_inds[ind]
             if ind < loop_switch_pont:
-                self._points_container.points[po_ind].set_select(status)
+                self._container.points[po_ind].set_select(status)
             elif ind >= face_switch_pont:
                 if self._individual_loops:
-                    self._points_container.set_face_loops_select(
+                    self._container.set_face_loops_select(
                         po_ind, status)
                 else:
-                    self._points_container.set_face_verts_select(
+                    self._container.set_face_verts_select(
                         po_ind, status)
             else:
-                self._points_container.points[po_ind[0]
-                                              ].loops[po_ind[1]].set_select(status)
-                self._points_container.points[po_ind[0]
-                                              ].set_selection_from_loops()
+                self._container.points[po_ind[0]
+                                       ].loops[po_ind[1]].set_select(status)
+                self._container.points[po_ind[0]
+                                       ].set_selection_from_loops()
 
         if self._active_point != None:
             if self._active_point.select == False:
-                self._points_container.clear_active()
+                self._container.clear_active()
                 self._active_point = None
 
-                # if self._points_container.points[self._active_point[0]].select == False:
+                # if self._container.points[self._active_point[0]].select == False:
                 #     self._active_point = None
 
     return change
@@ -1657,13 +1773,13 @@ def circle_selection_test(self, shift, ctrl, radius):
 
     clear_active_face(self)
 
-    avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
+    avail_cos, avail_sel_status, avail_inds = self._container.get_selection_available(
         add_rem_status)
 
     loop_switch_pont = len(avail_inds)
     # Add in loop selection data if enabled
     if self._individual_loops:
-        avail_loop_cos, avail_loop_sel_status, avail_loop_inds = self._points_container.get_loop_selection_available(
+        avail_loop_cos, avail_loop_sel_status, avail_loop_inds = self._container.get_loop_selection_available(
             add_rem_status)
 
         avail_cos += avail_loop_cos
@@ -1685,24 +1801,24 @@ def circle_selection_test(self, shift, ctrl, radius):
         for ind in new_sel:
             po_ind = avail_inds[ind]
             if ind < loop_switch_pont:
-                self._points_container.points[po_ind].set_select(
+                self._container.points[po_ind].set_select(
                     new_sel_status)
             elif ind >= face_switch_pont:
                 if self._individual_loops:
-                    self._points_container.set_face_loops_select(
+                    self._container.set_face_loops_select(
                         po_ind, new_sel_status)
                 else:
-                    self._points_container.set_face_verts_select(
+                    self._container.set_face_verts_select(
                         po_ind, new_sel_status)
             else:
-                self._points_container.points[po_ind[0]
-                                              ].loops[po_ind[1]].set_select(new_sel_status)
-                self._points_container.points[po_ind[0]
-                                              ].set_selection_from_loops()
+                self._container.points[po_ind[0]
+                                       ].loops[po_ind[1]].set_select(new_sel_status)
+                self._container.points[po_ind[0]
+                                       ].set_selection_from_loops()
 
         if self._active_point != None:
             if self._active_point.select == False:
-                self._points_container.clear_active()
+                self._container.clear_active()
                 self._active_point = None
 
     return change
@@ -1718,13 +1834,13 @@ def lasso_selection_test(self, shift, ctrl):
 
     clear_active_face(self)
 
-    avail_cos, avail_sel_status, avail_inds = self._points_container.get_selection_available(
+    avail_cos, avail_sel_status, avail_inds = self._container.get_selection_available(
         add_rem_status)
 
     loop_switch_pont = len(avail_inds)
     # Add in loop selection data if enabled
     if self._individual_loops:
-        avail_tri_cos, avail_loop_sel_status, avail_loop_inds = self._points_container.get_loop_selection_available(
+        avail_tri_cos, avail_loop_sel_status, avail_loop_inds = self._container.get_loop_selection_available(
             add_rem_status)
         avail_cos += avail_tri_cos
         avail_sel_status += avail_loop_sel_status
@@ -1743,7 +1859,7 @@ def lasso_selection_test(self, shift, ctrl):
 
     if change:
         if unselect:
-            for po in self._points_container.points:
+            for po in self._container.points:
                 po.set_select(False)
 
         for i, ind in enumerate(new_sel_add + new_sel_remove):
@@ -1753,23 +1869,23 @@ def lasso_selection_test(self, shift, ctrl):
 
             po_ind = avail_inds[ind]
             if ind < loop_switch_pont:
-                self._points_container.points[po_ind].set_select(status)
+                self._container.points[po_ind].set_select(status)
             elif ind >= face_switch_pont:
                 if self._individual_loops:
-                    self._points_container.set_face_loops_select(
+                    self._container.set_face_loops_select(
                         po_ind, status)
                 else:
-                    self._points_container.set_face_verts_select(
+                    self._container.set_face_verts_select(
                         po_ind, status)
             else:
-                self._points_container.points[po_ind[0]
-                                              ].loops[po_ind[1]].set_select(status)
-                self._points_container.points[po_ind[0]
-                                              ].set_selection_from_loops()
+                self._container.points[po_ind[0]
+                                       ].loops[po_ind[1]].set_select(status)
+                self._container.points[po_ind[0]
+                                       ].set_selection_from_loops()
 
         if self._active_point != None:
             if self._active_point.select == False:
-                self._points_container.clear_active()
+                self._container.clear_active()
                 self._active_point = None
 
     return change
@@ -1805,7 +1921,7 @@ def update_orbit_empty(self):
     self._orbit_ob.select_set(True)
     bpy.context.view_layer.objects.active = self._orbit_ob
 
-    sel_cos = self._points_container.get_selected_loop_cos()
+    sel_cos = self._container.get_selected_loop_cos()
     avg_loc = average_vecs(sel_cos)
 
     if avg_loc != None:

@@ -13,10 +13,10 @@ def refresh_batches(self, context):
         create_selection_drawing_lists(self)
 
     if self.redraw:
-        self._points_container.update_static()
+        self._container.update_static()
 
     if self.redraw_active:
-        self._points_container.update_active()
+        self._container.update_active()
 
     self.redraw = False
     self.redraw_active = False
@@ -36,7 +36,7 @@ def draw_callback_3d(self, context):
         if self._x_ray_mode == False:
             bgl.glEnable(bgl.GL_DEPTH_TEST)
 
-        self._points_container.draw()
+        self._container.draw()
 
         if len(self.translate_draw_line) > 0:
             bgl.glEnable(bgl.GL_DEPTH_TEST)
@@ -190,14 +190,14 @@ def viewport_change_cache(self, context):
 
 
 def start_active_drawing(self):
-    self._points_container.update_active()
-    self._points_container.update_static(exclude_active=True)
+    self._container.update_active()
+    self._container.update_static(exclude_active=True)
     return
 
 
 def end_active_drawing(self):
-    self._points_container.clear_active_batches()
-    self._points_container.update_static()
+    self._container.clear_active_batches()
+    self._container.update_static()
     return
 
 

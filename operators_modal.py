@@ -120,16 +120,11 @@ class ABN_OT_normal_editor_modal(Operator):
             self._rot_increment = 1
 
             self._object_smooth = True
-            self._filter_weights = None
 
             self._smooth_iterations = 5
             self._smooth_strength = 0.25
 
             self._mirror_range = 0.1
-
-            self._lock_x = False
-            self._lock_y = False
-            self._lock_z = False
 
             self._mirror_x = False
             self._mirror_y = False
@@ -218,14 +213,15 @@ class ABN_OT_normal_editor_modal(Operator):
             self.shader_2d = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
             self.shader_3d = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-            self._points_container = ABNPoints(self._object.matrix_world)
-            self._points_container.set_scale_selection(self._selected_scale)
-            self._points_container.set_brightess(self._line_brightness)
-            self._points_container.set_normal_scale(self._normal_size)
-            self._points_container.set_point_size(self._point_size)
-            self._points_container.set_loop_scale(self._loop_tri_size)
-            self._points_container.set_draw_only_selected(self._selected_only)
-            self._points_container.set_draw_tris(self._individual_loops)
+            self._container = ABNContainer(
+                self._object.matrix_world.normalized())
+            self._container.set_scale_selection(self._selected_scale)
+            self._container.set_brightess(self._line_brightness)
+            self._container.set_normal_scale(self._normal_size)
+            self._container.set_point_size(self._point_size)
+            self._container.set_loop_scale(self._loop_tri_size)
+            self._container.set_draw_only_selected(self._selected_only)
+            self._container.set_draw_tris(self._individual_loops)
 
             # INITIALIZE POINT DATA
             cache_point_data(self)
@@ -243,7 +239,7 @@ class ABN_OT_normal_editor_modal(Operator):
             setup_tools(self)
 
             # SETUP BATCHES
-            self._points_container.clear_batches()
+            self._container.clear_batches()
             refresh_batches(self, context)
 
             # OPENGL DRAWING HANDLER
