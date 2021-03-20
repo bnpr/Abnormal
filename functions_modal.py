@@ -1435,8 +1435,8 @@ def get_hidden_faces(self):
     if self._individual_loops:
         # Get indices of faces that all connected loops are hidden
         hid_faces = self._container.hide_status[self._container.face_link_ls]
-        hid_faces[self._container.face_link_ls < 0] = True
-        hid_faces = hid_faces.all(axis=1)
+        hid_faces[self._container.face_link_ls < 0] = False
+        hid_faces = hid_faces.any(axis=1)
         hid_faces = list(hid_faces.nonzero()[0])
 
     else:
@@ -1444,8 +1444,8 @@ def get_hidden_faces(self):
         face_ls = self._container.vert_link_ls[self._container.face_link_vs]
 
         hid_faces = self._container.hide_status[face_ls]
-        hid_faces[face_ls < 0] = True
-        hid_faces = hid_faces.all(axis=1)
+        hid_faces[face_ls < 0] = False
+        hid_faces = hid_faces.any(axis=1)
         hid_faces = list(hid_faces.nonzero()[0])
 
     return hid_faces

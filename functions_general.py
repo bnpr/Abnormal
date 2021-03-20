@@ -333,6 +333,7 @@ def find_path_between_faces(faces, bm, skip_fs=[]):
     cur_layer = [f1.index]
     searching, path_completed = True, False
     face_order, layers, found_inds = [], [], []
+    found_inds += skip_fs
     while searching:
         found = False
 
