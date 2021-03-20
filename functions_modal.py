@@ -608,6 +608,9 @@ def cache_point_data(self):
     max_link_loops = max([len(v.link_loops) for v in self._object_bm.verts])
     max_link_f_vs = max([len(f.verts) for f in self._object_bm.faces])
     max_link_f_loops = max([len(f.loops) for f in self._object_bm.faces])
+    max_link_f_eds = max([len(f.edges) for f in self._object_bm.faces])
+
+    #
 
     link_vs = []
     link_ls = []
@@ -630,11 +633,15 @@ def cache_point_data(self):
     self._container.vert_link_ls = np.array(link_ls, dtype=np.int32)
     self._container.vert_link_ls.shape = [vert_amnt, max_link_loops]
 
+    #
+
     link_f_vs = []
     link_f_ls = []
+    link_f_eds = []
     for f in self._object_bm.faces:
         l_v_inds = [-1] * max_link_f_vs
         l_l_inds = [-1] * max_link_f_loops
+        l_e_inds = [-1] * max_link_f_eds
 
         for v, vert in enumerate(f.verts):
             l_v_inds[v] = vert.index
@@ -642,14 +649,32 @@ def cache_point_data(self):
         for l, loop in enumerate(f.loops):
             l_l_inds[l] = loop.index
 
+        for e, ed in enumerate(f.edges):
+            l_e_inds[e] = ed.index
+
         link_f_vs += l_v_inds
         link_f_ls += l_l_inds
+        link_f_eds += l_e_inds
 
     self._container.face_link_vs = np.array(link_f_vs, dtype=np.int32)
     self._container.face_link_vs.shape = [face_amnt, max_link_f_vs]
 
     self._container.face_link_ls = np.array(link_f_ls, dtype=np.int32)
     self._container.face_link_ls.shape = [face_amnt, max_link_f_loops]
+
+    self._container.face_link_eds = np.array(link_f_eds, dtype=np.int32)
+    self._container.face_link_eds.shape = [face_amnt, max_link_f_eds]
+
+    #
+
+    link_ed_vs = []
+    for ed in self._object_bm.edges:
+        link_ed_vs.append([ed.verts[0].index, ed.verts[1].index])
+
+    self._container.edge_link_vs = np.array(link_ed_vs, dtype=np.int32)
+    self._container.edge_link_vs.shape = [edge_amnt, 2]
+
+    #
 
     self._container.po_coords = np.array(
         [v.co for v in self._object_bm.verts], dtype=np.float32)
@@ -1406,37 +1431,102 @@ def move_target(self, shift):
 #
 # SELECTION
 #
-def clear_active_face(self):
-    if self._active_face != None:
-        self._container.clear_active()
+def get_hidden_faces(self):
+    if self._individual_loops:
+        # Get indices of faces that all connected loops are hidden
+        hid_faces = self._container.hide_status[self._container.face_link_ls]
+        hid_faces[self._container.face_link_ls < 0] = True
+        hid_faces = hid_faces.all(axis=1)
+        hid_faces = list(hid_faces.nonzero()[0])
 
-    self._active_face = None
+    else:
+        # Get indices of faces that all connected vert loops are hidden
+        face_ls = self._container.vert_link_ls[self._container.face_link_vs]
+
+        hid_faces = self._container.hide_status[face_ls]
+        hid_faces[face_ls < 0] = True
+        hid_faces = hid_faces.all(axis=1)
+        hid_faces = list(hid_faces.nonzero()[0])
+
+    return hid_faces
+
+
+def get_hidden_points(self):
+    # Get indices of points that all connected loops are hidden
+    hid_pos = self._container.hide_status[self._container.vert_link_ls]
+    hid_pos[self._container.vert_link_ls < 0] = True
+    hid_pos = hid_pos.all(axis=1)
+    hid_pos = hid_pos.nonzero()[0]
+
+    return hid_pos
+
+
+def get_hidden_loops(self):
+    # Get indices of loops that are hidden
+    hid_ls = self._container.hide_status.nonzero()[0]
+    return hid_ls
+
+
+def get_active_point(self):
+    # Find active point to find a vert path from if no active then do nothing
+    act_point = None
+    loop_act_status = self._container.act_status[self._container.vert_link_ls]
+    loop_act_status[self._container.vert_link_ls < 0] = False
+    loop_act_status = loop_act_status.any(axis=1)
+    act_points = loop_act_status.nonzero()[0]
+
+    if act_points.size > 0:
+        act_point = act_points[0]
+
+    return act_point
+
+
+def get_active_face(self):
+    # Find active face by testing every face for a face with all loops being active
+    act_face = None
+    face_act_status = self._container.act_status[self._container.face_link_ls]
+    face_act_status[self._container.face_link_ls < 0] = True
+    face_act_status = face_act_status.all(axis=1)
+    act_faces = face_act_status.nonzero()[0]
+
+    if act_faces.size > 0:
+        act_face = act_faces[0]
+
+    return act_face
+
+
+def set_selection(self, shift, mask):
+    # New selection so clear act and sel and set current as sel/act
+    if shift == False:
+        self._container.sel_status[:] = False
+        self._container.act_status[:] = False
+
+        self._container.sel_status[mask] = True
+        self._container.act_status[mask] = True
+
+    # Adding to selection
+    else:
+        l_sel = self._container.sel_status[mask]
+        l_act = self._container.act_status[mask]
+
+        # Check if any point loops are not sel/act if so make all sel/act
+        if l_sel.all() == False or l_act.all() == False:
+            self._container.sel_status[mask] = True
+            self._container.act_status[:] = False
+            self._container.act_status[mask] = True
+
+        # If all loops neither act/sel then all loops are sel/act so clear both
+        else:
+            self._container.sel_status[mask] = False
+            self._container.act_status[:] = False
+
     return
 
 
-def get_active_point_index(indeces, active):
-    if active == None or active.type != 'POINT':
-        return None
-
-    for i, ind in enumerate(indeces):
-        if active.index == ind:
-            return i
-
-    return None
+#
 
 
-def get_active_loop_index(indeces, active):
-    if active == None or active.type != 'LOOP':
-        return None
-
-    for i, ind_set in enumerate(indeces):
-        if active.point.index == ind_set[0] and active.index == ind_set[1]:
-            return i
-
-    return None
-
-
-def selection_test(self, shift, radius=6.0):
+def selection_test(self, shift):
     # Get coords in region space
     rcos = get_np_region_cos(self._container.po_coords,
                              self.act_reg, self.act_rv3d)
@@ -1465,30 +1555,7 @@ def selection_test(self, shift, radius=6.0):
             mask = v_ls[po_ind]
             mask = mask[mask >= 0]
 
-            # Clear all selection and set points loops as sel and active
-            if shift == False:
-                self._container.sel_status[:] = False
-                self._container.act_status[:] = False
-
-                self._container.sel_status[mask] = True
-                self._container.act_status[mask] = True
-
-            # Adding to selection
-            else:
-                po_sel = self._container.sel_status[mask]
-                po_act = self._container.act_status[mask]
-
-                # Check if any point loops are not sel/act if so make all sel/act
-                if po_sel.all() == False or po_act.all() == False:
-                    self._container.sel_status[mask] = True
-                    self._container.act_status[:] = False
-                    self._container.act_status[mask] = True
-
-                # If all loops neither act/sel then all loops are sel/act so clear both
-                else:
-                    self._container.sel_status[mask] = False
-                    self._container.act_status[:] = False
-
+            set_selection(self, shift, mask)
             change = True
 
     # Face/Loop Tri selection
@@ -1513,30 +1580,7 @@ def selection_test(self, shift, radius=6.0):
                     intersect = intersect_point_tri_2d(
                         self._mouse_reg_loc, Vector(co_set[0]), Vector(co_set[1]), Vector(co_set[2]))
                     if intersect:
-                        # New selection so clear act and sel and set current as sel/act
-                        if shift == False:
-                            self._container.sel_status[:] = False
-                            self._container.act_status[:] = False
-
-                            self._container.sel_status[mask[c]] = True
-                            self._container.act_status[mask[c]] = True
-
-                        # Adding to selection
-                        else:
-                            l_sel = self._container.sel_status[mask[c]]
-                            l_act = self._container.act_status[mask[c]]
-
-                            # Check if any face loops are not sel/act if so make all sel/act
-                            if l_sel.all() == False or l_act.all() == False:
-                                self._container.sel_status[mask[c]] = True
-                                self._container.act_status[:] = False
-                                self._container.act_status[mask[c]] = True
-
-                            # If all loops neither act/sel then all loops are sel/act so clear both
-                            else:
-                                self._container.sel_status[mask[c]] = False
-                                self._container.act_status[:] = False
-
+                        set_selection(self, shift, mask[c])
                         change = True
                         break
 
@@ -1544,194 +1588,193 @@ def selection_test(self, shift, radius=6.0):
             if change == False:
                 # Only test loops of the face
                 if self._individual_loops:
-                    f_ls = self._container.face_link_ls
-                    mask = f_ls[face_res[1]]
+                    mask = self._container.face_link_ls[face_res[1]]
                     mask = mask[mask >= 0]
                 # Test each verts loops of the face
                 else:
-                    f_vs = self._container.face_link_vs
-                    mask = v_ls[f_vs[face_res[1]]]
+                    v_mask = self._container.face_link_vs[face_res[1]]
+                    v_mask = v_mask[v_mask >= 0]
+                    mask = v_ls[v_mask]
                     mask = mask[mask >= 0]
 
-                # New selection so clear act and sel and set current as sel/act
-                if shift == False:
-                    self._container.sel_status[:] = False
-                    self._container.act_status[:] = False
-
-                    self._container.sel_status[mask] = True
-                    self._container.act_status[mask] = True
-
-                # Adding to selection
-                else:
-                    l_sel = self._container.sel_status[mask]
-                    l_act = self._container.act_status[mask]
-
-                    # Check if any face loops are not sel/act if so make all sel/act
-                    if l_sel.all() == False or l_act.all() == False:
-                        self._container.sel_status[mask] = True
-                        self._container.act_status[:] = False
-                        self._container.act_status[mask] = True
-
-                    # If all loops neither act/sel then all loops are sel/act so clear both
-                    else:
-                        self._container.sel_status[mask] = False
-                        self._container.act_status[:] = False
-
-                #
-
-                self._active_face = face_res[1]
+                set_selection(self, shift, mask)
                 change = True
 
     return change
 
 
-def loop_selection_test(self, shift, radius=6.0):
+def loop_selection_test(self, shift):
     change = False
-    clear_active_face(self)
-
     face_res = ray_cast_to_mouse(self)
     if face_res != None:
+        self._container.act_status[:] = False
         if shift == False:
-            for po in self._container.points:
-                po.set_select(False)
+            self._container.sel_status[:] = False
 
-        face_rco = view3d_utils.location_3d_to_region_2d(
-            self.act_reg, self.act_rv3d, face_res[0])
+        # Get edges of clicked face
+        face_edges = self._container.face_link_eds[face_res[1]]
+        face_edges = face_edges[face_edges >= 0]
 
-        sel_ed = None
-        small_dist = 0.0
-        dist_2d = 0.0
-        for ed in self._object_bm.faces[face_res[1]].edges:
-            # then find nearest point on those edges that are in range
-            nearest_point_co, nearest_point_dist = nearest_co_on_line(
-                face_res[0], ed.verts[0].co, ed.verts[1].co)
+        # Get coords of the 2 verts of the faces edges
+        po_inds = self._container.edge_link_vs[face_edges]
+        edge_cos = self._container.po_coords[po_inds]
 
-            if nearest_point_dist < small_dist or sel_ed == None:
-                sel_ed = ed
-                small_dist = nearest_point_dist
+        # Get region coords of face edges
+        shape = [edge_cos.shape[0], edge_cos.shape[1]]
+        edge_cos.shape = [shape[0]*shape[1], 3]
+        rcos = get_np_region_cos(edge_cos, self.act_reg, self.act_rv3d)
 
-                near_rco = view3d_utils.location_3d_to_region_2d(
-                    self.act_reg, self.act_rv3d, nearest_point_co)
+        rcos.shape = [shape[0], shape[1], 3]
 
-                dist_2d = (near_rco - face_rco).length
+        face_co = get_np_region_cos([face_res[0]], self.act_reg, self.act_rv3d)
 
-        if sel_ed != None:
+        # Get nearest edge to the click location
+        ed_dists = get_np_dist_to_edge(rcos, face_co)
+        ed_order = np.argsort(ed_dists)
+        ed_dists = ed_dists[ed_order]
+        if ed_order.size > 0:
             # Edge loop selection
-            if dist_2d < 12.0:
-                skip_vs = [
-                    po.index for po in self._container.points if po.hide and po.valid]
+            if ed_dists[0] < 10.0:
+                # Get indices of points that all connected loops are hidden
+                skip_vs = list(get_hidden_points(self))
 
-                sel_loop = get_edge_loop(
-                    self._object_bm, sel_ed, skip_verts=skip_vs)
+                face_edge = self._container.face_link_eds[face_res[1]
+                                                          ][ed_order[0]]
+                sel_eds = get_edge_loop(
+                    self._object_bm, self._object_bm.edges[face_edge], skip_verts=skip_vs)
 
-                v_inds = []
-                for ed_ind in sel_loop:
-                    for v in self._object_bm.edges[ed_ind].verts:
-                        if v.index not in v_inds:
-                            v_inds.append(v.index)
+                sel_loops = self._container.vert_link_ls[self._container.edge_link_vs[sel_eds]]
+                sel_loops = sel_loops[sel_loops >= 0]
+                if self._container.sel_status[sel_loops].all():
+                    self._container.sel_status[sel_loops] = False
+                else:
+                    self._container.sel_status[sel_loops] = True
 
-                cur_sel = [
-                    self._container.points[ind].select for ind in v_inds]
+                    edge_vs = self._container.edge_link_vs[face_edge]
+                    v_order = get_np_vec_ordered_dists(
+                        self._container.po_coords[edge_vs], face_res[0])
+                    near_vert = edge_vs[v_order[0]]
 
-                loop_status = False in cur_sel
-                for ind in v_inds:
-                    self._container.points[ind].set_select(
-                        loop_status)
-                    change = True
+                    v_ls = self._container.vert_link_ls[near_vert]
+                    v_ls = v_ls[v_ls >= 0]
+
+                    self._container.act_status[v_ls] = True
+
+                change = True
 
             # Face loop selection
             else:
-                skip_fs = set()
-                if self._individual_loops:
-                    for po in self._container.points:
-                        if po.valid:
-                            for loop in po.loops:
-                                if loop.hide or po.hide:
-                                    skip_fs.add(loop.face_index)
-                else:
-                    for po in self._container.points:
-                        if po.hide and po.valid:
-                            for loop in po.loops:
-                                skip_fs.add(loop.face_index)
+                skip_fs = list(get_hidden_faces(self))
 
+                face_edge = self._container.face_link_eds[face_res[1]
+                                                          ][ed_order[0]]
                 sel_loop = get_face_loop(
-                    self._object_bm, sel_ed, skip_fs=list(skip_fs))
-
-                v_inds = []
-                for f_ind in sel_loop:
-                    for v in self._object_bm.faces[f_ind].verts:
-                        if v.index not in v_inds:
-                            v_inds.append(v.index)
+                    self._object_bm, self._object_bm.edges[face_edge], skip_fs=list(skip_fs))
 
                 if self._individual_loops:
-                    cur_sel = []
-                    for ind in v_inds:
-                        for loop in self._container.points[ind].loops:
-                            if loop.face_index in sel_loop:
-                                cur_sel.append(loop.select)
+                    sel_loops = self._container.face_link_ls[sel_loop]
                 else:
-                    cur_sel = [
-                        self._container.points[ind].select for ind in v_inds]
+                    face_vs = self._container.face_link_vs[sel_loop]
+                    face_vs = face_vs[face_vs >= 0]
 
-                loop_status = False in cur_sel
-                for ind in v_inds:
+                    sel_loops = self._container.vert_link_ls[face_vs]
+
+                sel_loops = sel_loops[sel_loops >= 0]
+
+                if self._container.sel_status[sel_loops].all():
+                    self._container.sel_status[sel_loops] = False
+                else:
+                    self._container.sel_status[sel_loops] = True
                     if self._individual_loops:
-                        for loop in self._container.points[ind].loops:
-                            if loop.face_index in sel_loop:
-                                loop.set_select(loop_status)
+                        face_ls = self._container.face_link_ls[face_res[1]]
                     else:
-                        self._container.points[ind].set_select(
-                            loop_status)
-                    change = True
+                        face_vs = self._container.face_link_vs[face_res[1]]
+                        face_vs = face_vs[face_vs >= 0]
+
+                        face_ls = self._container.vert_link_ls[face_vs]
+
+                    face_ls = face_ls[face_ls >= 0]
+                    self._container.act_status[face_ls] = True
+
+                change = True
 
     return change
 
 
-def path_selection_test(self, shift, radius=6.0):
+def path_selection_test(self, shift):
     change = False
-
     face_res = ray_cast_to_mouse(self)
     if face_res != None:
-        if shift == False:
-            for po in self._container.points:
-                po.set_select(False)
+        act_face = get_active_face(self)
 
-        if self._active_face != None:
+        # Test for face path
+        if act_face != None:
+            self._container.act_status[:] = False
+            if shift == False:
+                self._container.sel_status[:] = False
+
+            skip_faces = list(get_hidden_faces(self))
+
             path_f = find_path_between_faces(
-                [self._active_face, face_res[1]], self._object_bm)
+                [act_face, face_res[1]], self._object_bm, skip_fs=skip_faces)
 
-            clear_active_face(self)
-            self._active_face = face_res[1]
             if self._individual_loops:
-                self._container.select_face_loops(
-                    face_res[1], set_active=True)
+                sel_loops = self._container.face_link_ls[path_f]
             else:
-                self._container.select_face_verts(
-                    face_res[1], set_active=True)
+                face_vs = self._container.face_link_vs[path_f]
+                face_vs = face_vs[face_vs >= 0]
 
-            for ind in path_f:
-                for v in self._object_bm.faces[ind].verts:
-                    if self._individual_loops:
-                        for loop in self._container.points[v.index].loops:
-                            if loop.face_index == ind:
-                                loop.set_select(True)
-                    else:
-                        self._container.points[v.index].set_select(True)
+                sel_loops = self._container.vert_link_ls[face_vs]
 
+            sel_loops = sel_loops[sel_loops >= 0]
+
+            if self._container.sel_status[sel_loops].all():
+                self._container.sel_status[sel_loops] = False
+            else:
+                self._container.sel_status[sel_loops] = True
+                if self._individual_loops:
+                    face_ls = self._container.face_link_ls[face_res[1]]
+                else:
+                    face_vs = self._container.face_link_vs[face_res[1]]
+                    face_vs = face_vs[face_vs >= 0]
+
+                    face_ls = self._container.vert_link_ls[face_vs]
+
+                face_ls = face_ls[face_ls >= 0]
+                self._container.act_status[face_ls] = True
+
+            change = True
+
+        # Test for vert path
         else:
-            near_ind = self._object_kd.find(face_res[0])
-            path_v, path_ed = find_path_between_verts(
-                [self._active_point.index, near_ind[1]], self._object_bm)
+            act_point = get_active_point(self)
 
-            for ind in path_v:
-                self._container.points[ind].set_select(True)
+            if act_point != None:
+                near_ind = self._object_kd.find(face_res[0])
 
-            self._container.points[near_ind[1]].set_select(True)
-            self._container.set_active_point(near_ind[1])
-            self._active_point = self._container.points[near_ind[1]]
-            clear_active_face(self)
+                if near_ind[1] != act_point:
+                    self._container.act_status[:] = False
+                    if shift == False:
+                        self._container.sel_status[:] = False
 
-        change = True
+                    skip_verts = list(get_hidden_points(self))
+
+                    path_v, path_ed = find_path_between_verts(
+                        [act_point, near_ind[1]], self._object_bm, skip_verts=skip_verts)
+
+                    sel_loops = self._container.vert_link_ls[path_v]
+                    sel_loops = sel_loops[sel_loops >= 0]
+
+                    if self._container.sel_status[sel_loops].all():
+                        self._container.sel_status[sel_loops] = False
+                    else:
+                        act_loops = self._container.vert_link_ls[near_ind[1]]
+                        act_loops = act_loops[act_loops >= 0]
+
+                        self._container.sel_status[sel_loops] = True
+                        self._container.act_status[act_loops] = True
+
+                    change = True
 
     return change
 

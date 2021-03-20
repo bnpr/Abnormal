@@ -43,6 +43,8 @@ class ABNContainer:
         self.vert_link_ls = None
         self.face_link_vs = None
         self.face_link_ls = None
+        self.face_link_eds = None
+        self.edge_link_vs = None
 
         self.draw_tris = False
         self.draw_only_selected = False

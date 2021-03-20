@@ -262,34 +262,7 @@ def get_face_loop(bm, ed, skip_fs=[], skip_eds=[]):
     return loop
 
 
-def nearest_co_on_line(co, lv1, lv2):
-    vec = (lv1 - lv2).normalized()
-
-    v1_vec = co - lv1
-    v2_vec = co - lv2
-
-    dot = v1_vec.dot(vec)
-
-    line_co = lv1 + dot * vec
-
-    line_len = (lv1 - lv2).length
-    v1_dist = (line_co-lv1).length
-    v2_dist = (line_co-lv2).length
-
-    if v1_dist > line_len or v2_dist > line_len:
-        if v1_dist < v2_dist:
-            new_co = lv1
-        else:
-            new_co = lv2
-    else:
-        new_co = line_co
-
-    dist = (new_co-co).length
-
-    return new_co, dist
-
-
-def find_path_between_verts(verts, bm):
+def find_path_between_verts(verts, bm, skip_verts=[]):
     #
     # Find shortest path between 2 verts. Start at first vertex and expand outward till it reaches the second vertex
     #
@@ -299,6 +272,7 @@ def find_path_between_verts(verts, bm):
     cur_layer = [v1.index]
     searching, path_completed = True, False
     vert_order, edge_order, layers, found_inds = [], [], [], []
+    found_inds += skip_verts
     while searching:
         found = False
 
@@ -343,10 +317,13 @@ def find_path_between_verts(verts, bm):
                 edge_order.insert(0, ed.index)
         vert_order.insert(0, v1.index)
 
+    else:
+        vert_order = [v2.index]
+
     return vert_order, edge_order
 
 
-def find_path_between_faces(faces, bm):
+def find_path_between_faces(faces, bm, skip_fs=[]):
     #
     # Find shortest path between 2 f. Start at first vertex and expand outward till it reaches the second vertex
     #
@@ -584,53 +561,53 @@ def get_linked_geo(bm, inds, vis=None):
 #
 
 
-def get_np_region_cos(coords, region, region_data):
+def get_normalized_reg_cos(coords, mat, depth_dist):
+    #
+    # Get region coordinates at a normalized depth from a set of coordinates
+    #
+    cos = np.array(coords)
+    cos.shape = [len(coords), 3]
+
+    pmat = mat[:3, :3].T  # rotates backwards without T
+    loc = mat[:3, 3]
+    r_cos = cos @ pmat + loc
+
+    # Scale sscos to be on a flat plane 1.5 from view matrix
+    # -1.5 / r_cos[:,2] Gets a scale factor for each coord based on its depth in comparison with the value used
+    # [:,None] rebroadcasts the single scale value into a column to scale along the rows or coords of the ss cos
+    r_cos *= (-depth_dist / r_cos[:, 2])[:, None]
+    return r_cos
+
+
+def get_np_region_cos(coords, region, region_data, depth=1.5):
     #
     # Use numpy to get coords in region space
     # Bottom Left of region is 0,0
     #
 
-    # If less than 3 coords then just use basic function to calculate it
-    # since the first 2 are already calculated with this function in the other method
-    if len(coords) < 3:
-        r_cos = []
-        for co in coords:
-            reg_co = view3d_utils.location_3d_to_region_2d(
-                region, region_data, co)
-            r_cos.append(reg_co.to_3d())
+    mat = np.array(region_data.view_matrix)
+    pmat = mat[:3, :3].T
+    loc = mat[:3, 3]
+    r_cos = get_normalized_reg_cos(coords, mat, depth)
 
-    else:
-        r_cos = np.array(coords)
-        r_cos.shape = [len(coords), 3]
+    # Get the bottom left and bottom right coords projected into 3d space
+    # This gives us the region width for scaling our region coords
+    center_co = pmat @ Vector(np.array([0, 0, -1.5])-loc)
+    vec1 = view3d_utils.region_2d_to_location_3d(
+        region, region_data, [0, 0], center_co)
+    vec2 = view3d_utils.region_2d_to_location_3d(
+        region, region_data, [region.width, 0], center_co)
 
-        mat = region_data.view_matrix
+    width = (vec2-vec1).length
+    scale = region.width/width
 
-        m = np.array(mat)
-        pmat = m[:3, :3].T  # rotates backwards without T
-        loc = m[:3, 3]
-        r_cos = r_cos @ pmat + loc
+    origin = get_normalized_reg_cos([vec1], mat, 1.5) * scale
 
-        # Scale sscos to be on a flat plane 1.5 from view matrix
-        # -1.5 / r_cos[:,2] Gets a scale factor for each coord based on its depth in comparison with the value used
-        # [:,None] rebroadcasts the single scale value into a column to scale along the rows or coords of the ss cos
-        r_cos *= (-1.5 / r_cos[:, 2])[:, None]
-
-        # CONVERT INTO REGION SPACE USING FIRST 2 COORDS AS SCALE AND OFFSET DETECTION
-        reg_a = view3d_utils.location_3d_to_region_2d(
-            region, region_data, coords[0])
-        reg_b = view3d_utils.location_3d_to_region_2d(
-            region, region_data, coords[1])
-
-        # Get scale value based on distance between region coords and current ss coords of first 2 points
-        reg_dist = (reg_a-reg_b).length
-        ss_dist = Vector(r_cos[0]-r_cos[1]).length
-        scale = reg_dist/ss_dist
-
-        # Scale up the sscords and offset them
-        r_cos *= scale
-        r_cos[:, 0] += reg_a[0] - r_cos[0][0]
-        r_cos[:, 1] += reg_a[1] - r_cos[0][1]
-        r_cos[:, 2] = 0.0
+    # Scale up the sscords and offset them
+    r_cos *= scale
+    r_cos[:, 0] -= origin[0][0]
+    r_cos[:, 1] -= origin[0][1]
+    r_cos[:, 2] = 0.0
 
     return r_cos
 
@@ -658,6 +635,56 @@ def get_np_vec_ordered_dists(array, test_co, threshold=None):
         dist_inds = dist_inds[mask[dist_inds]]
 
     return dist_inds
+
+
+def get_np_nearest_co_on_edge(edge_cos, test_co):
+    #
+    # Given a list of edge coords (2 vectors per edge)
+    # we get the nearest coordinate project onto the edge
+    # the nearest coordinate will clamp to the ends of the edge
+    #
+
+    edge_vecs = edge_cos[:, 1] - edge_cos[:, 0]
+    edge_vecs_norm = edge_vecs * \
+        (1 / np.sqrt(np.sum(np.square(edge_vecs), axis=1)))[:, None]
+
+    test_co = np.array(test_co)
+
+    test_vecs = test_co - edge_cos[:, 0]
+
+    dots = np.sum(edge_vecs_norm * test_vecs, axis=1)
+    ed_lens = np.sqrt(np.sum(np.square(edge_vecs), axis=1))
+
+    # Get the status of which projected coords are outside of the edges bounds
+    off_ed_a = dots > ed_lens
+    off_ed_b = dots < 0.0
+
+    coords = edge_cos[:, 0] + edge_vecs_norm * dots[:, None]
+    coords[off_ed_b] = edge_cos[:, 0][off_ed_b]
+    coords[off_ed_a] = edge_cos[:, 1][off_ed_a]
+
+    return coords
+
+
+def get_np_dist_to_edge(edge_cos, test_co):
+    #
+    # Given a list of edge coords (2 vectors per edge)
+    # we get the nearest coordinate project onto the edge
+    # the nearest coordinate will clamp to the ends of the edge
+    #
+    coords = get_np_nearest_co_on_edge(edge_cos, test_co)
+
+    dists = np.sqrt(np.sum(np.square(np.array(test_co) - coords), axis=1))
+    return dists
+
+
+def get_np_nearest_edge_order(edge_cos, test_co):
+    #
+    # Given a list of edge coords (2 vectors per edge)
+    # we get the clipped distance from the test coord onto the edges
+    # and then sort the distances from smallest to longest
+    #
+    return np.argsort(get_np_dist_to_edge(edge_cos, test_co))
 
 
 #
