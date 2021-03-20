@@ -235,8 +235,10 @@ def create_selection_drawing_lists(self):
     lassosel_screen_lines = []
     if self.lasso_selecting:
         for i in range(len(self._mode_cache[0])):
-            lassosel_screen_lines.append(self._mode_cache[0][i-1])
-            lassosel_screen_lines.append(self._mode_cache[0][i])
+            lassosel_screen_lines.append(
+                [self._mode_cache[0][i-1][0], self._mode_cache[0][i-1][1]])
+            lassosel_screen_lines.append(
+                [self._mode_cache[0][i][0], self._mode_cache[0][i][1]])
 
     # BOX SELECTION LINES
     boxsel_screen_lines = []

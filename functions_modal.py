@@ -1495,7 +1495,69 @@ def get_active_face(self):
     return act_face
 
 
-def set_selection(self, shift, mask):
+def get_face_ls(self, face_inds):
+    if self._individual_loops:
+        sel_loops = self._container.face_link_ls[face_inds]
+    else:
+        face_vs = self._container.face_link_vs[face_inds]
+        face_vs = face_vs[face_vs >= 0]
+
+        sel_loops = self._container.vert_link_ls[face_vs]
+
+    sel_loops = sel_loops[sel_loops >= 0]
+    loops = filter_hidden_loops(self, sel_loops)
+    return loops
+
+
+def get_vert_ls(self, vert_inds):
+    sel_loops = self._container.vert_link_ls[vert_inds]
+    sel_loops = sel_loops[sel_loops >= 0]
+
+    loops = filter_hidden_loops(self, sel_loops)
+    return loops
+
+
+def get_edge_ls(self, edge_inds):
+    sel_loops = self._container.vert_link_ls[self._container.edge_link_vs[edge_inds]]
+    sel_loops = sel_loops[sel_loops >= 0]
+
+    loops = filter_hidden_loops(self, sel_loops)
+    return loops
+
+
+def filter_hidden_verts(self, mask):
+    v_ls = self._container.vert_link_ls
+
+    hidden = ~self._container.hide_status[v_ls[mask]].all(axis=1)
+    mask = mask[hidden]
+    return mask
+
+
+def filter_hidden_faces(self, mask):
+    if self._individual_loops:
+        sel_loops = self._container.face_link_ls[mask]
+        hidden = ~self._container.hide_status[sel_loops]
+        hidden[sel_loops < 0] = False
+        hidden = hidden.any(axis=1)
+    else:
+        face_vs = self._container.face_link_vs[mask]
+        sel_loops = self._container.vert_link_ls[face_vs]
+        hidden = ~self._container.hide_status[sel_loops]
+        hidden[face_vs < 0] = False
+        hidden[sel_loops < 0] = False
+        hidden = hidden.any(axis=1).any(axis=1)
+
+    mask = mask[hidden]
+    return mask
+
+
+def filter_hidden_loops(self, mask):
+    hidden = ~self._container.hide_status[mask]
+    mask = mask[hidden]
+    return mask
+
+
+def set_click_selection(self, shift, mask):
     # New selection so clear act and sel and set current as sel/act
     if shift == False:
         self._container.sel_status[:] = False
@@ -1523,6 +1585,48 @@ def set_selection(self, shift, mask):
     return
 
 
+def set_multi_selection(self, shift, mask, act_mask):
+    self._container.act_status[:] = False
+    if shift == False:
+        self._container.sel_status[:] = False
+
+    if self._container.sel_status[mask].all():
+        self._container.sel_status[mask] = False
+    else:
+        self._container.sel_status[mask] = True
+        self._container.act_status[act_mask] = True
+    return
+
+
+def set_group_selection(self, shift, ctrl, mask):
+    if shift == False and ctrl == False:
+        self._container.sel_status[:] = False
+
+    if ctrl:
+        self._container.sel_status[mask] = False
+    else:
+        self._container.sel_status[mask] = True
+
+    # Check if active point/face lost is no longer selected
+    act_face = get_active_face(self)
+    if act_face != None:
+        act_ls = get_face_ls(self, [act_face])
+        if self._container.sel_status[act_ls].all() == False:
+            self._container.act_status[:] = False
+
+    act_point = get_active_point(self)
+    if act_point != None:
+        act_ls = get_vert_ls(self, [act_point])
+
+        if self._individual_loops:
+            if self._container.sel_status[act_ls].all() == False:
+                self._container.act_status[:] = False
+        else:
+            self._container.act_status[act_ls] = self._container.sel_status[act_ls]
+
+    return
+
+
 #
 
 
@@ -1535,8 +1639,9 @@ def selection_test(self, shift):
     d_order = get_np_vec_ordered_dists(
         rcos, [self._mouse_reg_loc[0], self._mouse_reg_loc[1], 0.0], threshold=15.0)
 
+    d_order = filter_hidden_verts(self, d_order)
+
     change = False
-    v_ls = self._container.vert_link_ls
     # Point selection
     if d_order.size > 0:
         # Test for first point that is non occluded if xray off
@@ -1552,10 +1657,8 @@ def selection_test(self, shift):
             po_ind = d_order[0]
 
         if po_ind != None:
-            mask = v_ls[po_ind]
-            mask = mask[mask >= 0]
-
-            set_selection(self, shift, mask)
+            mask = get_vert_ls(self, po_ind)
+            set_click_selection(self, shift, mask)
             change = True
 
     # Face/Loop Tri selection
@@ -1563,42 +1666,33 @@ def selection_test(self, shift):
         face_res = ray_cast_to_mouse(self)
 
         if face_res != None:
-            # If using individual loops first test for loop a tri selection
-            if self._individual_loops:
-                f_ls = self._container.face_link_ls
-                mask = f_ls[face_res[1]]
-                mask = mask[mask >= 0]
-
-                tri_cos = self._container.loop_tri_coords[mask]
-                tri_cos.shape = [tri_cos.shape[0] *
-                                 tri_cos.shape[1], tri_cos.shape[2]]
-
-                rcos = get_np_region_cos(tri_cos, self.act_reg, self.act_rv3d)
-                rcos.shape = [mask.size, 3, 3]
-
-                for c, co_set in enumerate(rcos):
-                    intersect = intersect_point_tri_2d(
-                        self._mouse_reg_loc, Vector(co_set[0]), Vector(co_set[1]), Vector(co_set[2]))
-                    if intersect:
-                        set_selection(self, shift, mask[c])
-                        change = True
-                        break
-
-            # If still haven't gotten a selection then select the face loops/verts
-            if change == False:
-                # Only test loops of the face
+            hidden = filter_hidden_faces(self, np.array([face_res[1]]))
+            if hidden.size > 0:
+                # If using individual loops first test for loop a tri selection
                 if self._individual_loops:
-                    mask = self._container.face_link_ls[face_res[1]]
-                    mask = mask[mask >= 0]
-                # Test each verts loops of the face
-                else:
-                    v_mask = self._container.face_link_vs[face_res[1]]
-                    v_mask = v_mask[v_mask >= 0]
-                    mask = v_ls[v_mask]
-                    mask = mask[mask >= 0]
+                    mask = get_face_ls(self, face_res[1])
 
-                set_selection(self, shift, mask)
-                change = True
+                    tri_cos = self._container.loop_tri_coords[mask]
+                    tri_cos.shape = [tri_cos.shape[0] *
+                                     tri_cos.shape[1], tri_cos.shape[2]]
+
+                    rcos = get_np_region_cos(
+                        tri_cos, self.act_reg, self.act_rv3d)
+                    rcos.shape = [mask.size, 3, 3]
+
+                    for c, co_set in enumerate(rcos):
+                        intersect = intersect_point_tri_2d(
+                            self._mouse_reg_loc, Vector(co_set[0]), Vector(co_set[1]), Vector(co_set[2]))
+                        if intersect:
+                            set_click_selection(self, shift, mask[c])
+                            change = True
+                            break
+
+                # If still haven't gotten a selection then select the face loops/verts
+                if change == False:
+                    mask = get_face_ls(self, face_res[1])
+                    set_click_selection(self, shift, mask)
+                    change = True
 
     return change
 
@@ -1607,10 +1701,6 @@ def loop_selection_test(self, shift):
     change = False
     face_res = ray_cast_to_mouse(self)
     if face_res != None:
-        self._container.act_status[:] = False
-        if shift == False:
-            self._container.sel_status[:] = False
-
         # Get edges of clicked face
         face_edges = self._container.face_link_eds[face_res[1]]
         face_edges = face_edges[face_edges >= 0]
@@ -1643,23 +1733,15 @@ def loop_selection_test(self, shift):
                 sel_eds = get_edge_loop(
                     self._object_bm, self._object_bm.edges[face_edge], skip_verts=skip_vs)
 
-                sel_loops = self._container.vert_link_ls[self._container.edge_link_vs[sel_eds]]
-                sel_loops = sel_loops[sel_loops >= 0]
-                if self._container.sel_status[sel_loops].all():
-                    self._container.sel_status[sel_loops] = False
-                else:
-                    self._container.sel_status[sel_loops] = True
+                edge_vs = self._container.edge_link_vs[face_edge]
+                v_order = get_np_vec_ordered_dists(
+                    self._container.po_coords[edge_vs], face_res[0])
+                near_vert = edge_vs[v_order[0]]
 
-                    edge_vs = self._container.edge_link_vs[face_edge]
-                    v_order = get_np_vec_ordered_dists(
-                        self._container.po_coords[edge_vs], face_res[0])
-                    near_vert = edge_vs[v_order[0]]
+                sel_loops = get_edge_ls(self, sel_eds)
+                act_ls = get_vert_ls(self, near_vert)
 
-                    v_ls = self._container.vert_link_ls[near_vert]
-                    v_ls = v_ls[v_ls >= 0]
-
-                    self._container.act_status[v_ls] = True
-
+                set_multi_selection(self, shift, sel_loops, act_ls)
                 change = True
 
             # Face loop selection
@@ -1671,31 +1753,10 @@ def loop_selection_test(self, shift):
                 sel_loop = get_face_loop(
                     self._object_bm, self._object_bm.edges[face_edge], skip_fs=list(skip_fs))
 
-                if self._individual_loops:
-                    sel_loops = self._container.face_link_ls[sel_loop]
-                else:
-                    face_vs = self._container.face_link_vs[sel_loop]
-                    face_vs = face_vs[face_vs >= 0]
+                sel_loops = get_face_ls(self, sel_loop)
+                act_ls = get_face_ls(self, face_res[1])
 
-                    sel_loops = self._container.vert_link_ls[face_vs]
-
-                sel_loops = sel_loops[sel_loops >= 0]
-
-                if self._container.sel_status[sel_loops].all():
-                    self._container.sel_status[sel_loops] = False
-                else:
-                    self._container.sel_status[sel_loops] = True
-                    if self._individual_loops:
-                        face_ls = self._container.face_link_ls[face_res[1]]
-                    else:
-                        face_vs = self._container.face_link_vs[face_res[1]]
-                        face_vs = face_vs[face_vs >= 0]
-
-                        face_ls = self._container.vert_link_ls[face_vs]
-
-                    face_ls = face_ls[face_ls >= 0]
-                    self._container.act_status[face_ls] = True
-
+                set_multi_selection(self, shift, sel_loops, act_ls)
                 change = True
 
     return change
@@ -1718,31 +1779,10 @@ def path_selection_test(self, shift):
             path_f = find_path_between_faces(
                 [act_face, face_res[1]], self._object_bm, skip_fs=skip_faces)
 
-            if self._individual_loops:
-                sel_loops = self._container.face_link_ls[path_f]
-            else:
-                face_vs = self._container.face_link_vs[path_f]
-                face_vs = face_vs[face_vs >= 0]
+            sel_loops = get_face_ls(self, path_f)
+            act_ls = get_face_ls(self, face_res[1])
 
-                sel_loops = self._container.vert_link_ls[face_vs]
-
-            sel_loops = sel_loops[sel_loops >= 0]
-
-            if self._container.sel_status[sel_loops].all():
-                self._container.sel_status[sel_loops] = False
-            else:
-                self._container.sel_status[sel_loops] = True
-                if self._individual_loops:
-                    face_ls = self._container.face_link_ls[face_res[1]]
-                else:
-                    face_vs = self._container.face_link_vs[face_res[1]]
-                    face_vs = face_vs[face_vs >= 0]
-
-                    face_ls = self._container.vert_link_ls[face_vs]
-
-                face_ls = face_ls[face_ls >= 0]
-                self._container.act_status[face_ls] = True
-
+            set_multi_selection(self, shift, sel_loops, act_ls)
             change = True
 
         # Test for vert path
@@ -1753,226 +1793,157 @@ def path_selection_test(self, shift):
                 near_ind = self._object_kd.find(face_res[0])
 
                 if near_ind[1] != act_point:
-                    self._container.act_status[:] = False
-                    if shift == False:
-                        self._container.sel_status[:] = False
-
                     skip_verts = list(get_hidden_points(self))
 
                     path_v, path_ed = find_path_between_verts(
                         [act_point, near_ind[1]], self._object_bm, skip_verts=skip_verts)
 
-                    sel_loops = self._container.vert_link_ls[path_v]
-                    sel_loops = sel_loops[sel_loops >= 0]
+                    sel_loops = get_vert_ls(self, path_v)
+                    act_ls = get_vert_ls(self, near_ind[1])
 
-                    if self._container.sel_status[sel_loops].all():
-                        self._container.sel_status[sel_loops] = False
-                    else:
-                        act_loops = self._container.vert_link_ls[near_ind[1]]
-                        act_loops = act_loops[act_loops >= 0]
-
-                        self._container.sel_status[sel_loops] = True
-                        self._container.act_status[act_loops] = True
-
+                    set_multi_selection(self, shift, sel_loops, act_ls)
                     change = True
 
     return change
 
 
+def group_vert_selection_test(self, vert_ind_array, shift, ctrl):
+    change = False
+    # Vertex selection
+    if vert_ind_array.size > 0:
+        # Test for occlusion
+        if self._x_ray_mode == False:
+            valid_pos = []
+
+            for ind in vert_ind_array:
+                valid_po = not ray_cast_view_occlude_test(
+                    Vector(self._container.po_coords[ind]), self._mouse_reg_loc, self._object_bvh, self.act_reg, self.act_rv3d)
+                if valid_po:
+                    valid_pos.append(ind)
+
+            valid_pos = np.array(valid_pos)
+        else:
+            valid_pos = vert_ind_array
+
+        if valid_pos.size > 0:
+            sel_loops = get_vert_ls(self, valid_pos)
+            if sel_loops.size > 0:
+                set_group_selection(self, shift, ctrl, sel_loops)
+                change = True
+    return change
+
+
+def group_loop_selection_test(self, loop_ind_array, tri_cos, shift, ctrl):
+    change = False
+
+    if loop_ind_array.size > 0:
+        # Test for occlusion
+        if self._x_ray_mode == False:
+            sel_loops = []
+
+            for ind in loop_ind_array:
+                valid_po = not ray_cast_view_occlude_test(
+                    Vector(tri_cos[ind]), self._mouse_reg_loc, self._object_bvh, self.act_reg, self.act_rv3d)
+                if valid_po:
+                    sel_loops.append(ind)
+
+            sel_loops = np.array(sel_loops)
+        else:
+            sel_loops = loop_ind_array
+
+        if sel_loops.size > 0:
+            set_group_selection(self, shift, ctrl, sel_loops)
+            change = True
+    return change
+
+
 def box_selection_test(self, shift, ctrl):
-    add_rem_status = 0
-    if ctrl:
-        add_rem_status = 2
-    else:
-        if shift:
-            add_rem_status = 1
+    # Get coords in region space
+    rcos = get_np_region_cos(self._container.po_coords,
+                             self.act_reg, self.act_rv3d)
 
-    clear_active_face(self)
+    x_cos = np.array([self._mouse_reg_loc[0], self._mode_cache[0][0][0]])
+    y_cos = np.array([self._mouse_reg_loc[1], self._mode_cache[0][0][1]])
+    in_range = np_box_selection_test(rcos, x_cos, y_cos)
+    in_range = filter_hidden_verts(self, in_range)
 
-    avail_cos, avail_sel_status, avail_inds = self._container.get_selection_available(
-        add_rem_status)
+    change = group_vert_selection_test(self, in_range, shift, ctrl)
 
-    loop_switch_pont = len(avail_inds)
-    # Add in loop selection data if enabled
+    # Test loop tris for selection
     if self._individual_loops:
-        avail_tri_cos, avail_loop_sel_status, avail_loop_inds = self._container.get_loop_selection_available(
-            add_rem_status)
-        avail_cos += avail_tri_cos
-        avail_sel_status += avail_loop_sel_status
-        avail_inds += avail_loop_inds
+        loop_tri_cos = self._container.loop_tri_coords.mean(axis=1)
 
-    face_switch_pont = len(avail_inds)
-    avail_cos += [f.calc_center_median() for f in self._object_bm.faces]
-    if add_rem_status == 2:
-        avail_sel_status += [True for i in self._object_bm.faces]
-    else:
-        avail_sel_status += [False for i in self._object_bm.faces]
-    avail_inds += [i.index for i in self._object_bm.faces]
+        # Get coords in region space
+        rcos = get_np_region_cos(loop_tri_cos, self.act_reg, self.act_rv3d)
 
-    change, unselect, new_active, new_sel_add, new_sel_remove = box_points_selection_test(
-        avail_cos, avail_sel_status, self._mouse_reg_loc, self._mode_cache[0][0], self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
+        in_range = np_box_selection_test(rcos, x_cos, y_cos)
+        in_range = filter_hidden_loops(self, in_range)
 
-    if change:
-        if unselect:
-            for po in self._container.points:
-                po.set_select(False)
-
-        for i, ind in enumerate(new_sel_add + new_sel_remove):
-            status = True
-            if i >= len(new_sel_add):
-                status = False
-
-            po_ind = avail_inds[ind]
-            if ind < loop_switch_pont:
-                self._container.points[po_ind].set_select(status)
-            elif ind >= face_switch_pont:
-                if self._individual_loops:
-                    self._container.set_face_loops_select(
-                        po_ind, status)
-                else:
-                    self._container.set_face_verts_select(
-                        po_ind, status)
-            else:
-                self._container.points[po_ind[0]
-                                       ].loops[po_ind[1]].set_select(status)
-                self._container.points[po_ind[0]
-                                       ].set_selection_from_loops()
-
-        if self._active_point != None:
-            if self._active_point.select == False:
-                self._container.clear_active()
-                self._active_point = None
-
-                # if self._container.points[self._active_point[0]].select == False:
-                #     self._active_point = None
+        l_change = group_loop_selection_test(
+            self, in_range, loop_tri_cos, shift, ctrl)
+        if l_change:
+            change = l_change
 
     return change
 
 
 def circle_selection_test(self, shift, ctrl, radius):
-    add_rem_status = 0
-    if ctrl:
-        add_rem_status = 2
-    else:
-        if shift:
-            add_rem_status = 1
+    # Get coords in region space
+    rcos = get_np_region_cos(self._container.po_coords,
+                             self.act_reg, self.act_rv3d)
 
-    clear_active_face(self)
+    # Get ordered list of closest points within the threshold
+    in_range = get_np_vec_ordered_dists(
+        rcos, [self._mouse_reg_loc[0], self._mouse_reg_loc[1], 0.0], threshold=radius)
+    in_range = filter_hidden_verts(self, in_range)
 
-    avail_cos, avail_sel_status, avail_inds = self._container.get_selection_available(
-        add_rem_status)
+    change = group_vert_selection_test(self, in_range, True, ctrl)
 
-    loop_switch_pont = len(avail_inds)
-    # Add in loop selection data if enabled
+    # Test loop tris for selection
     if self._individual_loops:
-        avail_loop_cos, avail_loop_sel_status, avail_loop_inds = self._container.get_loop_selection_available(
-            add_rem_status)
+        loop_tri_cos = self._container.loop_tri_coords.mean(axis=1)
 
-        avail_cos += avail_loop_cos
-        avail_sel_status += avail_loop_sel_status
-        avail_inds += avail_loop_inds
+        # Get coords in region space
+        rcos = get_np_region_cos(loop_tri_cos, self.act_reg, self.act_rv3d)
 
-    face_switch_pont = len(avail_inds)
-    avail_cos += [f.calc_center_median() for f in self._object_bm.faces]
-    if add_rem_status == 2:
-        avail_sel_status += [True for i in self._object_bm.faces]
-    else:
-        avail_sel_status += [False for i in self._object_bm.faces]
-    avail_inds += [i.index for i in self._object_bm.faces]
+        in_range = get_np_vec_ordered_dists(
+            rcos, [self._mouse_reg_loc[0], self._mouse_reg_loc[1], 0.0], threshold=radius)
+        in_range = filter_hidden_loops(self, in_range)
 
-    change, unselect, new_active, new_sel, new_sel_status = circle_points_selection_test(
-        avail_cos, avail_sel_status, self._mouse_reg_loc, radius, self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
-
-    if change:
-        for ind in new_sel:
-            po_ind = avail_inds[ind]
-            if ind < loop_switch_pont:
-                self._container.points[po_ind].set_select(
-                    new_sel_status)
-            elif ind >= face_switch_pont:
-                if self._individual_loops:
-                    self._container.set_face_loops_select(
-                        po_ind, new_sel_status)
-                else:
-                    self._container.set_face_verts_select(
-                        po_ind, new_sel_status)
-            else:
-                self._container.points[po_ind[0]
-                                       ].loops[po_ind[1]].set_select(new_sel_status)
-                self._container.points[po_ind[0]
-                                       ].set_selection_from_loops()
-
-        if self._active_point != None:
-            if self._active_point.select == False:
-                self._container.clear_active()
-                self._active_point = None
+        l_change = group_loop_selection_test(
+            self, in_range, loop_tri_cos, True, ctrl)
+        if l_change:
+            change = l_change
 
     return change
 
 
 def lasso_selection_test(self, shift, ctrl):
-    add_rem_status = 0
-    if ctrl:
-        add_rem_status = 2
-    else:
-        if shift:
-            add_rem_status = 1
+    # Get coords in region space
+    rcos = get_np_region_cos(self._container.po_coords,
+                             self.act_reg, self.act_rv3d)
 
-    clear_active_face(self)
+    # Get ordered list of closest points within the threshold
+    lasso_shape = np.array(self._mode_cache[0])
+    in_range = np_test_cos_in_shape(rcos, lasso_shape)
+    in_range = filter_hidden_verts(self, in_range)
 
-    avail_cos, avail_sel_status, avail_inds = self._container.get_selection_available(
-        add_rem_status)
+    change = group_vert_selection_test(self, in_range, shift, ctrl)
 
-    loop_switch_pont = len(avail_inds)
-    # Add in loop selection data if enabled
+    # Test loop tris for selection
     if self._individual_loops:
-        avail_tri_cos, avail_loop_sel_status, avail_loop_inds = self._container.get_loop_selection_available(
-            add_rem_status)
-        avail_cos += avail_tri_cos
-        avail_sel_status += avail_loop_sel_status
-        avail_inds += avail_loop_inds
+        loop_tri_cos = self._container.loop_tri_coords.mean(axis=1)
 
-    face_switch_pont = len(avail_inds)
-    avail_cos += [f.calc_center_median() for f in self._object_bm.faces]
-    if add_rem_status == 2:
-        avail_sel_status += [True for i in self._object_bm.faces]
-    else:
-        avail_sel_status += [False for i in self._object_bm.faces]
-    avail_inds += [i.index for i in self._object_bm.faces]
+        # Get coords in region space
+        rcos = get_np_region_cos(loop_tri_cos, self.act_reg, self.act_rv3d)
 
-    change, unselect, new_active, new_sel_add, new_sel_remove = lasso_points_selection_test(
-        self._mode_cache[0], avail_cos, avail_sel_status, self._mouse_reg_loc, self.act_reg, self.act_rv3d, add_rem_status, self._x_ray_mode, self._object_bvh)
+        in_range = np_test_cos_in_shape(rcos, lasso_shape)
+        in_range = filter_hidden_loops(self, in_range)
 
-    if change:
-        if unselect:
-            for po in self._container.points:
-                po.set_select(False)
-
-        for i, ind in enumerate(new_sel_add + new_sel_remove):
-            status = True
-            if i >= len(new_sel_add):
-                status = False
-
-            po_ind = avail_inds[ind]
-            if ind < loop_switch_pont:
-                self._container.points[po_ind].set_select(status)
-            elif ind >= face_switch_pont:
-                if self._individual_loops:
-                    self._container.set_face_loops_select(
-                        po_ind, status)
-                else:
-                    self._container.set_face_verts_select(
-                        po_ind, status)
-            else:
-                self._container.points[po_ind[0]
-                                       ].loops[po_ind[1]].set_select(status)
-                self._container.points[po_ind[0]
-                                       ].set_selection_from_loops()
-
-        if self._active_point != None:
-            if self._active_point.select == False:
-                self._container.clear_active()
-                self._active_point = None
+        l_change = group_loop_selection_test(
+            self, in_range, loop_tri_cos, shift, ctrl)
+        if l_change:
+            change = l_change
 
     return change
 

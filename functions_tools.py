@@ -247,7 +247,8 @@ def box_sel_cancel(modal, context, event, keys, func_data):
 #
 # LASSO SELECT FUNCS
 def lasso_sel_start(modal, context, event, keys, func_data):
-    modal._mode_cache.append([modal._mouse_reg_loc])
+    modal._mode_cache.append(
+        [[modal._mouse_reg_loc[0], modal._mouse_reg_loc[1], 0.0]])
     modal.lasso_selecting = True
     return
 
@@ -271,10 +272,11 @@ def lasso_sel_mouse(modal, context, event, func_data):
 
         prev_loc = Vector(modal._mode_cache[0][-1])
         cur_loc = Vector(modal._mouse_reg_loc)
-        offset = cur_loc - prev_loc
+        offset = cur_loc.xy - prev_loc.xy
 
         if offset.length > 5.0:
-            modal._mode_cache[0].append(modal._mouse_reg_loc)
+            modal._mode_cache[0].append(
+                [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1], 0.0])
     return
 
 

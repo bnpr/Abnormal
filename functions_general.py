@@ -490,30 +490,6 @@ def bounding_box_filter(shape_cos, cos):
     return in_range_cos
 
 
-def test_point_in_shape(shape_cos, test_co):
-    tot_rot = 0
-
-    l_vec = Vector((shape_cos[0][0], shape_cos[0][1])) - test_co
-    prev_vec = l_vec.copy()
-    for lv in shape_cos:
-        s_co = Vector((lv[0], lv[1]))
-
-        c_vec = s_co - test_co
-
-        ang = math.degrees(prev_vec.xy.angle_signed(c_vec.xy))
-
-        tot_rot += ang
-        prev_vec = c_vec.copy()
-
-    ang = math.degrees(prev_vec.xy.angle_signed(l_vec.xy))
-
-    tot_rot += ang
-    if abs(tot_rot) > 180:
-        return True
-    else:
-        return False
-
-
 def vec_to_dashed(co, vec, segments):
     cos = []
     length_vec = vec / ((segments*2)+1)
@@ -692,191 +668,76 @@ def get_np_nearest_edge_order(edge_cos, test_co):
 #
 
 
-def box_points_selection_test(coords, sel_status, mouse_co, corner_co, region, rv3d, add_rem_status, x_ray, bvh, active=None, just_one=False):
-    mouse_co = Vector(mouse_co)
-
-    if x_ray:
-        bvh = None
-
-    low_x = corner_co[0]
-    hi_x = mouse_co[0]
-    low_y = corner_co[1]
-    hi_y = mouse_co[1]
-
-    if corner_co[0] > mouse_co[0]:
-        low_x = mouse_co[0]
-        hi_x = corner_co[0]
-
-    if corner_co[1] > mouse_co[1]:
-        low_y = mouse_co[1]
-        hi_y = corner_co[1]
-
-    change = False
-    unselect = add_rem_status == 0
-    new_active = active
-    new_sel_add = []
-    new_sel_remove = []
-    for c, co in enumerate(coords):
-        rco = view3d_utils.location_3d_to_region_2d(
-            region, rv3d, co)
-        if rco:
-            status = sel_status[c]
-            if rco[0] > low_x and rco[0] < hi_x and rco[1] > low_y and rco[1] < hi_y:
-                if bvh:
-                    no_hit = not ray_cast_view_occlude_test(
-                        co, mouse_co, bvh, region, rv3d)
-                    # INSIDE BOX AND IN VIEW
-                    if no_hit:
-                        if add_rem_status == 0:
-                            new_sel_add.append(c)
-                            change = True
-                        elif add_rem_status == 2:
-                            if status:
-                                new_sel_remove.append(c)
-                                change = True
-                        else:
-                            if status != True:
-                                new_sel_add.append(c)
-                                change = True
-
-                # INSIDE BOX NO BVH TEST
-                else:
-                    if add_rem_status == 0:
-                        new_sel_add.append(c)
-                        change = True
-                    elif add_rem_status == 2:
-                        if status:
-                            new_sel_remove.append(c)
-                            change = True
-                    else:
-                        if status != True:
-                            new_sel_add.append(c)
-                            change = True
-                if change and just_one:
-                    break
-
-    if active != None and active in new_sel_remove:
-        new_active = None
-
-    return change, unselect, new_active, new_sel_add, new_sel_remove
+def get_np_normalized_vecs(array):
+    #
+    # Given a vector numpy array normalize each vector
+    #
+    scale = 1 / np.sqrt(np.sum(np.square(array), axis=1))
+    return array*scale[:, None]
 
 
-def circle_points_selection_test(coords, sel_status, mouse_co, radius, region, rv3d, add_rem_status, x_ray, bvh, active=None, just_one=False):
-    mouse_co = Vector(mouse_co)
+def np_box_selection_test(cos, x_cos, y_cos):
+    #
+    # Test if coords inside a box
+    # tests the 2 axis min and max and filters the shape until only
+    # points inside are left True
+    #
+    in_range_inds = cos[:, 0] > x_cos.min()
+    x_max = cos[:, 0] < x_cos.max()
+    y_min = cos[:, 1] > y_cos.min()
+    y_max = cos[:, 1] < y_cos.max()
 
-    if x_ray:
-        bvh = None
+    in_range_inds[~x_max] = False
+    in_range_inds[~y_min] = False
+    in_range_inds[~y_max] = False
 
-    change = False
-    unselect = False
-    new_active = active
-    new_sel = []
-    new_sel_status = add_rem_status != 2
-    for c, co in enumerate(coords):
-        rco = view3d_utils.location_3d_to_region_2d(
-            region, rv3d, co)
-        if rco:
-            status = sel_status[c]
-            dist = (rco - mouse_co).length
-            if dist < radius:
-                if bvh:
-                    no_hit = not ray_cast_view_occlude_test(
-                        co, mouse_co, bvh, region, rv3d)
-                    if no_hit:
-                        if add_rem_status == 2:
-                            if status:
-                                new_sel.append(c)
-                                change = True
-                        else:
-                            if status != True:
-                                new_sel.append(c)
-                                change = True
-
-                else:
-                    if add_rem_status == 2:
-                        if status:
-                            new_sel.append(c)
-                            change = True
-                    else:
-                        if status != True:
-                            new_sel.append(c)
-                            change = True
-                if change and just_one:
-                    break
-
-    if active != None and active in new_sel and new_sel_status == False:
-        new_active = None
-
-    return change, unselect, new_active, new_sel, new_sel_status
+    return in_range_inds.nonzero()[0]
 
 
-def lasso_points_selection_test(lasso_points, coords, sel_status, mouse_co, region, rv3d, add_rem_status, x_ray, bvh, active=None, just_one=False):
-    mouse_co = Vector(mouse_co)
+def np_test_co_in_shape(cos, shape_arr):
+    #
+    # Test if coord inside a shape
+    # Gets vectors from the points to the shape coords
+    # Gets a rolled set of the same vectors to get the angles between the points
+    # if total summed rotation angle is greater than 180 it is inside shape
+    # if the point is outisde shape the total rotation angle would be 0
+    # inside is a sum rotation of 360 but I use 180 just to be safe
+    #
+    in_shape = False
 
-    if x_ray:
-        bvh = None
+    roll_arr = np.roll(shape_arr, 1, axis=0)
 
-    change = False
-    unselect = add_rem_status == 0
-    new_active = None
-    new_sel_add = []
-    new_sel_remove = []
-    in_range_inds = bounding_box_filter(lasso_points, [
-                                        view3d_utils.location_3d_to_region_2d(region, rv3d, co) for co in coords])
-    for c, co in enumerate(coords):
-        status = sel_status[c]
-        if c in in_range_inds:
-            rco = view3d_utils.location_3d_to_region_2d(
-                region, rv3d, co)
-            if rco:
-                sel_res = test_point_in_shape(lasso_points, rco)
-                if sel_res:
-                    if bvh:
-                        no_hit = not ray_cast_view_occlude_test(
-                            co, mouse_co, bvh, region, rv3d)
-                        # INSIDE BOX AND IN VIEW
-                        if no_hit:
-                            if add_rem_status == 0:
-                                new_sel_add.append(c)
-                                change = True
-                            elif add_rem_status == 2:
-                                if status:
-                                    new_sel_remove.append(c)
-                                    change = True
-                            else:
-                                if status != True:
-                                    new_sel_add.append(c)
-                                    change = True
-                        # # INSIDE BOX BUT NOT IN VIEW
-                        # else:
-                        #     if add_rem_status == 0:
-                        #         if status:
-                        #             new_sel_remove.append(c)
-                        #             change = True
+    vecs_a = get_np_normalized_vecs(shape_arr - cos)
+    vecs_b = get_np_normalized_vecs(roll_arr - cos)
 
-                    # INSIDE BOX NO BVH TEST
-                    else:
-                        if add_rem_status == 0:
-                            new_sel_add.append(c)
-                            change = True
-                        elif add_rem_status == 2:
-                            if status:
-                                new_sel_remove.append(c)
-                                change = True
-                        else:
-                            if status != True:
-                                new_sel_add.append(c)
-                                change = True
+    tot_rot = math.degrees(np.sum(np.arccos(np.sum(vecs_a * vecs_b, axis=1))))
+    if tot_rot >= 180:
+        in_shape = True
 
-                # else:
-                #     if add_rem_status == 0:
-                #         if status:
-                #             new_sel_remove.append(c)
-                #             change = True
-                    if change and just_one:
-                        break
+    return in_shape
 
-    if active != None and active in new_sel_remove:
-        new_active = None
 
-    return change, unselect, new_active, new_sel_add, new_sel_remove
+def np_test_cos_in_shape(cos, shape_arr):
+    #
+    # Test if coords inside a shape
+    # Gets vectors from the points to the shape coords
+    # Gets a rolled set of the same vectors to get the angles between the points
+    # if total summed rotation angle is greater than 180 it is inside shape
+    # if the point is outisde shape the total rotation angle would be 0
+    # inside is a sum rotation of 360 but I use 180 just to be safe
+    #
+    vecs_a = shape_arr - cos[:, np.newaxis]
+    shape = vecs_a.shape
+    vecs_a.shape = [shape[0]*shape[1], 3]
+    vecs_a = get_np_normalized_vecs(vecs_a)
+    vecs_a.shape = shape
+
+    vecs_b = np.roll(vecs_a, 1, axis=1)
+
+    angs = np.arccos(np.sum(vecs_a * vecs_b, axis=2))
+    sign = np.sum(np.cross(vecs_a, vecs_b), axis=2)
+    angs[sign <= 0.0] *= -1
+    tot_rots = np.degrees(np.sum(angs, axis=1))
+
+    in_shape = np.absolute(tot_rots) >= 180
+    return in_shape.nonzero()[0]

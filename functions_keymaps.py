@@ -167,55 +167,25 @@ def basic_keymap(self, context, event):
     if True:
         # hide unselected normals
         if 'Hide Unselected' in keys:
-            sel_inds = self._container.get_unselected_loops()
-            if sel_inds:
-                for ind in sel_inds:
-                    self._container.points[ind[0]
-                                           ].loops[ind[1]].set_hide(True)
-                    self._container.points[ind[0]
-                                           ].loops[ind[1]].set_select(False)
-                    self._container.points[ind[0]
-                                           ].set_selection_from_loops()
-                    self._container.points[ind[0]
-                                           ].set_hidden_from_loops()
-
-                self._active_face = None
+            if self._container.sel_status.all() == False:
+                self._container.hide_status[~self._container.sel_status] = True
                 add_to_undostack(self, 0)
             return status
 
         # hide selected normals
         if 'Hide Selected' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if sel_inds:
-                for ind_set in sel_inds:
-                    self._container.points[ind_set[0]
-                                           ].loops[ind_set[1]].set_hide(True)
-                    self._container.points[ind_set[0]
-                                           ].loops[ind_set[1]].set_select(False)
-                    self._container.points[ind_set[0]
-                                           ].set_selection_from_loops()
-                    self._container.points[ind_set[0]
-                                           ].set_hidden_from_loops()
-
-                self._active_face = None
+            if self._container.sel_status.any():
+                self._container.hide_status[self._container.sel_status] = True
+                self._container.sel_status[:] = False
+                self._container.act_status[:] = False
                 add_to_undostack(self, 0)
             return status
 
         # unhide normals
         if 'Unhide' in keys:
-            change = False
-            for po in self._container.points:
-                if po.hide:
-                    change = True
-                    po.set_hide(False)
-                    po.set_select(True)
-                else:
-                    for loop in po.loops:
-                        if loop.hide:
-                            change = True
-                            loop.set_hide(False)
-                            loop.set_select(True)
-            if change:
+            if self._container.hide_status.any():
+                self._container.sel_status[self._container.hide_status] = True
+                self._container.hide_status[:] = False
                 add_to_undostack(self, 0)
             return status
 
