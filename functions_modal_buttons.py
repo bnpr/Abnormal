@@ -665,33 +665,31 @@ def toggle_individual_loops(self, arguments):
 
 
 def mirror_selection(self, arguments):
-    if self._container.sel_status.any():
+    if arguments[0]._container.sel_status.any():
         mirror_normals(arguments[0], self.custom_id[0])
     return
 
 
 def flatten_axis(self, arguments):
-    sel_inds = arguments[0]._container.get_selected_loops()
-    if len(sel_inds) != 0:
-        flatten_normals(arguments[0], sel_inds, self.custom_id[0])
+    if arguments[0]._container.sel_status.any():
+        flatten_normals(arguments[0], self.custom_id[0])
     return
 
 
 def algin_to_axis(self, arguments):
-    sel_inds = arguments[0]._container.get_selected_loops()
-    if len(sel_inds) != 0:
+    if arguments[0]._container.sel_status.any():
         if self.custom_id[0] == 0:
-            align_to_axis_normals(arguments[0], sel_inds, 0, 1)
+            align_to_axis_normals(arguments[0], 0, 1)
         if self.custom_id[0] == 1:
-            align_to_axis_normals(arguments[0], sel_inds, 0, -1)
+            align_to_axis_normals(arguments[0], 0, -1)
         if self.custom_id[0] == 2:
-            align_to_axis_normals(arguments[0], sel_inds, 1, 1)
+            align_to_axis_normals(arguments[0], 1, 1)
         if self.custom_id[0] == 3:
-            align_to_axis_normals(arguments[0], sel_inds, 1, -1)
+            align_to_axis_normals(arguments[0], 1, -1)
         if self.custom_id[0] == 4:
-            align_to_axis_normals(arguments[0], sel_inds, 2, 1)
+            align_to_axis_normals(arguments[0], 2, 1)
         if self.custom_id[0] == 5:
-            align_to_axis_normals(arguments[0], sel_inds, 2, -1)
+            align_to_axis_normals(arguments[0], 2, -1)
 
     return
 

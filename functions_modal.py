@@ -67,10 +67,6 @@ def set_new_normals(self):
     return
 
 
-def loop_norm_set(self, loop, og_vec, to_vec):
-    return
-
-
 def mirror_normals(self, axis):
     sel_norms = self._container.new_norms[self._container.sel_status]
 
@@ -177,38 +173,39 @@ def rotate_vectors(self, sel_inds, angle):
 #
 # AXIS ALIGNMENT
 #
-def flatten_normals(self, sel_inds, axis):
+def flatten_normals(self, axis):
     update_filter_weights(self)
-    for ind in sel_inds:
-        po = self._container.points[ind[0]]
-        if po.valid:
-            loop = po.loops[ind[1]]
 
-            vec = loop.normal.copy()
-            vec[axis] = 0.0
+    norms = self._container.new_norms[self._container.sel_status]
+    norms[:, axis] = 0.0
 
-            if vec.length > 0.0:
-                loop_norm_set(self, loop, loop.normal, vec)
-        self.redraw = True
+    # Check for zero length vector after flattening
+    # If zero then set it back to 1.0 on flattened axis
+    zero_len = np.sum(norms, axis=1) == 0.0
+
+    # All vecs are zero length so no change occurs
+    if zero_len.all():
+        return
+
+    if zero_len.any():
+        norms[zero_len] = self._container.new_norms[self._container.sel_status][zero_len]
+
+    self._container.new_norms[self._container.sel_status] = norms
+    self.redraw = True
 
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
 
 
-def align_to_axis_normals(self, sel_inds, axis, dir):
+def align_to_axis_normals(self, axis, dir):
     update_filter_weights(self)
-    vec = Vector((0, 0, 0))
 
-    vec[axis] = 1.0*dir
-    for ind in sel_inds:
-        po = self._container.points[ind[0]]
-        if po.valid:
-            loop = po.loops[ind[1]]
+    vec = [0, 0, 0]
+    vec[axis] = dir
+    self._container.new_norms[self._container.sel_status] = vec
 
-            loop_norm_set(self, loop, loop.normal, vec.copy())
-
-            self.redraw = True
+    self.redraw = True
 
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -808,10 +805,11 @@ def update_filter_weights(self):
     abn_props = bpy.context.scene.abnormal_props
 
     weights = [1.0] * len(self._object.data.loops)
-    if abn_props.vertex_group != '':
+    if abn_props.vertex_group != '' and abn_props.vertex_group != self._current_filter:
         if abn_props.vertex_group in self._object.vertex_groups:
             for po in self._container.points:
                 vg = self._object.vertex_groups[abn_props.vertex_group]
+                self._current_filter = abn_props.vertex_group
 
                 try:
                     for loop in po.loops:
@@ -822,6 +820,7 @@ def update_filter_weights(self):
                         weights[loop.loop_index] = 0.0
 
         else:
+            self._current_filter = ''
             abn_props.vertex_group = ''
 
     self._container.filter_weights = np.array(weights)[:, None]

@@ -262,17 +262,13 @@ def basic_keymap(self, context, event):
 
         # Flatten Normals
         if 'Flatten Normals Start' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
-                self._mode_cache.append(sel_inds)
+            if self._container.sel_status.any():
                 self.tool_mode = True
                 self._current_tool = self._flatten_tool
 
         # Align Normals
         if 'Align Normals Start' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
-                self._mode_cache.append(sel_inds)
+            if self._container.sel_status.any():
                 self.tool_mode = True
                 self._current_tool = self._align_tool
 

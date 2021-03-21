@@ -899,27 +899,23 @@ def gizmo_cancel(modal, context, event, keys, func_data):
 # MIRROR FUNCS
 def mirror_x(modal, context, event, keys, func_data):
     mirror_normals(modal, 0)
-    modal._mode_cache.clear()
     modal.tool_mode = False
     return
 
 
 def mirror_y(modal, context, event, keys, func_data):
     mirror_normals(modal, 1)
-    modal._mode_cache.clear()
     modal.tool_mode = False
     return
 
 
 def mirror_z(modal, context, event, keys, func_data):
     mirror_normals(modal, 2)
-    modal._mode_cache.clear()
     modal.tool_mode = False
     return
 
 
 def mirror_cancel(modal, context, event, keys, func_data):
-    modal._mode_cache.clear()
     modal.tool_mode = False
     return
 
@@ -927,28 +923,24 @@ def mirror_cancel(modal, context, event, keys, func_data):
 #
 # FLATTEN FUNCS
 def flatten_x(modal, context, event, keys, func_data):
-    flatten_normals(modal, modal._mode_cache[0], 0)
-    modal._mode_cache.clear()
+    flatten_normals(modal, 0)
     modal.tool_mode = False
     return
 
 
 def flatten_y(modal, context, event, keys, func_data):
-    flatten_normals(modal, modal._mode_cache[0], 1)
-    modal._mode_cache.clear()
+    flatten_normals(modal, 1)
     modal.tool_mode = False
     return
 
 
 def flatten_z(modal, context, event, keys, func_data):
-    flatten_normals(modal, modal._mode_cache[0], 2)
-    modal._mode_cache.clear()
+    flatten_normals(modal, 2)
     modal.tool_mode = False
     return
 
 
 def flatten_cancel(modal, context, event, keys, func_data):
-    modal._mode_cache.clear()
     modal.tool_mode = False
     return
 
@@ -956,48 +948,41 @@ def flatten_cancel(modal, context, event, keys, func_data):
 #
 # ALIGN FUNCS
 def align_pos_x(modal, context, event, keys, func_data):
-    align_to_axis_normals(modal, modal._mode_cache[0], 0, 1)
-    modal._mode_cache.clear()
+    align_to_axis_normals(modal, 0, 1)
     modal.tool_mode = False
     return
 
 
 def align_pos_y(modal, context, event, keys, func_data):
-    align_to_axis_normals(modal, modal._mode_cache[0], 1, 1)
-    modal._mode_cache.clear()
+    align_to_axis_normals(modal, 1, 1)
     modal.tool_mode = False
     return
 
 
 def align_pos_z(modal, context, event, keys, func_data):
-    align_to_axis_normals(modal, modal._mode_cache[0], 2, 1)
-    modal._mode_cache.clear()
+    align_to_axis_normals(modal, 2, 1)
     modal.tool_mode = False
     return
 
 
 def align_neg_x(modal, context, event, keys, func_data):
-    align_to_axis_normals(modal, modal._mode_cache[0], 0, -1)
-    modal._mode_cache.clear()
+    align_to_axis_normals(modal, 0, -1)
     modal.tool_mode = False
     return
 
 
 def align_neg_y(modal, context, event, keys, func_data):
-    align_to_axis_normals(modal, modal._mode_cache[0], 1, -1)
-    modal._mode_cache.clear()
+    align_to_axis_normals(modal, 1, -1)
     modal.tool_mode = False
     return
 
 
 def align_neg_z(modal, context, event, keys, func_data):
-    align_to_axis_normals(modal, modal._mode_cache[0], 2, -1)
-    modal._mode_cache.clear()
+    align_to_axis_normals(modal, 2, -1)
     modal.tool_mode = False
     return
 
 
 def align_cancel(modal, context, event, keys, func_data):
-    modal._mode_cache.clear()
     modal.tool_mode = False
     return
