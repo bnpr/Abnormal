@@ -256,8 +256,7 @@ def basic_keymap(self, context, event):
 
         # Smooth Normals
         if 'Smooth Normals' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
+            if self._container.sel_status.any():
                 smooth_normals(self, sel_inds, 0.5)
 
         # Flatten Normals
@@ -274,64 +273,54 @@ def basic_keymap(self, context, event):
 
         # Copy Active Normal
         if 'Copy Active Normal' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
+            if self._container.sel_status.any():
                 self._copy_normals, self._copy_normals_tangs = get_po_loop_data(
                     self, self._active_point)
 
         # Paste Stored Normal
         if 'Paste Stored Normal' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
-                paste_normal(self, sel_inds)
+            if self._container.sel_status.any():
+                paste_normal(self)
 
         # Paste Active Normal to Selected
         if 'Paste Active Normal to Selected' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
-                copy_active_to_selected(self, sel_inds)
+            if self._container.sel_status.any():
+                copy_active_to_selected(self)
 
         # Set Normals Outside
         if 'Set Normals Outside' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
-                set_outside_inside(self, sel_inds, 1)
+            if self._container.sel_status.any():
+                set_outside_inside(self, 1)
 
         # Set Normals Inside
         if 'Set Normals Inside' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
-                set_outside_inside(self, sel_inds, -1)
+            if self._container.sel_status.any():
+                set_outside_inside(self, -1)
 
         # Flip Normals
         if 'Flip Normals' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
-                flip_normals(self, sel_inds)
+            if self._container.sel_status.any():
+                flip_normals(self)
 
         # Reset Vectors
         if 'Reset Vectors' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
-                reset_normals(self, sel_inds)
+            if self._container.sel_status.any():
+                reset_normals(self)
 
         # Average Individual Normals
         if 'Average Individual Normals' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
-                average_vertex_normals(self, sel_inds)
+            if self._container.sel_status.any():
+                average_vertex_normals(self)
 
         # Average Selected Normals
         if 'Average Selected Normals' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
-                average_selected_normals(self, sel_inds)
+            if self._container.sel_status.any():
+                average_selected_normals(self)
 
         # Set Normals from Faces
         if 'Set Normals From Faces' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
-                set_normals_from_faces(self, sel_inds)
+            if self._container.sel_status.any():
+                set_normals_from_faces(self)
 
     #
     #

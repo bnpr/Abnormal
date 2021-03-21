@@ -450,8 +450,7 @@ def rotate_norms_mouse(modal, context, event, func_data):
 
     if ang != 0.0:
         modal._mode_cache[2] = modal._mode_cache[2]+ang*modal._mode_cache[3]
-        rotate_vectors(
-            modal, modal._mode_cache[0], modal._mode_cache[2])
+        rotate_vectors(modal, modal._mode_cache[2])
         modal._mouse_init = modal._mouse_reg_loc
 
         modal.redraw_active = True
@@ -510,8 +509,7 @@ def rotate_pre_navigate(modal, context, event, func_data):
 
 def rotate_post_navigate(modal, context, event, func_data):
     if modal.translate_mode == 0:
-        rotate_vectors(
-            modal, modal._mode_cache[0], modal._mode_cache[2])
+        rotate_vectors(modal, modal._mode_cache[2])
         modal.redraw_active = True
 
     modal._mouse_init = modal._mouse_reg_loc
@@ -525,8 +523,7 @@ def rotate_post_navigate(modal, context, event, func_data):
 def rotate_set_x(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'ROTATING', 0)
     modal._mode_cache[3] = translate_axis_side(modal)
-    rotate_vectors(
-        modal, modal._mode_cache[0], modal._mode_cache[2]*modal._mode_cache[3])
+    rotate_vectors(modal, modal._mode_cache[2]*modal._mode_cache[3])
     modal.redraw_active = True
     return
 
@@ -534,8 +531,7 @@ def rotate_set_x(modal, context, event, keys, func_data):
 def rotate_set_y(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'ROTATING', 1)
     modal._mode_cache[3] = translate_axis_side(modal)
-    rotate_vectors(
-        modal, modal._mode_cache[0], modal._mode_cache[2]*modal._mode_cache[3])
+    rotate_vectors(modal, modal._mode_cache[2]*modal._mode_cache[3])
     modal.redraw_active = True
     return
 
@@ -543,8 +539,7 @@ def rotate_set_y(modal, context, event, keys, func_data):
 def rotate_set_z(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'ROTATING', 2)
     modal._mode_cache[3] = translate_axis_side(modal)
-    rotate_vectors(
-        modal, modal._mode_cache[0], modal._mode_cache[2]*modal._mode_cache[3])
+    rotate_vectors(modal, modal._mode_cache[2]*modal._mode_cache[3])
     modal.redraw_active = True
     return
 
@@ -834,8 +829,7 @@ def gizmo_mouse(modal, context, event, func_data):
         modal._mode_cache.insert(0, mouse_loc)
 
         if modal._mode_cache[5]:
-            rotate_vectors(
-                modal, modal._mode_cache[1], modal._mode_cache[2]*ang_fac)
+            rotate_vectors(modal, modal._mode_cache[2]*ang_fac)
             modal._window.update_gizmo_rot(
                 modal._mode_cache[2], modal._mode_cache[3])
             modal.redraw_active = True

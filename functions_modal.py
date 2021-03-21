@@ -85,28 +85,20 @@ def mirror_normals(self, axis):
     return
 
 
-def incremental_rotate_vectors(self, sel_inds, axis, increment):
-    sel_cos = self._container.get_selected_loop_cos()
-    avg_loc = average_vecs(sel_cos)
-
-    self._container.cache_current_normals()
-
-    self._mode_cache.clear()
-    self._mode_cache.append(self._mouse_reg_loc)
-    self._mode_cache.append(avg_loc)
-    self._mode_cache.append(0)
-
+def incremental_rotate_vectors(self, axis, direction):
     self.translate_mode = 2
     self.translate_axis = axis
-    rotate_vectors(self, sel_inds, math.radians(
-        increment * self._rot_increment))
+    rotate_vectors(self, math.radians(direction * self._rot_increment))
     self.translate_mode = 0
     self.translate_axis = 2
-    self._mode_cache.clear()
+
+    self._container.cache_norms = self._container.new_norms.copy()
+
+    self.redraw = True
     return
 
 
-def rotate_vectors(self, sel_inds, angle):
+def rotate_vectors(self, angle):
     if self.translate_axis == 0:
         axis = 'X'
     if self.translate_axis == 1:
@@ -165,7 +157,7 @@ def rotate_vectors(self, sel_inds, angle):
                 self._container.cache_norms[self._container.sel_status].T).T
 
     set_new_normals(self)
-    self.redraw_active = True
+    # self.redraw_active = True
 
     return
 
@@ -215,7 +207,7 @@ def align_to_axis_normals(self, axis, dir):
 #
 # MANIPULATE NORMALS
 #
-def average_vertex_normals(self, sel_inds):
+def average_vertex_normals(self):
     update_filter_weights(self)
 
     new_norms = []
@@ -244,7 +236,7 @@ def average_vertex_normals(self, sel_inds):
     return
 
 
-def average_selected_normals(self, sel_inds):
+def average_selected_normals(self):
     update_filter_weights(self)
     avg_vec = Vector((0, 0, 0))
     for ind in sel_inds:
@@ -272,7 +264,7 @@ def average_selected_normals(self, sel_inds):
     return
 
 
-def smooth_normals(self, sel_inds, fac):
+def smooth_normals(self, fac):
     update_filter_weights(self)
 
     calc_norms = None
@@ -310,20 +302,16 @@ def smooth_normals(self, sel_inds, fac):
 #
 # NORMAL DIRECTION
 #
-def flip_normals(self, sel_inds):
-    for ind in sel_inds:
-        po = self._container.points[ind[0]]
-        if po.valid:
-            loop = po.loops[ind[1]]
-            loop.normal *= -1
-            self.redraw = True
+def flip_normals(self):
+    self._container.new_norms[self._container.sel_status] *= -1
 
+    self.redraw = True
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
 
 
-def set_outside_inside(self, sel_inds, direction):
+def set_outside_inside(self, direction):
     update_filter_weights(self)
     for ind in sel_inds:
         po = self._container.points[ind[0]]
@@ -350,20 +338,17 @@ def set_outside_inside(self, sel_inds, direction):
     return
 
 
-def reset_normals(self, sel_inds):
-    for ind in sel_inds:
-        po = self._container.points[ind[0]]
-        if po.valid:
-            loop = po.loops[ind[1]]
-            loop.reset_normal()
-        self.redraw = True
+def reset_normals(self):
+    self._container.new_norms[self._container.sel_status] = self._container.og_norms[self._container.sel_status]
+
+    self.redraw = True
 
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
 
 
-def set_normals_from_faces(self, sel_inds):
+def set_normals_from_faces(self):
     update_filter_weights(self)
     for ind in sel_inds:
         po = self._container.points[ind[0]]
@@ -391,7 +376,7 @@ def set_normals_from_faces(self, sel_inds):
 #
 # COPY/PASTE
 #
-def copy_active_to_selected(self, sel_inds):
+def copy_active_to_selected(self):
     update_filter_weights(self)
     if self._active_point != None:
         norms, tangs = get_po_loop_data(self, self._active_point)
@@ -433,7 +418,7 @@ def get_po_loop_data(self, po_loop):
     return norms, tangs
 
 
-def paste_normal(self, sel_inds):
+def paste_normal(self):
     update_filter_weights(self)
     if self._copy_normals != None and self._copy_normals_tangs != None:
         for ind in sel_inds:
