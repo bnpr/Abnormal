@@ -204,7 +204,7 @@ def basic_keymap(self, context, event):
 
             if self._container.sel_status.any():
                 avg_loc = np.mean(
-                    self._container.new_norms[self._container.sel_status], axis=1)
+                    self._container.new_norms[self._container.sel_status], axis=0)
 
                 self._window.set_status('VIEW ROTATION')
 
