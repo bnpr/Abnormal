@@ -130,6 +130,8 @@ class ABN_OT_normal_editor_modal(Operator):
             self._mirror_y = False
             self._mirror_z = False
 
+            self._current_filter = ''
+
             self._draw_area = context.area
             self._modal_running = True
             self.redraw = False
