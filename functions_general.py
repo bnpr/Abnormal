@@ -614,6 +614,17 @@ def get_np_vec_ordered_dists(array, test_co, threshold=None):
     return dist_inds
 
 
+def get_np_vecs_ordered_dists(array, test_cos):
+    #
+    # Given a vector numpy array get distance to every test coord
+    # Subtract test_cos from array, Square each axis,
+    # get the square root of each axis, and sum the axis of each vector for a distance
+    #
+    dist_inds = np.argsort(
+        np.sum(np.square(array - test_cos[:, np.newaxis]), axis=2))
+    return dist_inds
+
+
 def get_np_nearest_co_on_edge(edge_cos, test_co):
     #
     # Given a list of edge coords (2 vectors per edge)

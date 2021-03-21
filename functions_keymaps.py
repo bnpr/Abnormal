@@ -138,8 +138,7 @@ def basic_keymap(self, context, event):
         self.prev_view = context.region_data.view_matrix.copy()
         self.waiting = False
 
-        sel_inds = self._container.get_selected_loops()
-        if len(sel_inds) > 0:
+        if self._container.sel_status.any():
             gizmo_update_hide(self, True)
         else:
             gizmo_update_hide(self, False)
@@ -202,24 +201,18 @@ def basic_keymap(self, context, event):
         # Rotate Normals
         if 'Rotate Normals' in keys:
             update_filter_weights(self)
-            sel_inds = self._container.get_selected_loops()
 
-            if len(sel_inds) > 0:
-                sel_cos = self._container.get_selected_loop_cos()
-                avg_loc = average_vecs(sel_cos)
-
-                self._container.cache_current_normals()
+            if self._container.sel_status.any():
+                avg_loc = np.mean(
+                    self._container.new_norms[self._container.sel_status], axis=1)
 
                 self._window.set_status('VIEW ROTATION')
 
                 self._mode_cache.clear()
-                self._mode_cache.append(sel_inds)
                 self._mode_cache.append(avg_loc)
                 self._mode_cache.append(0)
                 self._mode_cache.append(1)
                 self._mouse_init = self._mouse_reg_loc
-
-                self._container.cache_current_normals()
 
                 self.rotating = True
                 self._current_tool = self._rotate_norms_tool
@@ -241,8 +234,7 @@ def basic_keymap(self, context, event):
             self._use_gizmo = not self._use_gizmo
             self._gizmo_bool.toggle_bool()
             update_orbit_empty(self)
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) > 0:
+            if self._container.sel_status.any():
                 gizmo_update_hide(self, True)
             else:
                 gizmo_update_hide(self, False)
@@ -257,7 +249,7 @@ def basic_keymap(self, context, event):
         # Smooth Normals
         if 'Smooth Normals' in keys:
             if self._container.sel_status.any():
-                smooth_normals(self, sel_inds, 0.5)
+                smooth_normals(self, 0.5)
 
         # Flatten Normals
         if 'Flatten Normals Start' in keys:
@@ -391,14 +383,14 @@ def basic_keymap(self, context, event):
         # select linked normals
         if 'Select Linked' in keys:
             change = False
-            sel_inds = self._container.get_selected_loops()
-            if sel_inds:
+            if self._container.sel_status.any():
+
                 po_inds = []
                 for ind_set in sel_inds:
                     if ind_set[0] not in po_inds:
                         po_inds.append(ind_set[0])
 
-                vis_pos = self._container.get_visible()
+                vis_pos = (~self._container.hide_status).nonzero()[0]
                 new_sel = get_linked_geo(self._object_bm, po_inds, vis=vis_pos)
 
                 for ind in new_sel:
@@ -418,7 +410,7 @@ def basic_keymap(self, context, event):
             if face_res != None:
                 sel_ind = self._object_bm.faces[face_res[1]].verts[0].index
 
-                vis_pos = self._container.get_visible()
+                vis_pos = (~self._container.hide_status).nonzero()[0]
                 new_sel = get_linked_geo(
                     self._object_bm, [sel_ind], vis=vis_pos)
 

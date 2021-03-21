@@ -437,7 +437,7 @@ def clear_draw_post_navigate(modal, context, event, func_data):
 # ROTATE NORMALS FUNCS
 def rotate_norms_mouse(modal, context, event, func_data):
     center = view3d_utils.location_3d_to_region_2d(
-        modal.act_reg, modal.act_rv3d, modal._mode_cache[1])
+        modal.act_reg, modal.act_rv3d, modal._mode_cache[0])
 
     start_vec = Vector(
         (modal._mouse_init[0]-center[0], modal._mouse_init[1]-center[1]))
@@ -449,8 +449,8 @@ def rotate_norms_mouse(modal, context, event, func_data):
         ang *= 0.1
 
     if ang != 0.0:
-        modal._mode_cache[2] = modal._mode_cache[2]+ang*modal._mode_cache[3]
-        rotate_vectors(modal, modal._mode_cache[2])
+        modal._mode_cache[1] = modal._mode_cache[1]+ang*modal._mode_cache[2]
+        rotate_vectors(modal, modal._mode_cache[1])
         modal._mouse_init = modal._mouse_reg_loc
 
         modal.redraw_active = True
@@ -458,7 +458,6 @@ def rotate_norms_mouse(modal, context, event, func_data):
 
 
 def rotate_norms_confirm(modal, context, event, keys, func_data):
-    modal._container.clear_cached_normals()
 
     add_to_undostack(modal, 1)
     modal._mode_cache.clear()
@@ -479,7 +478,6 @@ def rotate_norms_confirm(modal, context, event, keys, func_data):
 
 
 def rotate_norms_cancel(modal, context, event, keys, func_data):
-    modal._container.restore_cached_normals()
 
     set_new_normals(modal)
     modal._mode_cache.clear()
@@ -509,37 +507,37 @@ def rotate_pre_navigate(modal, context, event, func_data):
 
 def rotate_post_navigate(modal, context, event, func_data):
     if modal.translate_mode == 0:
-        rotate_vectors(modal, modal._mode_cache[2])
+        rotate_vectors(modal, modal._mode_cache[1])
         modal.redraw_active = True
 
     modal._mouse_init = modal._mouse_reg_loc
     bpy.context.window.cursor_modal_set('DEFAULT')
     modal.rotating = True
     modal.selection_drawing = True
-    modal._mode_cache[3] = translate_axis_side(modal)
+    modal._mode_cache[2] = translate_axis_side(modal)
     return
 
 
 def rotate_set_x(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'ROTATING', 0)
-    modal._mode_cache[3] = translate_axis_side(modal)
-    rotate_vectors(modal, modal._mode_cache[2]*modal._mode_cache[3])
+    modal._mode_cache[2] = translate_axis_side(modal)
+    rotate_vectors(modal, modal._mode_cache[1]*modal._mode_cache[2])
     modal.redraw_active = True
     return
 
 
 def rotate_set_y(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'ROTATING', 1)
-    modal._mode_cache[3] = translate_axis_side(modal)
-    rotate_vectors(modal, modal._mode_cache[2]*modal._mode_cache[3])
+    modal._mode_cache[2] = translate_axis_side(modal)
+    rotate_vectors(modal, modal._mode_cache[1]*modal._mode_cache[2])
     modal.redraw_active = True
     return
 
 
 def rotate_set_z(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'ROTATING', 2)
-    modal._mode_cache[3] = translate_axis_side(modal)
-    rotate_vectors(modal, modal._mode_cache[2]*modal._mode_cache[3])
+    modal._mode_cache[2] = translate_axis_side(modal)
+    rotate_vectors(modal, modal._mode_cache[1]*modal._mode_cache[2])
     modal.redraw_active = True
     return
 
@@ -790,21 +788,21 @@ def gizmo_mouse(modal, context, event, func_data):
     line_b = view_orig + view_vec*10000
     # Get start vector to measure angle of mouse
     if modal.translate_axis == 0:
-        giz_vec = modal._mode_cache[4] @ Vector((1, 0, 0)) - \
-            modal._mode_cache[4].translation
+        giz_vec = modal._mode_cache[3] @ Vector((1, 0, 0)) - \
+            modal._mode_cache[3].translation
 
     if modal.translate_axis == 1:
-        giz_vec = modal._mode_cache[4] @ Vector((0, 1, 0)) - \
-            modal._mode_cache[4].translation
+        giz_vec = modal._mode_cache[3] @ Vector((0, 1, 0)) - \
+            modal._mode_cache[3].translation
 
     if modal.translate_axis == 2:
-        giz_vec = modal._mode_cache[4] @ Vector((0, 0, 1)) - \
-            modal._mode_cache[4].translation
+        giz_vec = modal._mode_cache[3] @ Vector((0, 0, 1)) - \
+            modal._mode_cache[3].translation
 
     mouse_co_3d = intersect_line_plane(
-        line_a, line_b, modal._mode_cache[4].translation, giz_vec)
+        line_a, line_b, modal._mode_cache[3].translation, giz_vec)
 
-    mouse_co_local = modal._mode_cache[4].inverted() @ mouse_co_3d
+    mouse_co_local = modal._mode_cache[3].inverted() @ mouse_co_3d
 
     # Get angle of current rotation
     ang_fac = 1.0
@@ -824,14 +822,14 @@ def gizmo_mouse(modal, context, event, func_data):
 
     # Apply angle to normals or gizmo
     if ang != 0.0:
-        modal._mode_cache[2] = modal._mode_cache[2]+ang
+        modal._mode_cache[1] = modal._mode_cache[1]+ang
         modal._mode_cache.pop(0)
         modal._mode_cache.insert(0, mouse_loc)
 
-        if modal._mode_cache[5]:
-            rotate_vectors(modal, modal._mode_cache[2]*ang_fac)
+        if modal._mode_cache[4]:
+            rotate_vectors(modal, modal._mode_cache[1]*ang_fac)
             modal._window.update_gizmo_rot(
-                modal._mode_cache[2], modal._mode_cache[3])
+                modal._mode_cache[1], modal._mode_cache[2])
             modal.redraw_active = True
         else:
             if modal.translate_axis == 0:
@@ -852,7 +850,7 @@ def gizmo_confirm(modal, context, event, keys, func_data):
         gizmo.active = True
         gizmo.in_use = False
 
-    if modal._mode_cache[5]:
+    if modal._mode_cache[4]:
         add_to_undostack(modal, 1)
 
     modal.gizmo_click = False
@@ -866,12 +864,10 @@ def gizmo_confirm(modal, context, event, keys, func_data):
 
 
 def gizmo_cancel(modal, context, event, keys, func_data):
-    if modal._mode_cache[5]:
-        modal._container.restore_cached_normals()
-
+    if modal._mode_cache[4]:
         set_new_normals(modal)
     else:
-        modal._orbit_ob.matrix_world = modal._mode_cache[4].copy()
+        modal._orbit_ob.matrix_world = modal._mode_cache[3].copy()
         modal._window.update_gizmo_orientation(
             modal._orbit_ob.matrix_world)
 
