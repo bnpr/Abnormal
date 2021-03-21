@@ -250,9 +250,7 @@ def basic_keymap(self, context, event):
 
         # Mirror Normals
         if 'Mirror Normals Start' in keys:
-            sel_inds = self._container.get_selected_loops()
-            if len(sel_inds) != 0:
-                self._mode_cache.append(sel_inds)
+            if self._container.sel_status.any():
                 self.tool_mode = True
                 self._current_tool = self._mirror_tool
 
@@ -346,17 +344,9 @@ def basic_keymap(self, context, event):
     if True:
         # invert selection
         if 'Invert Selection' in keys:
-            change = False
-            for po in self._container.points:
-                if po.hide == False:
-                    for loop in po.loops:
-                        if loop.hide == False:
-                            loop.set_select(not loop.select)
-                            change = True
-
-                    po.set_selection_from_loops()
-
-            if change:
+            if self._container.hide_status.all() == False:
+                self._container.act_status[:] = False
+                self._container.sel_status[~self._container.hide_status] = ~self._container.sel_status[~self._container.hide_status]
                 self._active_face = None
                 add_to_undostack(self, 0)
             return status

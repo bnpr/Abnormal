@@ -665,9 +665,8 @@ def toggle_individual_loops(self, arguments):
 
 
 def mirror_selection(self, arguments):
-    sel_inds = arguments[0]._container.get_selected_loops()
-    if len(sel_inds) != 0:
-        mirror_normals(arguments[0], sel_inds, self.custom_id[0])
+    if self._container.sel_status.any():
+        mirror_normals(arguments[0], self.custom_id[0])
     return
 
 

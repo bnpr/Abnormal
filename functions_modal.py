@@ -90,27 +90,18 @@ def loop_norm_set(self, loop, og_vec, to_vec):
     return
 
 
-def mirror_normals(self, sel_inds, axis):
+def mirror_normals(self, axis):
+    sel_norms = self._container.new_norms[self._container.sel_status]
 
-    for ind in sel_inds:
-        po = self._container.points[ind[0]]
-        if po.valid:
-            loop = po.loops[ind[1]]
+    sel_norms[:, axis] *= -1
+    if axis == 0:
+        self._container.new_norms[self.mir_loops_x[self._container.sel_status]] = sel_norms
+    if axis == 1:
+        self._container.new_norms[self.mir_loops_y[self._container.sel_status]] = sel_norms
+    if axis == 2:
+        self._container.new_norms[self.mir_loops_z[self._container.sel_status]] = sel_norms
 
-            if axis == 0:
-                mir_loop = loop.x_mirror
-            if axis == 1:
-                mir_loop = loop.y_mirror
-            if axis == 2:
-                mir_loop = loop.z_mirror
-
-            if mir_loop != None:
-                mir_norm = loop.normal.copy()
-                mir_norm[axis] *= -1
-
-                mir_loop.normal = mir_norm
-
-                self.redraw = True
+    self.redraw = True
 
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -826,9 +817,9 @@ def cache_mirror_data(self):
                 if i == 2:
                     z_mirs.append(loop.index)
 
-    self.mir_loops_x = np.array(x_mirs, dtype=np.float32)
-    self.mir_loops_x = np.array(y_mirs, dtype=np.float32)
-    self.mir_loops_x = np.array(z_mirs, dtype=np.float32)
+    self.mir_loops_x = np.array(x_mirs, dtype=np.int32)
+    self.mir_loops_y = np.array(y_mirs, dtype=np.int32)
+    self.mir_loops_z = np.array(z_mirs, dtype=np.int32)
     return
 
 

@@ -898,21 +898,21 @@ def gizmo_cancel(modal, context, event, keys, func_data):
 #
 # MIRROR FUNCS
 def mirror_x(modal, context, event, keys, func_data):
-    mirror_normals(modal, modal._mode_cache[0], 0)
+    mirror_normals(modal, 0)
     modal._mode_cache.clear()
     modal.tool_mode = False
     return
 
 
 def mirror_y(modal, context, event, keys, func_data):
-    mirror_normals(modal, modal._mode_cache[0], 1)
+    mirror_normals(modal, 1)
     modal._mode_cache.clear()
     modal.tool_mode = False
     return
 
 
 def mirror_z(modal, context, event, keys, func_data):
-    mirror_normals(modal, modal._mode_cache[0], 2)
+    mirror_normals(modal, 2)
     modal._mode_cache.clear()
     modal.tool_mode = False
     return
