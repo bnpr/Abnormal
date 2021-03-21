@@ -48,6 +48,19 @@ def set_new_normals(self):
     scale = 1 / np.sqrt(np.sum(np.square(self._container.new_norms), axis=1))
     self._container.new_norms = self._container.new_norms*scale[:, None]
 
+    if self._mirror_x:
+        sel_norms = self._container.new_norms[self._container.sel_status]
+        sel_norms[:, 0] *= -1
+        self._container.new_norms[self.mir_loops_x[self._container.sel_status]] = sel_norms
+    if self._mirror_y:
+        sel_norms = self._container.new_norms[self._container.sel_status]
+        sel_norms[:, 1] *= -1
+        self._container.new_norms[self.mir_loops_y[self._container.sel_status]] = sel_norms
+    if self._mirror_z:
+        sel_norms = self._container.new_norms[self._container.sel_status]
+        sel_norms[:, 2] *= -1
+        self._container.new_norms[self.mir_loops_z[self._container.sel_status]] = sel_norms
+
     # self._container.new_norms.shape = [len(self._object.data.loops), 3]
     self._object.data.normals_split_custom_set(self._container.new_norms)
 
@@ -55,38 +68,6 @@ def set_new_normals(self):
 
 
 def loop_norm_set(self, loop, og_vec, to_vec):
-    # weight = None
-    # if self._container.filter_weights != None:
-    #     weight = self._container.filter_weights[loop.point.index]
-
-    # if weight == None:
-    #     new_vec = to_vec
-    # else:
-    #     new_vec = og_vec.lerp(to_vec, weight)
-
-    # loop.normal = new_vec
-
-    # axis = []
-    # if self._mirror_x:
-    #     axis.append(0)
-    # if self._mirror_y:
-    #     axis.append(1)
-    # if self._mirror_z:
-    #     axis.append(2)
-
-    # for ind in axis:
-    #     if ind == 0:
-    #         mir_loop = loop.x_mirror
-    #     if ind == 1:
-    #         mir_loop = loop.y_mirror
-    #     if ind == 2:
-    #         mir_loop = loop.z_mirror
-
-    #     if mir_loop != None:
-    #         mir_norm = loop.normal.copy()
-    #         mir_norm[ind] *= -1
-
-    #         mir_loop.normal = mir_norm
     return
 
 
