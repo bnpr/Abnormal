@@ -82,7 +82,18 @@ def basic_ui_hover_keymap(self, context, event):
     # else:
     #     status = {"RUNNING_MODAL"}
 
-    # cancel modal
+    # Toggle Gizmo
+    if 'Toggle Gizmo' in keys:
+        self._use_gizmo = not self._use_gizmo
+        self._gizmo_bool.toggle_bool()
+        update_orbit_empty(self)
+        if self._container.sel_status.any():
+            gizmo_update_hide(self, True)
+        else:
+            gizmo_update_hide(self, False)
+        return status
+
+    # Cancel modal
     if 'Cancel Modal' in keys:
         ob = self._object
         if self._object.as_pointer() != self._object_pointer:
@@ -204,9 +215,11 @@ def basic_keymap(self, context, event):
 
             if self._container.sel_status.any():
                 avg_loc = np.mean(
-                    self._container.new_norms[self._container.sel_status], axis=0)
+                    self._container.loop_coords[self._container.sel_status], axis=0)
 
                 self._window.set_status('VIEW ROTATION')
+
+                self._container.cache_norms = self._container.new_norms.copy()
 
                 self._mode_cache.clear()
                 self._mode_cache.append(avg_loc)
@@ -384,22 +397,15 @@ def basic_keymap(self, context, event):
         if 'Select Linked' in keys:
             change = False
             if self._container.sel_status.any():
+                vis_pos = get_visible_points(self)
+                sel_inds = get_selected_points(self, any_selected=True)
 
-                po_inds = []
-                for ind_set in sel_inds:
-                    if ind_set[0] not in po_inds:
-                        po_inds.append(ind_set[0])
+                new_sel = get_linked_geo(
+                    self._object_bm, list(sel_inds), vis=list(vis_pos))
 
-                vis_pos = (~self._container.hide_status).nonzero()[0]
-                new_sel = get_linked_geo(self._object_bm, po_inds, vis=vis_pos)
-
-                for ind in new_sel:
-                    if self._container.points[ind].select == False:
-                        self._container.points[ind].set_select(True)
-                        change = True
-
-                if change:
-                    self._active_face = None
+                if len(new_sel) > 0:
+                    self._container.sel_status[get_vert_ls(
+                        self, new_sel)] = True
                     add_to_undostack(self, 0)
             return status
 
@@ -408,19 +414,16 @@ def basic_keymap(self, context, event):
             # selection test
             face_res = ray_cast_to_mouse(self)
             if face_res != None:
-                sel_ind = self._object_bm.faces[face_res[1]].verts[0].index
+                vis_pos = get_visible_points(self)
+                hov_inds = [
+                    v.index for v in self._object_bm.faces[face_res[1]].verts if v.index in vis_pos]
 
-                vis_pos = (~self._container.hide_status).nonzero()[0]
                 new_sel = get_linked_geo(
-                    self._object_bm, [sel_ind], vis=vis_pos)
+                    self._object_bm, hov_inds, vis=list(vis_pos))
 
-                for ind in new_sel:
-                    if self._container.points[ind].select == False:
-                        self._container.points[ind].set_select(True)
-                        change = True
-
-                if change:
-                    self._active_face = None
+                if len(new_sel) > 0:
+                    self._container.sel_status[get_vert_ls(
+                        self, new_sel)] = True
                     add_to_undostack(self, 0)
             return status
 

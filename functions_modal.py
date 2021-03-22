@@ -13,23 +13,26 @@ from .classes import *
 from .keymap import addon_keymaps
 
 
-def match_loops_vecs(self, loop, o_tangs, flip_axis=None):
-    tang = self._object_bm.verts[loop.point.index].link_loops[loop.index].calc_tangent(
-    )
+def match_loops_vecs(source_vecs, target_vecs, target_inds):
+    #
+    # Match the list of vectors with the target list
+    # matches by smallest angle
+    # Source vecs should be a 2d array Nx3 of just 3d vectors
+    # Target vecs should be a 3d array NxIx3 where it is a list of lists of 3d vectors for the source vec to be tested against
+    # Each I of the NxIx3 array is a list of vectors to test against the N vectors of source
+    #
 
-    small = 0
-    small_ind = None
-    for o, o_tang in enumerate(o_tangs):
-        t_tang = o_tang.copy()
-        if flip_axis != None:
-            t_tang[flip_axis] *= -1
+    # Get the dot product from the matched cos tangents to the original loops tangent
+    # and filter out -1 loops from the matched co
+    dots = np.sum(source_vecs[:, np.newaxis] * target_vecs, axis=2)
+    dots[target_inds < 0] = nan
 
-        ang = tang.angle(t_tang)
-        if ang < small or small_ind == None:
-            small_ind = o
-            small = ang
+    # Make the dot products absoulte and sort for the smallest angle
+    sort = np.argsort(np.absolute(dots))[:, 0]
 
-    return small_ind
+    indeces = np.arange(sort.size)
+
+    return target_inds[indeces, sort]
 
 
 #
@@ -65,6 +68,7 @@ def set_new_normals(self):
     # self._container.new_norms.shape = [len(self._object.data.loops), 3]
     self._object.data.normals_split_custom_set(self._container.new_norms)
 
+    self.redraw = True
     return
 
 
@@ -78,8 +82,6 @@ def mirror_normals(self, axis):
         self._container.new_norms[self.mir_loops_y[self._container.sel_status]] = sel_norms
     if axis == 2:
         self._container.new_norms[self.mir_loops_z[self._container.sel_status]] = sel_norms
-
-    self.redraw = True
 
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -182,7 +184,6 @@ def flatten_normals(self, axis):
         norms[zero_len] = self._container.new_norms[self._container.sel_status][zero_len]
 
     self._container.new_norms[self._container.sel_status] = norms
-    self.redraw = True
 
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -196,8 +197,6 @@ def align_to_axis_normals(self, axis, dir):
     vec[axis] = dir
     self._container.new_norms[self._container.sel_status] = vec
 
-    self.redraw = True
-
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
@@ -209,26 +208,22 @@ def align_to_axis_normals(self, axis, dir):
 def average_vertex_normals(self):
     update_filter_weights(self)
 
-    new_norms = []
-    for ind in sel_inds:
-        po = self._container.points[ind[0]]
-        if po.valid:
-            loop = po.loops[ind[1]]
+    sel_pos = get_selected_points(self, any_selected=True)
+    sel_loops = self._container.vert_link_ls[sel_pos]
 
-            vec = average_vecs(
-                [loop.normal for loop in po.loops if loop.select])
+    loop_status = self._container.sel_status[sel_loops]
+    loop_status[sel_loops < 0] = False
 
-            new_norms.append(vec)
-        else:
-            new_norms.append(None)
+    cur_norms = self._container.new_norms[sel_loops]
+    cur_norms[~loop_status] = nan
+    cur_norms = np.nanmean(cur_norms, axis=1)[:, np.newaxis]
 
-    for i, ind in enumerate(sel_inds):
-        po = self._container.points[ind[0]]
-        if po.valid:
-            loop = po.loops[ind[1]]
-            loop_norm_set(self, loop, loop.normal, new_norms[i])
+    new_norms = self._container.new_norms[sel_loops]
+    new_norms[:] = cur_norms
+    sel_loops = sel_loops[loop_status]
+    new_norms = new_norms[loop_status]
 
-            self.redraw = True
+    self._container.new_norms[sel_loops] = new_norms
 
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -237,62 +232,38 @@ def average_vertex_normals(self):
 
 def average_selected_normals(self):
     update_filter_weights(self)
-    avg_vec = Vector((0, 0, 0))
-    for ind in sel_inds:
-        po = self._container.points[ind[0]]
-        if po.valid:
-            vec = average_vecs(
-                [loop.normal for loop in po.loops if loop.select])
-            avg_vec += vec
 
-            self.redraw = True
+    avg_norm = np.mean(
+        self._container.new_norms[self._container.sel_status], axis=0)
 
-    avg_vec = (avg_vec/len(sel_inds)).normalized()
+    self._container.new_norms[self._container.sel_status] = avg_norm
 
-    if avg_vec.length > 0.0:
-        for ind in sel_inds:
-            po = self._container.points[ind[0]]
-            if po.valid:
-                loop = po.loops[ind[1]]
-
-                loop_norm_set(self, loop, loop.normal, avg_vec.copy())
-
-        set_new_normals(self)
-        add_to_undostack(self, 1)
-
+    set_new_normals(self)
+    add_to_undostack(self, 1)
     return
 
 
 def smooth_normals(self, fac):
     update_filter_weights(self)
 
-    calc_norms = None
+    sel_pos = get_selected_points(self, any_selected=True)
+    conn_pos = self._container.vert_link_vs[sel_pos]
+    sel_loops = self._container.vert_link_ls[sel_pos]
+    sel_mask = sel_loops >= 0
+
     for i in range(self._smooth_iterations):
-        calc_norms = []
-        for po in self._container.points:
-            if len(po.loops) > 0 and po.valid:
-                vec = average_vecs([loop.normal for loop in po.loops])
-                calc_norms.append(vec)
-            else:
-                calc_norms.append(None)
 
-        for ind in sel_inds:
-            po = self._container.points[ind[0]]
-            if po.valid:
-                loop = po.loops[ind[1]]
+        conn_norms = self._container.new_norms[self._container.vert_link_ls[conn_pos]]
+        conn_norms[self._container.vert_link_ls[conn_pos] < 0] = nan
+        conn_norms[conn_pos < 0] = nan
+        conn_norms = np.nanmean(conn_norms, axis=(1, 2))[:, np.newaxis]
+        conn_norms = self._container.new_norms[sel_loops] * (
+            1.0-fac*self._smooth_strength) + conn_norms*(fac*self._smooth_strength)
 
-                l_vs = [ed.other_vert(self._object_bm.verts[po.index])
-                        for ed in self._object_bm.verts[po.index].link_edges]
+        conn_norms = conn_norms[sel_mask]
 
-                smooth_vec = Vector((0, 0, 0))
-                smooth_vec = average_vecs(
-                    [loop.normal.lerp(calc_norms[ov.index], fac) for ov in l_vs])
+        self._container.new_norms[sel_loops[sel_mask]] = conn_norms
 
-                if smooth_vec.length > 0:
-                    loop_norm_set(self, loop, loop.normal, loop.normal.lerp(
-                        smooth_vec, self._smooth_strength))
-
-    self.redraw = True
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
@@ -304,7 +275,6 @@ def smooth_normals(self, fac):
 def flip_normals(self):
     self._container.new_norms[self._container.sel_status] *= -1
 
-    self.redraw = True
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
@@ -330,8 +300,6 @@ def set_outside_inside(self, direction):
                 loop.normal = self._object_bm.loops[loop.loop_index].face.normal.copy(
                 ) * direction
 
-            self.redraw = True
-
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
@@ -339,8 +307,6 @@ def set_outside_inside(self, direction):
 
 def reset_normals(self):
     self._container.new_norms[self._container.sel_status] = self._container.og_norms[self._container.sel_status]
-
-    self.redraw = True
 
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -365,8 +331,6 @@ def set_normals_from_faces(self):
                 loop_norm_set(self, loop, loop.normal,
                               poly_norm/len(sel_faces))
 
-            self.redraw = True
-
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
@@ -390,8 +354,6 @@ def copy_active_to_selected(self):
                 loop_norm_set(
                     self, loop, loop.normal, norms[m_ind].copy())
 
-        self.redraw = True
-
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
@@ -410,8 +372,6 @@ def paste_normal(self):
 
                 loop_norm_set(
                     self, loop, loop.normal, self._copy_normals[m_ind].copy())
-
-                self.redraw = True
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
@@ -679,58 +639,38 @@ def cache_mirror_data(self):
     loc = mat[:3, 3]
     loop_cos = (mat_inv[:3, :3] @ (self._container.loop_coords-loc).T).T
 
+    self.mir_loops_x = find_coord_mirror(self._container.po_coords, loop_cos.copy(
+    ), self._container.loop_tangents, self._container.vert_link_ls, 0, mat)
+
+    self.mir_loops_y = find_coord_mirror(self._container.po_coords, loop_cos.copy(
+    ), self._container.loop_tangents, self._container.vert_link_ls, 1, mat)
+
+    self.mir_loops_z = find_coord_mirror(self._container.po_coords, loop_cos.copy(
+    ), self._container.loop_tangents, self._container.vert_link_ls, 2, mat)
+    return
+
+
+def find_coord_mirror(po_coords, l_coords, loop_tangs, vert_link_ls, mir_axis, mat):
+    #
+    # Match the list of loops with their mirror on the set axis
+    # detect the proper loop on the mirror point by getting the smallest angle
+    #
+
     # Get the loop coords on the mirrored axis
-    x_mir_cos = loop_cos.copy()
-    x_mir_cos[:, 0] *= -1
-    x_mir_cos = (mat[:3, :3] @ x_mir_cos.T).T+loc
-
-    y_mir_cos = loop_cos.copy()
-    y_mir_cos[:, 1] *= -1
-    y_mir_cos = (mat[:3, :3] @ y_mir_cos.T).T+loc
-
-    z_mir_cos = loop_cos.copy()
-    z_mir_cos[:, 2] *= -1
-    z_mir_cos = (mat[:3, :3] @ z_mir_cos.T).T+loc
+    l_coords[:, mir_axis] *= -1
+    l_coords = (mat[:3, :3] @ l_coords.T).T+mat[:3, 3]
 
     # Test distance for nearest points from the loops mirroed coord
-    x_po_match = get_np_vecs_ordered_dists(
-        self._container.po_coords, x_mir_cos)[:, 0]
-    y_po_match = get_np_vecs_ordered_dists(
-        self._container.po_coords, y_mir_cos)[:, 0]
-    z_po_match = get_np_vecs_ordered_dists(
-        self._container.po_coords, z_mir_cos)[:, 0]
+    po_match = get_np_vecs_ordered_dists(po_coords, l_coords)[:, 0]
 
     # Get the tangents of the matched mirror coord
-    x_tans = self._container.loop_tangents[self._container.vert_link_ls[x_po_match]]
-    y_tans = self._container.loop_tangents[self._container.vert_link_ls[y_po_match]]
-    z_tans = self._container.loop_tangents[self._container.vert_link_ls[z_po_match]]
+    tans = loop_tangs[vert_link_ls[po_match]]
 
-    # Get the dot product from the matched cos tangents to the original loops tangent
-    # and filter out -1 loops from the matched co
-    x_dots = np.sum(
-        self._container.loop_tangents[:, np.newaxis] * x_tans, axis=2)
-    x_dots[self._container.vert_link_ls[x_po_match] < 0] = nan
+    # Test the dot products for the smallest of the current loop to the matched points loops
+    # filters out -1 mathc loop indices
+    match_tans = match_loops_vecs(loop_tangs, tans, vert_link_ls[po_match])
 
-    y_dots = np.sum(
-        self._container.loop_tangents[:, np.newaxis] * y_tans, axis=2)
-    y_dots[self._container.vert_link_ls[y_po_match] < 0] = nan
-
-    z_dots = np.sum(
-        self._container.loop_tangents[:, np.newaxis] * z_tans, axis=2)
-    z_dots[self._container.vert_link_ls[z_po_match] < 0] = nan
-
-    # Make the dot products absoulte and sort for the smallest angle
-    x_sort = np.argsort(np.absolute(x_dots))[:, 0]
-    y_sort = np.argsort(np.absolute(y_dots))[:, 0]
-    z_sort = np.argsort(np.absolute(z_dots))[:, 0]
-
-    indeces = np.arange(x_sort.size)
-
-    self.mir_loops_x = self._container.vert_link_ls[x_po_match][indeces, x_sort]
-    self.mir_loops_y = self._container.vert_link_ls[y_po_match][indeces, y_sort]
-    self.mir_loops_z = self._container.vert_link_ls[z_po_match][indeces, z_sort]
-
-    return
+    return match_tans
 
 
 def update_filter_weights(self):
@@ -885,7 +825,6 @@ def move_undostack(self, dir):
                 for loop in po.loops:
                     loop.normal = state[po.index][loop.index].copy()
 
-            self.redraw = True
             set_new_normals(self)
 
     return
@@ -952,11 +891,7 @@ def finish_modal(self, restore):
             'use_edge_sharp', self._container.og_sharp)
 
         # restore normals
-        og_norms = [None for l in ob.data.loops]
-        for po in self._container.points:
-            for loop in po.loops:
-                og_norms[loop.loop_index] = loop.og_normal.normalized()
-        ob.data.normals_split_custom_set(og_norms)
+        ob.data.normals_split_custom_set(self._container.og_norms)
 
     restore_modifiers(self)
 
@@ -1081,6 +1016,8 @@ def gizmo_click_init(self, event, giz_status):
             self._mode_cache.append(orb_mat.copy())
             self._mode_cache.append(False)
 
+        self._container.cache_norms = self._container.new_norms.copy()
+
         self.gizmo_click = True
         self._current_tool = self._gizmo_tool
         self.tool_mode = True
@@ -1130,7 +1067,7 @@ def start_sphereize_mode(self):
         bpy.context.selected_objects[0].select_set(False)
 
     avg_loc = np.mean(
-        self._container.new_norms[self._container.sel_status], axis=0)
+        self._container.loop_coords[self._container.sel_status], axis=0)
     self._target_emp.location = avg_loc
     self._target_emp.empty_display_size = 0.5
     self._target_emp.select_set(True)
@@ -1205,7 +1142,7 @@ def start_point_mode(self):
         bpy.context.selected_objects[0].select_set(False)
 
     avg_loc = np.mean(
-        self._container.new_norms[self._container.sel_status], axis=0)
+        self._container.loop_coords[self._container.sel_status], axis=0)
     self._target_emp.location = avg_loc
     self._target_emp.empty_display_size = 0.5
     self._target_emp.select_set(True)
@@ -1258,7 +1195,7 @@ def end_point_mode(self, keep_normals):
 def point_normals(self):
     if self.point_align:
         avg_loc = np.mean(
-            self._container.new_norms[self._container.sel_status], axis=0)
+            self._container.loop_coords[self._container.sel_status], axis=0)
         vec = (self._object.matrix_world.inverted() @ self._target_emp.location) - \
             (self._object.matrix_world.inverted() @ avg_loc)
 
@@ -1353,6 +1290,30 @@ def get_hidden_loops(self):
     # Get indices of loops that are hidden
     hid_ls = self._container.hide_status.nonzero()[0]
     return hid_ls
+
+
+def get_visible_points(self):
+    # Get indices of points that all connected loops are visible
+    vis_pos = self._container.hide_status[self._container.vert_link_ls]
+    vis_pos[self._container.vert_link_ls < 0] = False
+    vis_pos = vis_pos.all(axis=1)
+    vis_pos = (~vis_pos).nonzero()[0]
+
+    return vis_pos
+
+
+def get_selected_points(self, any_selected=False):
+    # Get indices of points that all connected loops are visible
+    vis_pos = self._container.sel_status[self._container.vert_link_ls]
+    if any_selected:
+        vis_pos[self._container.vert_link_ls < 0] = False
+        vis_pos = vis_pos.any(axis=1)
+    else:
+        vis_pos[self._container.vert_link_ls < 0] = True
+        vis_pos = vis_pos.all(axis=1)
+    vis_pos = vis_pos.nonzero()[0]
+
+    return vis_pos
 
 
 def get_active_point(self):
@@ -1868,7 +1829,7 @@ def update_orbit_empty(self):
 
     if self._container.sel_status.any():
         avg_loc = np.mean(
-            self._container.new_norms[self._container.sel_status], axis=0)
+            self._container.loop_coords[self._container.sel_status], axis=0)
         gizmo_update_hide(self, True)
         self._orbit_ob.matrix_world.translation = avg_loc
     else:
