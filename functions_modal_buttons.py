@@ -451,11 +451,11 @@ def init_ui_panels(self, rw, rh, scale):
 
         row = box.add_row()
         but = row.add_button(20, 'Set Smooth Shading')
-        but.set_custom_id([2])
+        but.set_custom_id([0])
         but.set_click_up_func(change_shading)
 
         but = row.add_button(20, 'Set Flat Shading')
-        but.set_custom_id([2])
+        but.set_custom_id([1])
         but.set_click_up_func(change_shading)
 
         box = self._tools_panel.add_box()

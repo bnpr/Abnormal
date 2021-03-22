@@ -282,23 +282,31 @@ def flip_normals(self):
 
 def set_outside_inside(self, direction):
     update_filter_weights(self)
-    for ind in sel_inds:
-        po = self._container.points[ind[0]]
-        if po.valid:
-            loop = po.loops[ind[1]]
 
-            if self._object_smooth:
-                poly_norm = Vector((0, 0, 0))
-                for bm_loop in self._object_bm.verts[po.index].link_loops:
-                    poly_norm += self._object.data.polygons[bm_loop.face.index].normal * direction
+    if self._object_smooth:
+        sel_pos = get_selected_points(self, any_selected=True)
+        sel_loops = self._container.vert_link_ls[sel_pos]
 
-                if poly_norm.length > 0.0:
-                    loop_norm_set(self, loop, loop.normal,
-                                  poly_norm/len(po.loops))
+        f_norms = self._container.face_normals[self._container.loop_faces[sel_loops]]
+        f_norms[sel_loops < 0] = nan
 
-            else:
-                loop.normal = self._object_bm.loops[loop.loop_index].face.normal.copy(
-                ) * direction
+        loop_status = self._container.sel_status[sel_loops]
+        loop_status[sel_loops < 0] = False
+
+        f_norms[~loop_status] = nan
+        f_norms = np.nanmean(f_norms, axis=1)[:, np.newaxis]
+        new_norms = self._container.new_norms[sel_loops]
+
+        new_norms[:] = f_norms
+
+        sel_loops = sel_loops[loop_status]
+        new_norms = new_norms[loop_status]
+
+        self._container.new_norms[sel_loops] = new_norms
+
+    else:
+        self._container.new_norms[self._container.sel_status] = self._container.face_normals[
+            self._container.loop_faces[self._container.sel_status]]
 
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -315,21 +323,46 @@ def reset_normals(self):
 
 def set_normals_from_faces(self):
     update_filter_weights(self)
-    for ind in sel_inds:
-        po = self._container.points[ind[0]]
-        if po.valid:
-            sel_faces = [
-                loop.face_index for loop in po.loops if loop.select or po.select]
 
-            loop = po.loops[ind[1]]
+    # Get all faces that have all loops selected
+    sel_fs = self._container.sel_status[self._container.face_link_ls]
+    sel_fs[self._container.face_link_ls < 0] = True
+    sel_fs = sel_fs.all(axis=1).nonzero()[0]
 
-            poly_norm = Vector((0, 0, 0))
-            for f_ind in sel_faces:
-                poly_norm += self._object.data.polygons[f_ind].normal
+    # Get the unique vertices of these faces in a flat array
+    face_vs = self._container.face_link_vs[sel_fs].ravel()
+    face_vs = np.unique(face_vs[face_vs >= 0])
 
-            if poly_norm.length > 0.0:
-                loop_norm_set(self, loop, loop.normal,
-                              poly_norm/len(sel_faces))
+    # Get the loops of each vert
+    vert_ls = self._container.vert_link_ls[face_vs]
+
+    # Get the faces fand face normals of these loops
+    loop_fs = self._container.loop_faces[vert_ls]
+    face_l_norms = self._container.face_normals[loop_fs]
+
+    # Find which of these loops is valid based on if its face is apart of the fully selected faces
+    loop_status = np.in1d(loop_fs, sel_fs)
+    loop_status.shape = [face_l_norms.shape[0], face_l_norms.shape[1]]
+    loop_status[vert_ls < 0] = False
+
+    # Remove loop face normals for non valid loops and average per vertex
+    face_l_norms[~loop_status] = nan
+    face_l_norms = np.nanmean(face_l_norms, axis=1)
+
+    # Create array of vertex averaged normals for all of the loops connected to the verts
+    new_norms = self._container.new_norms[vert_ls]
+    new_norms[:] = face_l_norms[:, np.newaxis]
+
+    # Filter out loops that should not be set
+    # Filter by verts if individual loops is off and by loops if it is on
+    if self._individual_loops:
+        new_norms = new_norms[loop_status]
+        vert_ls = vert_ls[loop_status]
+    else:
+        new_norms = new_norms[vert_ls >= 0]
+        vert_ls = vert_ls[vert_ls >= 0]
+
+    self._container.new_norms[vert_ls] = new_norms
 
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -505,6 +538,7 @@ def cache_point_data(self):
 
     link_vs = []
     link_ls = []
+    link_fs = [None for i in range(loop_amnt)]
     for v in self._object_bm.verts:
         l_v_inds = [-1] * max_link_eds
         l_l_inds = [-1] * max_link_loops
@@ -514,6 +548,7 @@ def cache_point_data(self):
 
         for l, loop in enumerate(v.link_loops):
             l_l_inds[l] = loop.index
+            link_fs[loop.index] = loop.face.index
 
         link_vs += l_v_inds
         link_ls += l_l_inds
@@ -524,11 +559,14 @@ def cache_point_data(self):
     self._container.vert_link_ls = np.array(link_ls, dtype=np.int32)
     self._container.vert_link_ls.shape = [vert_amnt, max_link_loops]
 
+    self._container.loop_faces = np.array(link_fs, dtype=np.int32)
+
     #
 
     link_f_vs = []
     link_f_ls = []
     link_f_eds = []
+    face_normals = []
     l_tangents = [None for i in range(loop_amnt)]
     for f in self._object_bm.faces:
         l_v_inds = [-1] * max_link_f_vs
@@ -541,6 +579,8 @@ def cache_point_data(self):
         for l, loop in enumerate(f.loops):
             l_l_inds[l] = loop.index
             l_tangents[loop.index] = loop.calc_tangent()
+
+        face_normals.append(f.normal)
 
         link_f_vs += l_v_inds
         link_f_ls += l_l_inds
@@ -557,6 +597,9 @@ def cache_point_data(self):
 
     self._container.loop_tangents = np.array(l_tangents, dtype=np.float32)
     self._container.loop_tangents.shape = [loop_amnt, 3]
+
+    self._container.face_normals = np.array(face_normals, dtype=np.float32)
+    self._container.face_normals.shape = [face_amnt, 3]
 
     #
 

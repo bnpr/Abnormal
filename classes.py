@@ -32,6 +32,7 @@ class ABNContainer:
         self.loop_coords = None
         self.loop_tangents = None
         self.loop_tri_coords = None
+        self.face_normals = None
 
         self.og_norms = None
         self.new_norms = None
@@ -48,6 +49,7 @@ class ABNContainer:
         self.face_link_ls = None
         self.face_link_eds = None
         self.edge_link_vs = None
+        self.loop_faces = None
 
         self.color_tri = (0.16, 0.55, 0.7, 0.2)
         self.color_tri_sel = (0.16, 0.7, 0.9, 0.5)
