@@ -103,8 +103,7 @@ class ABN_OT_normal_editor_modal(Operator):
             self._mode_cache = []
             self._line_drawing_pos = []
 
-            self._copy_normals = None
-            self._copy_normals_tangs = None
+            self._copy_normals = np.array([])
 
             self.target_strength = 1.0
             self._target_emp = None
