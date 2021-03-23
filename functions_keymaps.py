@@ -279,8 +279,7 @@ def basic_keymap(self, context, event):
         # Copy Active Normal
         if 'Copy Active Normal' in keys:
             if self._container.sel_status.any():
-                self._copy_normals, self._copy_normals_tangs = get_po_loop_data(
-                    self, self._active_point)
+                store_active_normal(self)
 
         # Paste Stored Normal
         if 'Paste Stored Normal' in keys:

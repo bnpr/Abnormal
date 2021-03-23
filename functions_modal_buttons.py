@@ -755,9 +755,8 @@ def active_to_selection(self, arguments):
 
 
 def store_active(self, arguments):
-    if arguments[0]._container.sel_status.any():
-        arguments[0]._copy_normals, arguments[0]._copy_normals_tangs = get_po_loop_data(
-            arguments[0], arguments[0]._active_point)
+    if arguments[0]._container.act_status.any():
+        store_active_normal(arguments[0])
     return
 
 

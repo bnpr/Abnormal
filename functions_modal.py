@@ -384,10 +384,13 @@ def copy_active_to_selected(self):
 
     # Find active po and match the tangents of this po to the selected loops
     else:
-        sel_loops = self._container.sel_status
-        sel_loops[act_loops] = False
-
         act_po = get_active_point(self)
+        act_ls = self._container.vert_link_ls[act_po]
+        act_ls = act_ls[act_ls >= 0]
+
+        sel_loops = self._container.sel_status
+        sel_loops[act_ls] = False
+
         match_pos = [act_po]*sel_loops.nonzero()[0].size
         target_tans = self._container.loop_tangents[self._container.vert_link_ls[match_pos]]
 
@@ -401,20 +404,45 @@ def copy_active_to_selected(self):
     return
 
 
+def store_active_normal(self):
+    act_loops = self._container.act_status.nonzero()[0]
+
+    # 1 active loop so paste it onto all selected
+    if act_loops.size == 1:
+        self._copy_normals = act_loops
+
+    # Find active po and match the tangents of this po to the selected loops
+    else:
+        act_po = get_active_point(self)
+        act_ls = self._container.vert_link_ls[act_po]
+        act_ls = act_ls[act_ls >= 0]
+
+        self._copy_normals = act_ls
+    return
+
+
 def paste_normal(self):
     update_filter_weights(self)
 
-    if self._copy_normals != None and self._copy_normals_tangs != None:
-        for ind in sel_inds:
-            po = self._container.points[ind[0]]
-            if po.valid:
-                loop = po.loops[ind[1]]
+    if self._copy_normals.size > 0:
+        # 1 active loop so paste it onto all selected
+        if self._copy_normals.size == 1:
+            self._container.new_norms[self._container.sel_status] = self._container.new_norms[self._copy_normals[0]]
 
-                m_ind = match_loops_vecs(
-                    self, loop, self._copy_normals_tangs)
+        # Find active po and match the tangents of this po to the selected loops
+        else:
+            sel_loops = self._container.sel_status
+            sel_loops[self._copy_normals] = False
 
-                loop_norm_set(
-                    self, loop, loop.normal, self._copy_normals[m_ind].copy())
+            target_tans = np.tile(
+                self._container.loop_tangents[self._copy_normals], (sel_loops.nonzero()[0].size, 1, 1))
+            target_inds = np.tile(self._copy_normals,
+                                  (sel_loops.nonzero()[0].size, 1))
+
+            loop_matches = match_loops_vecs(
+                self._container.loop_tangents[sel_loops], target_tans, target_inds)
+
+            self._container.new_norms[sel_loops] = self._container.new_norms[loop_matches]
 
     set_new_normals(self)
     add_to_undostack(self, 1)
