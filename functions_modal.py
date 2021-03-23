@@ -25,10 +25,11 @@ def match_loops_vecs(source_vecs, target_vecs, target_inds):
     # Get the dot product from the matched cos tangents to the original loops tangent
     # and filter out -1 loops from the matched co
     dots = np.sum(source_vecs[:, np.newaxis] * target_vecs, axis=2)
+
+    dots *= -1
     dots[target_inds < 0] = nan
 
-    # Make the dot products absoulte and sort for the smallest angle
-    sort = np.argsort(np.absolute(dots))[:, 0]
+    sort = np.argsort(dots)[:, 0]
 
     indeces = np.arange(sort.size)
 
@@ -95,7 +96,7 @@ def incremental_rotate_vectors(self, axis, direction):
     self.translate_mode = 0
     self.translate_axis = 2
 
-    self._container.cache_norms = self._container.new_norms.copy()
+    self._container.cache_norms[:] = self._container.new_norms
 
     self.redraw = True
     return
@@ -374,18 +375,26 @@ def set_normals_from_faces(self):
 #
 def copy_active_to_selected(self):
     update_filter_weights(self)
-    if self._active_point != None:
-        norms, tangs = get_po_loop_data(self, self._active_point)
 
-        for ind in sel_inds:
-            po = self._container.points[ind[0]]
-            if po.valid:
-                loop = po.loops[ind[1]]
+    act_loops = self._container.act_status.nonzero()[0]
 
-                m_ind = match_loops_vecs(self, loop, tangs)
+    # 1 active loop so paste it onto all selected
+    if act_loops.size == 1:
+        self._container.new_norms[self._container.sel_status] = self._container.new_norms[act_loops[0]]
 
-                loop_norm_set(
-                    self, loop, loop.normal, norms[m_ind].copy())
+    # Find active po and match the tangents of this po to the selected loops
+    else:
+        sel_loops = self._container.sel_status
+        sel_loops[act_loops] = False
+
+        act_po = get_active_point(self)
+        match_pos = [act_po]*sel_loops.nonzero()[0].size
+        target_tans = self._container.loop_tangents[self._container.vert_link_ls[match_pos]]
+
+        loop_matches = match_loops_vecs(
+            self._container.loop_tangents[sel_loops], target_tans, self._container.vert_link_ls[match_pos])
+
+        self._container.new_norms[sel_loops] = self._container.new_norms[loop_matches]
 
     set_new_normals(self)
     add_to_undostack(self, 1)
@@ -394,6 +403,7 @@ def copy_active_to_selected(self):
 
 def paste_normal(self):
     update_filter_weights(self)
+
     if self._copy_normals != None and self._copy_normals_tangs != None:
         for ind in sel_inds:
             po = self._container.points[ind[0]]
@@ -405,6 +415,7 @@ def paste_normal(self):
 
                 loop_norm_set(
                     self, loop, loop.normal, self._copy_normals[m_ind].copy())
+
     set_new_normals(self)
     add_to_undostack(self, 1)
     return
@@ -683,13 +694,13 @@ def cache_mirror_data(self):
     loop_cos = (mat_inv[:3, :3] @ (self._container.loop_coords-loc).T).T
 
     self.mir_loops_x = find_coord_mirror(self._container.po_coords, loop_cos.copy(
-    ), self._container.loop_tangents, self._container.vert_link_ls, 0, mat)
+    ), self._container.loop_tangents.copy(), self._container.vert_link_ls, 0, mat)
 
     self.mir_loops_y = find_coord_mirror(self._container.po_coords, loop_cos.copy(
-    ), self._container.loop_tangents, self._container.vert_link_ls, 1, mat)
+    ), self._container.loop_tangents.copy(), self._container.vert_link_ls, 1, mat)
 
     self.mir_loops_z = find_coord_mirror(self._container.po_coords, loop_cos.copy(
-    ), self._container.loop_tangents, self._container.vert_link_ls, 2, mat)
+    ), self._container.loop_tangents.copy(), self._container.vert_link_ls, 2, mat)
     return
 
 
@@ -708,6 +719,8 @@ def find_coord_mirror(po_coords, l_coords, loop_tangs, vert_link_ls, mir_axis, m
 
     # Get the tangents of the matched mirror coord
     tans = loop_tangs[vert_link_ls[po_match]]
+
+    loop_tangs[:, mir_axis] *= -1
 
     # Test the dot products for the smallest of the current loop to the matched points loops
     # filters out -1 mathc loop indices
@@ -1059,7 +1072,7 @@ def gizmo_click_init(self, event, giz_status):
             self._mode_cache.append(orb_mat.copy())
             self._mode_cache.append(False)
 
-        self._container.cache_norms = self._container.new_norms.copy()
+        self._container.cache_norms[:] = self._container.new_norms
 
         self.gizmo_click = True
         self._current_tool = self._gizmo_tool

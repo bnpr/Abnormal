@@ -219,7 +219,7 @@ def basic_keymap(self, context, event):
 
                 self._window.set_status('VIEW ROTATION')
 
-                self._container.cache_norms = self._container.new_norms.copy()
+                self._container.cache_norms[:] = self._container.new_norms
 
                 self._mode_cache.clear()
                 self._mode_cache.append(avg_loc)
@@ -289,7 +289,7 @@ def basic_keymap(self, context, event):
 
         # Paste Active Normal to Selected
         if 'Paste Active Normal to Selected' in keys:
-            if self._container.sel_status.any():
+            if self._container.act_status.any():
                 copy_active_to_selected(self)
 
         # Set Normals Outside

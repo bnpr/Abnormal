@@ -478,6 +478,7 @@ def rotate_norms_confirm(modal, context, event, keys, func_data):
 
 
 def rotate_norms_cancel(modal, context, event, keys, func_data):
+    modal._container.new_norms = modal._container.cache_norms.copy()
 
     set_new_normals(modal)
     modal._mode_cache.clear()

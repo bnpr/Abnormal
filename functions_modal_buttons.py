@@ -749,7 +749,7 @@ def change_shading(self, arguments):
 
 
 def active_to_selection(self, arguments):
-    if arguments[0]._container.sel_status.any():
+    if arguments[0]._container.act_status.any():
         copy_active_to_selected(arguments[0])
     return
 
