@@ -599,6 +599,7 @@ def cache_point_data(self):
     self._container.vert_link_ls.shape = [vert_amnt, max_link_loops]
 
     self._container.loop_faces = np.array(link_fs, dtype=np.int32)
+    self._container.filter_weights = np.zeroes(loop_amnt, dtype=np.float32)
 
     #
 
@@ -763,23 +764,21 @@ def update_filter_weights(self):
     weights = [1.0] * len(self._object.data.loops)
     if abn_props.vertex_group != '' and abn_props.vertex_group != self._current_filter:
         if abn_props.vertex_group in self._object.vertex_groups:
-            for po in self._container.points:
+            for v in self._object_bm.verts:
                 vg = self._object.vertex_groups[abn_props.vertex_group]
                 self._current_filter = abn_props.vertex_group
 
                 try:
-                    for loop in po.loops:
-                        weights[loop.loop_index] = vg.weight(po.index)
+                    weight = vg.weight(v.index)
+                    self._container.filter_weights[self._container.vert_link_ls[v.index]] = weight
 
                 except:
-                    for loop in po.loops:
-                        weights[loop.loop_index] = 0.0
+                    self._container.filter_weights[self._container.vert_link_ls[v.index]] = 0.0
 
         else:
             self._current_filter = ''
             abn_props.vertex_group = ''
 
-    self._container.filter_weights = np.array(weights)[:, None]
     return
 
 

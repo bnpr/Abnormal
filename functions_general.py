@@ -538,53 +538,63 @@ def get_linked_geo(bm, inds, vis=None):
 #
 
 
-def get_normalized_reg_cos(coords, mat, depth_dist):
-    #
-    # Get region coordinates at a normalized depth from a set of coordinates
-    #
-    cos = np.array(coords)
-    cos.shape = [len(coords), 3]
-
-    pmat = mat[:3, :3].T  # rotates backwards without T
-    loc = mat[:3, 3]
-    r_cos = cos @ pmat + loc
-
-    # Scale sscos to be on a flat plane 1.5 from view matrix
-    # -1.5 / r_cos[:,2] Gets a scale factor for each coord based on its depth in comparison with the value used
-    # [:,None] rebroadcasts the single scale value into a column to scale along the rows or coords of the ss cos
-    r_cos *= (-depth_dist / r_cos[:, 2])[:, None]
-    return r_cos
-
-
 def get_np_region_cos(coords, region, region_data, depth=1.5):
     #
     # Use numpy to get coords in region space
     # Bottom Left of region is 0,0
     #
 
-    mat = np.array(region_data.view_matrix)
-    pmat = mat[:3, :3].T
-    loc = mat[:3, 3]
-    r_cos = get_normalized_reg_cos(coords, mat, depth)
+    m = np.array(region_data.view_matrix)
+    pmat = m[:3, :3].T  # rotates backwards without T
+    loc = m[:3, 3]
 
-    # Get the bottom left and bottom right coords projected into 3d space
-    # This gives us the region width for scaling our region coords
-    center_co = pmat @ Vector(np.array([0, 0, -1.5])-loc)
-    vec1 = view3d_utils.region_2d_to_location_3d(
-        region, region_data, [0, 0], center_co)
-    vec2 = view3d_utils.region_2d_to_location_3d(
-        region, region_data, [region.width, 0], center_co)
+    cent_reg_co = pmat @ Vector(np.array([0, 0, -depth])-loc)
+    bl_reg_co = view3d_utils.region_2d_to_location_3d(
+        region, region_data, [0, 0], cent_reg_co)
+    br_reg_co = view3d_utils.region_2d_to_location_3d(
+        region, region_data, [region.width, 0], cent_reg_co)
+    tl_reg_co = view3d_utils.region_2d_to_location_3d(
+        region, region_data, [0, region.height], cent_reg_co)
 
-    width = (vec2-vec1).length
-    scale = region.width/width
+    loc_arr = np.array(coords)
+    loc_arr.shape = [len(coords), 3]
 
-    origin = get_normalized_reg_cos([vec1], mat, 1.5) * scale
+    view_vec = np.array(view3d_utils.region_2d_to_vector_3d(
+        region, region_data, [region.width/2, region.height/2]))
+    view_vecs = np.tile(view_vec, (loc_arr.shape[0], 1))
 
-    # Scale up the sscords and offset them
-    r_cos *= scale
-    r_cos[:, 0] -= origin[0][0]
-    r_cos[:, 1] -= origin[0][1]
-    r_cos[:, 2] = 0.0
+    if region_data.view_perspective == 'PERSP':
+        scale_center = np.array(view3d_utils.region_2d_to_origin_3d(
+            region, region_data, [region.width/2, region.height/2]))
+        dir_vecs = loc_arr - scale_center
+
+        dot_offsets = np.sum((loc_arr - scale_center) * view_vec, axis=1)
+
+        scale_3d = depth/dot_offsets
+
+        flat_locs = scale_center + dir_vecs*scale_3d[:, None]
+
+    elif region_data.view_perspective == 'ORTHO':
+        scale_center = np.array(bl_reg_co)
+        dir_vecs = view_vecs
+
+        dot_offsets = np.sum((loc_arr - scale_center) * view_vec, axis=1)
+
+        flat_locs = loc_arr - dir_vecs*dot_offsets[:, None]
+
+    vec_w = np.array((br_reg_co-bl_reg_co).normalized())
+    vec_h = np.array((tl_reg_co-bl_reg_co).normalized())
+
+    h_offsets = (flat_locs - np.array(bl_reg_co)) @ vec_w
+    v_offsets = (flat_locs - np.array(bl_reg_co)) @ vec_h
+
+    r_cos = np.zeros(loc_arr.size)
+    r_cos.shape = loc_arr.shape
+
+    r_cos[:, 0] = h_offsets
+    r_cos[:, 1] = v_offsets
+
+    r_cos *= region.width/(br_reg_co-bl_reg_co).length
 
     return r_cos
 
@@ -721,7 +731,7 @@ def np_test_co_in_shape(cos, shape_arr):
     vecs_a = get_np_normalized_vecs(shape_arr - cos)
     vecs_b = get_np_normalized_vecs(roll_arr - cos)
 
-    tot_rot = math.degrees(np.sum(np.arccos(np.sum(vecs_a * vecs_b, axis=1))))
+    tot_rot = np.degrees(np.sum(np.arccos(np.sum(vecs_a * vecs_b, axis=1))))
     if tot_rot >= 180:
         in_shape = True
 

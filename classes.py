@@ -12,7 +12,6 @@ class ABNContainer:
         self.create_shader()
         self.create_point_shader()
 
-        self.points = []
         self.matrix = np.array(mat)
 
         self.loop_scale = 1.0
