@@ -11,13 +11,13 @@ def basic_ui_hover_keymap(self, context, event):
 
     # test hover panels
     if event.type == 'MOUSEMOVE' and self.click_hold == False:
-        hov_status = self._window.test_hover(self._mouse_reg_loc)
+        hov_status = self._window.test_hover(self._mouse_reg_loc.tolist())
         self.ui_hover = hov_status != None
 
     # click down move
     if event.type == 'MOUSEMOVE' and self.click_hold:
         self._window.click_down_move(
-            self._mouse_reg_loc, event.shift, arguments=[event])
+            self._mouse_reg_loc.tolist(), event.shift, arguments=[event])
 
     # Panel scrolling
     if event.type == 'WHEELDOWNMOUSE' and event.value == 'PRESS':
@@ -42,7 +42,7 @@ def basic_ui_hover_keymap(self, context, event):
 
         # Test 2d ui selection
         panel_status = self._window.test_click_down(
-            self._mouse_reg_loc, event.shift, arguments=[event])
+            self._mouse_reg_loc.tolist(), event.shift, arguments=[event])
         self.click_hold = True
         if panel_status:
             if panel_status[0] == 'GIZMO':
@@ -59,7 +59,7 @@ def basic_ui_hover_keymap(self, context, event):
         status = {'RUNNING_MODAL'}
 
         panel_status = self._window.test_click_up(
-            self._mouse_reg_loc, event.shift, arguments=[event])
+            self._mouse_reg_loc.tolist(), event.shift, arguments=[event])
         self.click_hold = False
         if panel_status:
             rco = view3d_utils.location_3d_to_region_2d(
@@ -124,7 +124,7 @@ def basic_keymap(self, context, event):
     # test hover ui
     if event.type == 'MOUSEMOVE' and self.click_hold == False:
         status = {'RUNNING_MODAL'}
-        hov_status = self._window.test_hover(self._mouse_reg_loc)
+        hov_status = self._window.test_hover(self._mouse_reg_loc.tolist())
         self.ui_hover = hov_status != None
         if self.ui_hover:
             return status
@@ -225,7 +225,7 @@ def basic_keymap(self, context, event):
                 self._mode_cache.append(avg_loc)
                 self._mode_cache.append(0)
                 self._mode_cache.append(1)
-                self._mouse_init = self._mouse_reg_loc
+                self._mouse_init[:] = self._mouse_reg_loc
 
                 self.rotating = True
                 self._current_tool = self._rotate_norms_tool

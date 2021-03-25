@@ -227,9 +227,9 @@ def create_selection_drawing_lists(self):
         angle = math.radians(360/32)
 
         for i in range(32):
-            circlesel_screen_lines.append(co.copy())
+            circlesel_screen_lines.append(co.xy)
             co = rotate_2d(cur_loc, co, angle)
-            circlesel_screen_lines.append(co.copy())
+            circlesel_screen_lines.append(co.xy)
 
     # LASSO SELECTION LINES
     lassosel_screen_lines = []
@@ -244,8 +244,8 @@ def create_selection_drawing_lists(self):
     boxsel_screen_lines = []
     if self.box_selecting:
 
-        init_loc = Vector(self._mode_cache[0][0])
-        cur_loc = Vector(self._mode_cache[0][1])
+        init_loc = Vector(self._mode_cache[0][0]).xy
+        cur_loc = Vector(self._mode_cache[0][1]).xy
 
         top_right = Vector(
             (self._mode_cache[0][1][0], self._mode_cache[0][0][1]))
@@ -277,7 +277,7 @@ def create_selection_drawing_lists(self):
     if self.rotating:
         cent_loc = view3d_utils.location_3d_to_region_2d(
             self.act_reg, self.act_rv3d, self._mode_cache[0])
-        cur_loc = Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1]))
+        cur_loc = Vector(self._mouse_reg_loc[:2])
 
         vec = cur_loc-cent_loc
         start_co = cent_loc

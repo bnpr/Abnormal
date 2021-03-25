@@ -46,8 +46,8 @@ def set_new_normals(self):
 
     # Lerp between cached and new normals by the filter weights
     self._container.new_norms = self._container.cache_norms * \
-        (1.0-self._container.filter_weights) + \
-        self._container.new_norms * self._container.filter_weights
+        (1.0-self._container.filter_weights[:, None]) + \
+        self._container.new_norms * self._container.filter_weights[:, None]
 
     # Get the scale factor to normalized new normals
     scale = 1 / np.sqrt(np.sum(np.square(self._container.new_norms), axis=1))
@@ -115,10 +115,10 @@ def rotate_vectors(self, angle):
     # Viewspace rotation matrix
     if self.translate_mode == 0:
         persp_mat = bpy.context.region_data.view_matrix.to_3x3().normalized()
-        loc_mat = self._object.matrix_world.to_3x3().normalized()
+        ob_mat = self._object.matrix_world.to_3x3().normalized()
 
         self._container.new_norms[self._container.sel_status] = (np.array(
-            loc_mat) @ self._container.cache_norms[self._container.sel_status].T).T
+            ob_mat) @ self._container.cache_norms[self._container.sel_status].T).T
         self._container.new_norms[self._container.sel_status] = (np.array(
             persp_mat) @ self._container.new_norms[self._container.sel_status].T).T
         self._container.new_norms[self._container.sel_status] = (
@@ -126,27 +126,27 @@ def rotate_vectors(self, angle):
         self._container.new_norms[self._container.sel_status] = (np.array(
             persp_mat.inverted()) @ self._container.new_norms[self._container.sel_status].T).T
         self._container.new_norms[self._container.sel_status] = (np.array(
-            loc_mat.inverted()) @ self._container.new_norms[self._container.sel_status].T).T
+            ob_mat.inverted()) @ self._container.new_norms[self._container.sel_status].T).T
 
     # World space rotation matrix
     elif self.translate_mode == 1:
-        loc_mat = self._object.matrix_world.to_3x3().normalized()
+        ob_mat = self._object.matrix_world.to_3x3().normalized()
 
         self._container.new_norms[self._container.sel_status] = (np.array(
-            loc_mat) @ self._container.cache_norms[self._container.sel_status].T).T
+            ob_mat) @ self._container.cache_norms[self._container.sel_status].T).T
         self._container.new_norms[self._container.sel_status] = (
             rot @ self._container.new_norms[self._container.sel_status].T).T
         self._container.new_norms[self._container.sel_status] = (np.array(
-            loc_mat.inverted()) @ self._container.new_norms[self._container.sel_status].T).T
+            ob_mat.inverted()) @ self._container.new_norms[self._container.sel_status].T).T
 
     # Local space roatation matrix
     elif self.translate_mode == 2:
         if self.gizmo_click:
             orb_mat = self._orbit_ob.matrix_world.to_3x3().normalized()
-            loc_mat = self._object.matrix_world.to_3x3().normalized()
+            ob_mat = self._object.matrix_world.to_3x3().normalized()
 
             self._container.new_norms[self._container.sel_status] = (np.array(
-                loc_mat) @ self._container.cache_norms[self._container.sel_status].T).T
+                ob_mat) @ self._container.cache_norms[self._container.sel_status].T).T
             self._container.new_norms[self._container.sel_status] = (np.array(
                 orb_mat.inverted()) @ self._container.new_norms[self._container.sel_status].T).T
             self._container.new_norms[self._container.sel_status] = (
@@ -154,7 +154,7 @@ def rotate_vectors(self, angle):
             self._container.new_norms[self._container.sel_status] = (
                 np.array(orb_mat) @ self._container.new_norms[self._container.sel_status].T).T
             self._container.new_norms[self._container.sel_status] = (np.array(
-                loc_mat.inverted()) @ self._container.new_norms[self._container.sel_status].T).T
+                ob_mat.inverted()) @ self._container.new_norms[self._container.sel_status].T).T
 
         else:
             self._container.new_norms[self._container.sel_status] = (
@@ -516,7 +516,7 @@ def translate_axis_change(self, text, axis):
 
 def translate_axis_side(self):
     view_vec = view3d_utils.region_2d_to_vector_3d(
-        self.act_reg, self.act_rv3d, Vector(self._mouse_reg_loc))
+        self.act_reg, self.act_rv3d, self._mouse_reg_loc)
 
     if self.translate_mode == 1:
         mat = generate_matrix(Vector((0, 0, 0)), Vector(
@@ -599,7 +599,7 @@ def cache_point_data(self):
     self._container.vert_link_ls.shape = [vert_amnt, max_link_loops]
 
     self._container.loop_faces = np.array(link_fs, dtype=np.int32)
-    self._container.filter_weights = np.zeroes(loop_amnt, dtype=np.float32)
+    self._container.filter_weights = np.ones(loop_amnt, dtype=np.float32)
 
     #
 
@@ -1048,10 +1048,10 @@ def gizmo_click_init(self, event, giz_status):
 
         orb_mat = self._orbit_ob.matrix_world
 
-        view_vec = view3d_utils.region_2d_to_vector_3d(self.act_reg, self.act_rv3d, Vector(
-            (self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
+        view_vec = view3d_utils.region_2d_to_vector_3d(
+            self.act_reg, self.act_rv3d, self._mouse_reg_loc)
         view_orig = view3d_utils.region_2d_to_origin_3d(
-            self.act_reg, self.act_rv3d, Vector((self._mouse_reg_loc[0], self._mouse_reg_loc[1])))
+            self.act_reg, self.act_rv3d, self._mouse_reg_loc)
 
         line_a = view_orig
         line_b = view_orig + view_vec*10000
@@ -1149,6 +1149,8 @@ def start_sphereize_mode(self):
     for i in range(len(bpy.context.selected_objects)):
         bpy.context.selected_objects[0].select_set(False)
 
+    self._container.cache_norms[:] = self._container.new_norms
+
     avg_loc = np.mean(
         self._container.loop_coords[self._container.sel_status], axis=0)
     self._target_emp.location = avg_loc
@@ -1168,7 +1170,7 @@ def start_sphereize_mode(self):
     self._tools_panel.set_visibility(False)
     self._sphere_panel.set_visibility(True)
     self._sphere_panel.set_new_position(
-        self._mouse_reg_loc, window_dims=self._window.dimensions)
+        self._mouse_reg_loc.tolist(), window_dims=self._window.dimensions)
 
     sphereize_normals(self)
     return
@@ -1176,6 +1178,7 @@ def start_sphereize_mode(self):
 
 def end_sphereize_mode(self, keep_normals):
     if keep_normals == False:
+        self._container.new_norms[:] = self._container.cache_norms
         set_new_normals(self)
 
     # self._export_panel.set_visibility(True)
@@ -1192,6 +1195,7 @@ def end_sphereize_mode(self, keep_normals):
     bpy.context.view_layer.objects.active = self._orbit_ob
 
     gizmo_update_hide(self, True)
+    end_active_drawing(self)
 
     self.sphereize_mode = False
     self.tool_mode = False
@@ -1201,18 +1205,14 @@ def end_sphereize_mode(self, keep_normals):
 
 
 def sphereize_normals(self):
-    for i, ind in enumerate(sel_inds):
-        po = self._container.points[ind[0]]
-        loop = po.loops[ind[1]]
+    targ_loc = get_np_matrix_transformed_vecs(
+        np.array(self._target_emp.location), self._object.matrix_world.inverted())
+    local_cos = get_np_matrix_transformed_vecs(
+        self._container.loop_coords[self._container.sel_status], self._object.matrix_world.inverted())
 
-        if po.valid:
-            vec = (self._object.matrix_world.inverted() @ po.co) - \
-                (self._object.matrix_world.inverted() @ self._target_emp.location)
+    self._container.new_norms[self._container.sel_status] = local_cos - targ_loc
 
-            loop_norm_set(
-                self, loop, loop.cached_normal, loop.cached_normal.lerp(vec, self.target_strength))
-
-            self.redraw_active = True
+    self.redraw_active = True
 
     set_new_normals(self)
     return
@@ -1224,9 +1224,12 @@ def start_point_mode(self):
     for i in range(len(bpy.context.selected_objects)):
         bpy.context.selected_objects[0].select_set(False)
 
+    self._container.cache_norms[:] = self._container.new_norms
+
     avg_loc = np.mean(
         self._container.loop_coords[self._container.sel_status], axis=0)
     self._target_emp.location = avg_loc
+    self._target_emp.location[2] += .01
     self._target_emp.empty_display_size = 0.5
     self._target_emp.select_set(True)
     bpy.context.view_layer.objects.active = self._target_emp
@@ -1243,7 +1246,7 @@ def start_point_mode(self):
     self._tools_panel.set_visibility(False)
     self._point_panel.set_visibility(True)
     self._point_panel.set_new_position(
-        self._mouse_reg_loc, window_dims=self._window.dimensions)
+        self._mouse_reg_loc.tolist(), window_dims=self._window.dimensions)
 
     point_normals(self)
     return
@@ -1251,6 +1254,7 @@ def start_point_mode(self):
 
 def end_point_mode(self, keep_normals):
     if keep_normals == False:
+        self._container.new_norms[:] = self._container.cache_norms
         set_new_normals(self)
 
     # self._export_panel.set_visibility(True)
@@ -1267,6 +1271,7 @@ def end_point_mode(self, keep_normals):
     bpy.context.view_layer.objects.active = self._orbit_ob
 
     gizmo_update_hide(self, True)
+    end_active_drawing(self)
 
     self.point_mode = False
     self.tool_mode = False
@@ -1276,48 +1281,44 @@ def end_point_mode(self, keep_normals):
 
 
 def point_normals(self):
+    targ_loc = get_np_matrix_transformed_vecs(
+        np.array(self._target_emp.location), self._object.matrix_world.inverted())
+
     if self.point_align:
-        avg_loc = np.mean(
-            self._container.loop_coords[self._container.sel_status], axis=0)
-        vec = (self._object.matrix_world.inverted() @ self._target_emp.location) - \
-            (self._object.matrix_world.inverted() @ avg_loc)
+        avg_loc = get_np_matrix_transformed_vecs(np.mean(
+            self._container.loop_coords[self._container.sel_status], axis=0), self._object.matrix_world.inverted())
 
-    for i, ind in enumerate(sel_inds):
-        po = self._container.points[ind[0]]
-        loop = po.loops[ind[1]]
+        self._container.new_norms[self._container.sel_status] = targ_loc - avg_loc
 
-        if po.valid:
-            if self.point_align == False:
-                vec = (self._object.matrix_world.inverted(
-                ) @ self._target_emp.location) - (self._object.matrix_world.inverted() @ po.co)
+    else:
+        local_cos = get_np_matrix_transformed_vecs(
+            self._container.loop_coords[self._container.sel_status], self._object.matrix_world.inverted())
 
-            loop_norm_set(
-                self, loop, loop.cached_normal, loop.cached_normal.lerp(vec, self.target_strength))
+        self._container.new_norms[self._container.sel_status] = targ_loc - local_cos
 
-            self.redraw_active = True
+    self.redraw_active = True
 
     set_new_normals(self)
     return
 
 
 def move_target(self, shift):
-    offset = [self._mouse_reg_loc[0] - self._mode_cache[2]
-              [0], self._mouse_reg_loc[1] - self._mode_cache[2][1]]
+    offset = self._mouse_reg_loc - self._mode_cache[1]
 
     if shift:
         offset[0] = offset[0]*.1
         offset[1] = offset[1]*.1
 
-    self._mode_cache[4][0] = self._mode_cache[4][0] + offset[0]
-    self._mode_cache[4][1] = self._mode_cache[4][1] + offset[1]
+    self._mode_cache[3][0] = self._mode_cache[3][0] + offset[0]
+    self._mode_cache[3][1] = self._mode_cache[3][1] + offset[1]
 
     new_co = view3d_utils.region_2d_to_location_3d(
-        self.act_reg, self.act_rv3d, self._mode_cache[4], self._mode_cache[3])
+        self.act_reg, self.act_rv3d, self._mode_cache[3], self._mode_cache[2])
     if self.translate_mode == 0:
         self._target_emp.location = new_co
 
     elif self.translate_mode == 1:
-        self._target_emp.location = self._mode_cache[3].copy()
+        self._target_emp.location = self._mode_cache[2].copy()
         self._target_emp.location[self.translate_axis] = new_co[self.translate_axis]
 
     elif self.translate_mode == 2:
@@ -1330,7 +1331,7 @@ def move_target(self, shift):
         def_vec = (self._object.matrix_world @ def_vec) - \
             self._object.matrix_world.translation
 
-        self._target_emp.location = self._mode_cache[3].copy()
+        self._target_emp.location = self._mode_cache[2].copy()
         self._target_emp.location += def_vec
 
     return
@@ -1569,7 +1570,7 @@ def selection_test(self, shift):
 
     # Get ordered list of closest points within the threshold
     d_order = get_np_vec_ordered_dists(
-        rcos, [self._mouse_reg_loc[0], self._mouse_reg_loc[1], 0.0], threshold=15.0)
+        rcos, self._mouse_reg_loc, threshold=15.0)
 
     d_order = filter_hidden_verts(self, d_order)
 
@@ -1826,7 +1827,7 @@ def circle_selection_test(self, shift, ctrl, radius):
 
     # Get ordered list of closest points within the threshold
     in_range = get_np_vec_ordered_dists(
-        rcos, [self._mouse_reg_loc[0], self._mouse_reg_loc[1], 0.0], threshold=radius)
+        rcos, self._mouse_reg_loc, threshold=radius)
     in_range = filter_hidden_verts(self, in_range)
 
     change = group_vert_selection_test(self, in_range, True, ctrl)
@@ -1839,7 +1840,7 @@ def circle_selection_test(self, shift, ctrl, radius):
         rcos = get_np_region_cos(loop_tri_cos, self.act_reg, self.act_rv3d)
 
         in_range = get_np_vec_ordered_dists(
-            rcos, [self._mouse_reg_loc[0], self._mouse_reg_loc[1], 0.0], threshold=radius)
+            rcos, self._mouse_reg_loc, threshold=radius)
         in_range = filter_hidden_loops(self, in_range)
 
         l_change = group_loop_selection_test(

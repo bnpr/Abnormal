@@ -685,6 +685,22 @@ def get_np_nearest_edge_order(edge_cos, test_co):
     return np.argsort(get_np_dist_to_edge(edge_cos, test_co))
 
 
+def get_np_matrix_transformed_vecs(array, mat):
+    #
+    # Array is a Nx3 array of 3d vectors
+    # Matrix is a 4x4 object matrix
+    # turns array into an Nx4 array to perform matrix multiplication on it and
+    # returns a Nx3 array of the end vectors transformed
+    #
+    n_mat = np.array(mat)
+
+    full_array = np.ones(shape=(int(array.size/3), 4), dtype=np.float32)
+    full_array[:, :-1] = array
+
+    transformed_array = (n_mat @ full_array.T).T[:, :-1]
+    return transformed_array
+
+
 #
 #
 

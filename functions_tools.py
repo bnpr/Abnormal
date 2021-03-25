@@ -90,13 +90,15 @@ def setup_tools(modal):
     modal._rotate_norms_tool = tool
 
     # SPHEREIZE
-    tool = modal.tools.add_tool(inherit_confirm=False)
+    tool = modal.tools.add_tool(inherit_confirm=False, inherit_cancel=False)
     tool.set_mouse_function(sphereize_mouse)
     tool.set_confirm_function(sphereize_confirm)
+    tool.set_cancel_function(sphereize_cancel)
     tool.set_mouse_pass(True)
     tool.add_keymap_argument('Target Move Start', sphereize_start_move)
     tool.add_keymap_argument('Target Center Reset', sphereize_reset)
     tool.add_keymap_argument('Toggle X-Ray', toggle_x_ray)
+    tool.add_cancel_key('Cancel Tool 1')
 
     modal._sphereize_tool = tool
 
@@ -113,13 +115,15 @@ def setup_tools(modal):
     modal._sphereize_move_tool = tool
 
     # POINT
-    tool = modal.tools.add_tool(inherit_confirm=False)
+    tool = modal.tools.add_tool(inherit_confirm=False, inherit_cancel=False)
     tool.set_mouse_function(point_mouse)
     tool.set_confirm_function(point_confirm)
+    tool.set_cancel_function(point_cancel)
     tool.set_mouse_pass(True)
     tool.add_keymap_argument('Target Move Start', point_start_move)
     tool.add_keymap_argument('Target Center Reset', point_reset)
     tool.add_keymap_argument('Toggle X-Ray', toggle_x_ray)
+    tool.add_cancel_key('Cancel Tool 1')
 
     modal._point_tool = tool
 
@@ -179,29 +183,29 @@ def setup_tools(modal):
 #
 # BOX SELECT FUNCS
 def box_sel_start(modal, context, event, keys, func_data):
-    modal._mode_cache.append([modal._mouse_reg_loc, modal._mouse_reg_loc])
+    modal._mode_cache.append(
+        [modal._mouse_reg_loc.tolist(), modal._mouse_reg_loc.tolist()])
     modal.box_selecting = True
     return
 
 
 def box_sel_mouse(modal, context, event, func_data):
     if event.alt:
-        if modal._mouse_init == None:
-            modal._mouse_init = modal._mouse_reg_loc
+        if np.isnan(modal._mouse_init).all():
+            modal._mouse_init[:] = modal._mouse_reg_loc
         else:
-            offset = [modal._mouse_reg_loc[0]-modal._mouse_init[0],
-                      modal._mouse_reg_loc[1]-modal._mouse_init[1]]
+            offset = modal._mouse_reg_loc-modal._mouse_init
 
             for p in range(len(modal._mode_cache[0])):
                 modal._mode_cache[0][p][0] += offset[0]
                 modal._mode_cache[0][p][1] += offset[1]
 
-            modal._mouse_init = modal._mouse_reg_loc
+            modal._mouse_init[:] = modal._mouse_reg_loc
     else:
-        modal._mouse_init = None
+        modal._mouse_init[:] = nan
 
         modal._mode_cache[0].pop(-1)
-        modal._mode_cache[0].append(modal._mouse_reg_loc)
+        modal._mode_cache[0].append(modal._mouse_reg_loc.tolist())
     return
 
 
@@ -224,7 +228,7 @@ def box_sel_confirm(modal, context, event, keys, func_data):
     modal.tool_mode = False
     modal.box_selecting = False
     modal._mode_cache.clear()
-    modal._mouse_init = None
+    modal._mouse_init[:] = nan
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     keymap_refresh(modal)
@@ -236,7 +240,7 @@ def box_sel_cancel(modal, context, event, keys, func_data):
     modal.tool_mode = False
     modal.box_selecting = False
     modal._mode_cache.clear()
-    modal._mouse_init = None
+    modal._mouse_init[:] = nan
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     keymap_refresh(modal)
@@ -247,36 +251,33 @@ def box_sel_cancel(modal, context, event, keys, func_data):
 #
 # LASSO SELECT FUNCS
 def lasso_sel_start(modal, context, event, keys, func_data):
-    modal._mode_cache.append(
-        [[modal._mouse_reg_loc[0], modal._mouse_reg_loc[1], 0.0]])
+    modal._mode_cache.append([modal._mouse_reg_loc.tolist()])
     modal.lasso_selecting = True
     return
 
 
 def lasso_sel_mouse(modal, context, event, func_data):
     if event.alt:
-        if modal._mouse_init == None:
-            modal._mouse_init = modal._mouse_reg_loc
+        if np.isnan(modal._mouse_init).all():
+            modal._mouse_init[:] = modal._mouse_reg_loc
         else:
-            offset = [modal._mouse_reg_loc[0]-modal._mouse_init[0],
-                      modal._mouse_reg_loc[1]-modal._mouse_init[1]]
+            offset = modal._mouse_reg_loc-modal._mouse_init
 
             for p in range(len(modal._mode_cache[0])):
                 modal._mode_cache[0][p][0] += offset[0]
                 modal._mode_cache[0][p][1] += offset[1]
 
-            modal._mouse_init = modal._mouse_reg_loc
+            modal._mouse_init[:] = modal._mouse_reg_loc
 
     else:
-        modal._mouse_init = None
+        modal._mouse_init[:] = nan
 
         prev_loc = Vector(modal._mode_cache[0][-1])
         cur_loc = Vector(modal._mouse_reg_loc)
         offset = cur_loc.xy - prev_loc.xy
 
         if offset.length > 5.0:
-            modal._mode_cache[0].append(
-                [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1], 0.0])
+            modal._mode_cache[0].append(modal._mouse_reg_loc.tolist())
     return
 
 
@@ -299,7 +300,7 @@ def lasso_sel_confirm(modal, context, event, keys, func_data):
     modal.tool_mode = False
     modal.lasso_selecting = False
     modal._mode_cache.clear()
-    modal._mouse_init = None
+    modal._mouse_init[:] = nan
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     keymap_refresh(modal)
@@ -311,7 +312,7 @@ def lasso_sel_cancel(modal, context, event, keys, func_data):
     modal.tool_mode = False
     modal.lasso_selecting = False
     modal._mode_cache.clear()
-    modal._mouse_init = None
+    modal._mouse_init[:] = nan
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     keymap_refresh(modal)
@@ -371,11 +372,11 @@ def circle_sel_start_resize(modal, context, event, keys, func_data):
     modal._current_tool = modal._circle_resize_tool
 
     if modal._mouse_reg_loc[0]-modal.circle_radius < 0:
-        modal._mouse_init = [modal._mouse_reg_loc[0] +
-                             modal.circle_radius, modal._mouse_reg_loc[1]]
+        modal._mouse_init[:] = modal._mouse_reg_loc
+        modal._mouse_init[0] += modal.circle_radius
     else:
-        modal._mouse_init = [modal._mouse_reg_loc[0] -
-                             modal.circle_radius, modal._mouse_reg_loc[1]]
+        modal._mouse_init[:] = modal._mouse_reg_loc
+        modal._mouse_init[0] -= modal.circle_radius
 
     modal._mode_cache.append(modal.circle_radius)
     return
@@ -436,13 +437,11 @@ def clear_draw_post_navigate(modal, context, event, func_data):
 #
 # ROTATE NORMALS FUNCS
 def rotate_norms_mouse(modal, context, event, func_data):
-    center = view3d_utils.location_3d_to_region_2d(
-        modal.act_reg, modal.act_rv3d, modal._mode_cache[0])
+    center = np.array(view3d_utils.location_3d_to_region_2d(
+        modal.act_reg, modal.act_rv3d, modal._mode_cache[0]).to_3d())
 
-    start_vec = Vector(
-        (modal._mouse_init[0]-center[0], modal._mouse_init[1]-center[1]))
-    mouse_vec = Vector(
-        (modal._mouse_reg_loc[0]-center[0], modal._mouse_reg_loc[1]-center[1]))
+    start_vec = Vector(modal._mouse_init-center).xy
+    mouse_vec = Vector(modal._mouse_reg_loc-center).xy
 
     ang = mouse_vec.angle_signed(start_vec)
     if event.shift:
@@ -451,7 +450,7 @@ def rotate_norms_mouse(modal, context, event, func_data):
     if ang != 0.0:
         modal._mode_cache[1] = modal._mode_cache[1]+ang*modal._mode_cache[2]
         rotate_vectors(modal, modal._mode_cache[1])
-        modal._mouse_init = modal._mouse_reg_loc
+        modal._mouse_init[:] = modal._mouse_reg_loc
 
         modal.redraw_active = True
     return
@@ -461,7 +460,7 @@ def rotate_norms_confirm(modal, context, event, keys, func_data):
 
     add_to_undostack(modal, 1)
     modal._mode_cache.clear()
-    modal._mouse_init = None
+    modal._mouse_init[:] = nan
 
     modal.translate_axis = 2
     modal.translate_mode = 0
@@ -478,11 +477,11 @@ def rotate_norms_confirm(modal, context, event, keys, func_data):
 
 
 def rotate_norms_cancel(modal, context, event, keys, func_data):
-    modal._container.new_norms = modal._container.cache_norms.copy()
+    modal._container.new_norms[:] = modal._container.cache_norms
 
     set_new_normals(modal)
     modal._mode_cache.clear()
-    modal._mouse_init = None
+    modal._mouse_init[:] = nan
 
     modal.translate_axis = 2
     modal.translate_mode = 0
@@ -511,7 +510,7 @@ def rotate_post_navigate(modal, context, event, func_data):
         rotate_vectors(modal, modal._mode_cache[1])
         modal.redraw_active = True
 
-    modal._mouse_init = modal._mouse_reg_loc
+    modal._mouse_init[:] = modal._mouse_reg_loc
     bpy.context.window.cursor_modal_set('DEFAULT')
     modal.rotating = True
     modal.selection_drawing = True
@@ -546,7 +545,7 @@ def rotate_set_z(modal, context, event, keys, func_data):
 #
 # SPHEREIZE FUNCS
 def sphereize_mouse(modal, context, event, func_data):
-    hov_status = modal._window.test_hover(modal._mouse_reg_loc)
+    hov_status = modal._window.test_hover(modal._mouse_reg_loc.tolist())
     modal.ui_hover = hov_status != None
     return
 
@@ -557,7 +556,7 @@ def sphereize_start_move(modal, context, event, keys, func_data):
     rco = view3d_utils.location_3d_to_region_2d(
         modal.act_reg, modal.act_rv3d, modal._target_emp.location)
 
-    modal._mode_cache.append(modal._mouse_reg_loc)
+    modal._mode_cache.append(modal._mouse_reg_loc.tolist())
     modal._mode_cache.append(modal._target_emp.location.copy())
     modal._mode_cache.append(rco)
     keymap_target_move(modal)
@@ -566,8 +565,8 @@ def sphereize_start_move(modal, context, event, keys, func_data):
 
 
 def sphereize_reset(modal, context, event, keys, func_data):
-    modal._target_emp.location = modal._mode_cache[1]
-    sphereize_normals(modal, modal._mode_cache[0])
+    modal._target_emp.location = modal._mode_cache[2]
+    sphereize_normals(modal)
     return
 
 
@@ -576,13 +575,18 @@ def sphereize_confirm(modal, context, event, keys, func_data):
         # Test 2d ui selection
         if modal._sphere_panel.visible:
             modal._sphere_panel.test_click_down(
-                modal._mouse_reg_loc, event.shift, arguments=[event])
+                modal._mouse_reg_loc.tolist(), event.shift, arguments=[event])
             modal.click_hold = True
     else:
         if modal._sphere_panel.visible:
             modal._sphere_panel.test_click_up(
-                modal._mouse_reg_loc, event.shift, arguments=[event])
+                modal._mouse_reg_loc.tolist(), event.shift, arguments=[event])
             modal.click_hold = False
+    return
+
+
+def sphereize_cancel(modal, context, event, keys, func_data):
+    end_sphereize_mode(modal, False)
     return
 
 
@@ -596,10 +600,10 @@ def toggle_x_ray(modal, context, event, keys, func_data):
 # SPHEREIZE MOVE FUNCS
 def sphereize_move_mouse(modal, context, event, func_data):
     move_target(modal, event.shift)
-    sphereize_normals(modal, modal._mode_cache[0])
+    sphereize_normals(modal)
 
-    modal._mode_cache.pop(2)
-    modal._mode_cache.insert(2, modal._mouse_reg_loc)
+    modal._mode_cache.pop(1)
+    modal._mode_cache.insert(1, modal._mouse_reg_loc.tolist())
 
     modal.redraw_active = True
     return
@@ -611,9 +615,9 @@ def sphereize_move_confirm(modal, context, event, keys, func_data):
     clear_translate_axis_draw(modal)
     modal._window.clear_status()
     keymap_target(modal)
-    modal._mode_cache.pop(4)
     modal._mode_cache.pop(3)
     modal._mode_cache.pop(2)
+    modal._mode_cache.pop(1)
     modal._current_tool = modal._sphereize_tool
     end_active_drawing(modal)
     return
@@ -625,12 +629,12 @@ def sphereize_move_cancel(modal, context, event, keys, func_data):
     clear_translate_axis_draw(modal)
     modal._window.clear_status()
     modal.redraw = True
-    modal._target_emp.location = modal._mode_cache[3].copy()
+    modal._target_emp.location = modal._mode_cache[2].copy()
     keymap_target(modal)
-    sphereize_normals(modal, modal._mode_cache[0])
-    modal._mode_cache.pop(4)
+    sphereize_normals(modal)
     modal._mode_cache.pop(3)
     modal._mode_cache.pop(2)
+    modal._mode_cache.pop(1)
     modal._current_tool = modal._sphereize_tool
     end_active_drawing(modal)
     return
@@ -639,7 +643,7 @@ def sphereize_move_cancel(modal, context, event, keys, func_data):
 def sphereize_move_set_x(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'TRANSLATING', 0)
     move_target(modal, event.shift)
-    sphereize_normals(modal, modal._mode_cache[0])
+    sphereize_normals(modal)
 
     modal.redraw_active = True
     return
@@ -648,7 +652,7 @@ def sphereize_move_set_x(modal, context, event, keys, func_data):
 def sphereize_move_set_y(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'TRANSLATING', 1)
     move_target(modal, event.shift)
-    sphereize_normals(modal, modal._mode_cache[0])
+    sphereize_normals(modal)
 
     modal.redraw_active = True
     return
@@ -657,7 +661,7 @@ def sphereize_move_set_y(modal, context, event, keys, func_data):
 def sphereize_move_set_z(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'TRANSLATING', 2)
     move_target(modal, event.shift)
-    sphereize_normals(modal, modal._mode_cache[0])
+    sphereize_normals(modal)
 
     modal.redraw_active = True
     return
@@ -666,7 +670,7 @@ def sphereize_move_set_z(modal, context, event, keys, func_data):
 #
 # POINT FUNCS
 def point_mouse(modal, context, event, func_data):
-    hov_status = modal._window.test_hover(modal._mouse_reg_loc)
+    hov_status = modal._window.test_hover(modal._mouse_reg_loc.tolist())
     modal.ui_hover = hov_status != None
     return
 
@@ -677,7 +681,7 @@ def point_start_move(modal, context, event, keys, func_data):
     rco = view3d_utils.location_3d_to_region_2d(
         modal.act_reg, modal.act_rv3d, modal._target_emp.location)
 
-    modal._mode_cache.append(modal._mouse_reg_loc)
+    modal._mode_cache.append(modal._mouse_reg_loc.tolist())
     modal._mode_cache.append(modal._target_emp.location.copy())
     modal._mode_cache.append(rco)
     keymap_target_move(modal)
@@ -686,8 +690,8 @@ def point_start_move(modal, context, event, keys, func_data):
 
 
 def point_reset(modal, context, event, keys, func_data):
-    modal._target_emp.location = modal._mode_cache[1]
-    point_normals(modal, modal._mode_cache[0])
+    modal._target_emp.location = modal._mode_cache[2]
+    point_normals(modal)
     return
 
 
@@ -696,13 +700,18 @@ def point_confirm(modal, context, event, keys, func_data):
         # Test 2d ui selection
         if modal._point_panel.visible:
             modal._point_panel.test_click_down(
-                modal._mouse_reg_loc, event.shift, arguments=[event])
+                modal._mouse_reg_loc.tolist(), event.shift, arguments=[event])
             modal.click_hold = True
     else:
         if modal._point_panel.visible:
             modal._point_panel.test_click_up(
-                modal._mouse_reg_loc, event.shift, arguments=[event])
+                modal._mouse_reg_loc.tolist(), event.shift, arguments=[event])
             modal.click_hold = False
+    return
+
+
+def point_cancel(modal, context, event, keys, func_data):
+    end_point_mode(modal, False)
     return
 
 
@@ -710,10 +719,10 @@ def point_confirm(modal, context, event, keys, func_data):
 # POINT MOVE FUNCS
 def point_move_mouse(modal, context, event, func_data):
     move_target(modal, event.shift)
-    point_normals(modal, modal._mode_cache[0])
+    point_normals(modal)
 
-    modal._mode_cache.pop(2)
-    modal._mode_cache.insert(2, modal._mouse_reg_loc)
+    modal._mode_cache.pop(1)
+    modal._mode_cache.insert(1, modal._mouse_reg_loc.tolist())
 
     modal.redraw_active = True
     return
@@ -725,9 +734,9 @@ def point_move_confirm(modal, context, event, keys, func_data):
     clear_translate_axis_draw(modal)
     modal._window.clear_status()
     keymap_target(modal)
-    modal._mode_cache.pop(4)
     modal._mode_cache.pop(3)
     modal._mode_cache.pop(2)
+    modal._mode_cache.pop(1)
     modal._current_tool = modal._point_tool
     end_active_drawing(modal)
     return
@@ -738,12 +747,12 @@ def point_move_cancel(modal, context, event, keys, func_data):
     modal.translate_mode = 0
     clear_translate_axis_draw(modal)
     modal._window.clear_status()
-    modal._target_emp.location = modal._mode_cache[3].copy()
+    modal._target_emp.location = modal._mode_cache[2].copy()
     keymap_target(modal)
-    point_normals(modal, modal._mode_cache[0])
-    modal._mode_cache.pop(4)
+    point_normals(modal)
     modal._mode_cache.pop(3)
     modal._mode_cache.pop(2)
+    modal._mode_cache.pop(1)
     modal._current_tool = modal._point_tool
     end_active_drawing(modal)
     return
@@ -752,7 +761,7 @@ def point_move_cancel(modal, context, event, keys, func_data):
 def point_move_set_x(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'TRANSLATING', 0)
     move_target(modal, event.shift)
-    point_normals(modal, modal._mode_cache[0])
+    point_normals(modal)
 
     modal.redraw_active = True
     return
@@ -761,7 +770,7 @@ def point_move_set_x(modal, context, event, keys, func_data):
 def point_move_set_y(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'TRANSLATING', 1)
     move_target(modal, event.shift)
-    point_normals(modal, modal._mode_cache[0])
+    point_normals(modal)
 
     modal.redraw_active = True
     return
@@ -770,7 +779,7 @@ def point_move_set_y(modal, context, event, keys, func_data):
 def point_move_set_z(modal, context, event, keys, func_data):
     translate_axis_change(modal, 'TRANSLATING', 2)
     move_target(modal, event.shift)
-    point_normals(modal, modal._mode_cache[0])
+    point_normals(modal)
 
     modal.redraw_active = True
     return
@@ -781,9 +790,9 @@ def point_move_set_z(modal, context, event, keys, func_data):
 def gizmo_mouse(modal, context, event, func_data):
     start_vec = modal._mode_cache[0]
     view_vec = view3d_utils.region_2d_to_vector_3d(
-        modal.act_reg, modal.act_rv3d, Vector((modal._mouse_reg_loc[0], modal._mouse_reg_loc[1])))
+        modal.act_reg, modal.act_rv3d, modal._mouse_reg_loc)
     view_orig = view3d_utils.region_2d_to_origin_3d(
-        modal.act_reg, modal.act_rv3d, Vector((modal._mouse_reg_loc[0], modal._mouse_reg_loc[1])))
+        modal.act_reg, modal.act_rv3d, modal._mouse_reg_loc)
 
     line_a = view_orig
     line_b = view_orig + view_vec*10000
@@ -866,6 +875,7 @@ def gizmo_confirm(modal, context, event, keys, func_data):
 
 def gizmo_cancel(modal, context, event, keys, func_data):
     if modal._mode_cache[4]:
+        modal._container.new_norms[:] = modal._container.cache_norms
         set_new_normals(modal)
     else:
         modal._orbit_ob.matrix_world = modal._mode_cache[3].copy()

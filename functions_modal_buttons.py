@@ -105,7 +105,8 @@ def init_ui_panels(self, rw, rh, scale):
 
     # POINT AT PANEL
     if True:
-        self._point_panel = self._window.add_panel(self._mouse_reg_loc, 250)
+        self._point_panel = self._window.add_panel(
+            self._mouse_reg_loc.tolist(), 250)
         self._point_panel.set_separation(8)
         self._point_panel.set_horizontal_alignment('LEFT')
         self._point_panel.add_header(
@@ -138,7 +139,8 @@ def init_ui_panels(self, rw, rh, scale):
 
     # SPHEREIZE PANEL
     if True:
-        self._sphere_panel = self._window.add_panel(self._mouse_reg_loc, 250)
+        self._sphere_panel = self._window.add_panel(
+            self._mouse_reg_loc.tolist(), 250)
         self._sphere_panel.set_separation(8)
         self._sphere_panel.set_horizontal_alignment('LEFT')
         self._sphere_panel.add_header(
