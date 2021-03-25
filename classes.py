@@ -49,6 +49,7 @@ class ABNContainer:
         self.face_link_eds = None
         self.edge_link_vs = None
         self.loop_faces = None
+        self.loop_verts = None
 
         self.color_tri = (0.16, 0.55, 0.7, 0.2)
         self.color_tri_sel = (0.16, 0.7, 0.9, 0.5)

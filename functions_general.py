@@ -41,6 +41,18 @@ def create_kd(bm):
     return kd
 
 
+def create_kd_from_np(array):
+    size = int(array.size/3)
+    kd = kdtree.KDTree(size)
+
+    for i, co in enumerate(array):
+        kd.insert(co, i)
+
+    kd.balance()
+
+    return kd
+
+
 def ob_to_bm(ob):
     bm = bmesh.new()
     bm.from_mesh(ob.data)

@@ -5,6 +5,7 @@ from mathutils.bvhtree import BVHTree
 from mathutils.geometry import intersect_line_plane
 import numpy as np
 import os
+import time
 from bpy_extras import view3d_utils
 from .functions_general import *
 from .functions_drawing import *
@@ -578,6 +579,7 @@ def cache_point_data(self):
     link_vs = []
     link_ls = []
     link_fs = [None for i in range(loop_amnt)]
+    link_verts = [None for i in range(loop_amnt)]
     for v in self._object_bm.verts:
         l_v_inds = [-1] * max_link_eds
         l_l_inds = [-1] * max_link_loops
@@ -588,6 +590,7 @@ def cache_point_data(self):
         for l, loop in enumerate(v.link_loops):
             l_l_inds[l] = loop.index
             link_fs[loop.index] = loop.face.index
+            link_verts[loop.index] = v.index
 
         link_vs += l_v_inds
         link_ls += l_l_inds
@@ -599,6 +602,7 @@ def cache_point_data(self):
     self._container.vert_link_ls.shape = [vert_amnt, max_link_loops]
 
     self._container.loop_faces = np.array(link_fs, dtype=np.int32)
+    self._container.loop_verts = np.array(link_verts, dtype=np.int32)
     self._container.filter_weights = np.ones(loop_amnt, dtype=np.float32)
 
     #
@@ -720,41 +724,59 @@ def cache_mirror_data(self):
     mat_inv = np.array(self._object.matrix_world.inverted())
 
     loc = mat[:3, 3]
-    loop_cos = (mat_inv[:3, :3] @ (self._container.loop_coords-loc).T).T
+    mir_cos = (mat_inv[:3, :3] @ (self._container.po_coords-loc).T).T
 
-    self.mir_loops_x = find_coord_mirror(self._container.po_coords, loop_cos.copy(
-    ), self._container.loop_tangents.copy(), self._container.vert_link_ls, 0, mat)
+    kd = create_kd_from_np(self._container.po_coords)
 
-    self.mir_loops_y = find_coord_mirror(self._container.po_coords, loop_cos.copy(
-    ), self._container.loop_tangents.copy(), self._container.vert_link_ls, 1, mat)
-
-    self.mir_loops_z = find_coord_mirror(self._container.po_coords, loop_cos.copy(
-    ), self._container.loop_tangents.copy(), self._container.vert_link_ls, 2, mat)
+    self.mir_loops_x = find_coord_mirror(self, mir_cos.copy(), 0, mat, kd)
+    self.mir_loops_y = find_coord_mirror(self, mir_cos.copy(), 1, mat, kd)
+    self.mir_loops_z = find_coord_mirror(self, mir_cos.copy(), 2, mat, kd)
     return
 
 
-def find_coord_mirror(po_coords, l_coords, loop_tangs, vert_link_ls, mir_axis, mat):
+def find_coord_mirror(self, mir_coords, mir_axis, mat, kd):
     #
     # Match the list of loops with their mirror on the set axis
     # detect the proper loop on the mirror point by getting the smallest angle
     #
 
     # Get the loop coords on the mirrored axis
-    l_coords[:, mir_axis] *= -1
-    l_coords = (mat[:3, :3] @ l_coords.T).T+mat[:3, 3]
+    mir_coords[:, mir_axis] *= -1
+    l_coords = (mat[:3, :3] @ mir_coords.T).T+mat[:3, 3]
 
-    # Test distance for nearest points from the loops mirroed coord
-    po_match = get_np_vecs_ordered_dists(po_coords, l_coords)[:, 0]
+    # ORIGINAL VERSION SUPER SLOW FOR A 12K VERT MESH 10 SECONDS PER AXIS
+    # # Test distance for nearest points from the loops mirroed coord
+    # po_matches = get_np_vecs_ordered_dists(
+    #     self._container.po_coords, l_coords)[:, 0]
+
+    # TEST VERSION USING get_np_vec_ordered_dists SLIGHTLY FASTER THAN get_np_vecs_ordered_dists
+    # match_inds = []
+    # for co in l_coords:
+    #     match = get_np_vec_ordered_dists(self._container.po_coords, co)[0]
+    #     match_inds.append(match)
+    # po_matches = np.array(match_inds)
+
+    # Use kdtree to find nearest co on the mirror axis
+    # Far far far faster than current implementation of get_np_vecs_ordered_dists
+    # Despite that it is using a loop it cuts the time down immensely
+    po_matches = []
+    for co in l_coords:
+        res = kd.find(co)
+        po_matches.append(res[1])
+
+    po_matches = np.array(po_matches)
+
+    match_loops = self._container.vert_link_ls[po_matches[self._container.loop_verts]]
 
     # Get the tangents of the matched mirror coord
-    tans = loop_tangs[vert_link_ls[po_match]]
+    tans = self._container.loop_tangents[match_loops]
 
-    loop_tangs[:, mir_axis] *= -1
+    mir_tangs = self._container.loop_tangents.copy()
+    mir_tangs[:, mir_axis] *= -1
 
     # Test the dot products for the smallest of the current loop to the matched points loops
     # filters out -1 mathc loop indices
-    match_tans = match_loops_vecs(loop_tangs, tans, vert_link_ls[po_match])
-
+    match_tans = match_loops_vecs(mir_tangs, tans, match_loops)
     return match_tans
 
 
@@ -1383,6 +1405,20 @@ def get_visible_points(self):
     vis_pos = vis_pos.all(axis=1)
     vis_pos = (~vis_pos).nonzero()[0]
 
+    return vis_pos
+
+
+def get_selectable_points(self):
+    # Get indices of points that arent hidden and have a loop that is unselected
+    vis_pos = self._container.hide_status[self._container.vert_link_ls]
+    vis_pos[self._container.vert_link_ls < 0] = True
+    vis_pos = ~(vis_pos.all(axis=1))
+
+    sel_pos = self._container.sel_status[self._container.vert_link_ls]
+    sel_pos[self._container.vert_link_ls < 0] = True
+    sel_pos = sel_pos.all(axis=1)
+
+    vis_pos[sel_pos] = False
     return vis_pos
 
 

@@ -116,13 +116,6 @@ def draw_callback_2d(self, context):
 
             self._window.draw()
 
-            bgl.glPointSize(2)
-            self.batch_po = batch_for_shader(self.shader_2d, 'POINTS', {
-                "pos": self._temp_po_draw})
-            self.shader_2d.bind()
-            self.shader_2d.uniform_float("color", (1.0, 0.0, 0.0, 1))
-            self.batch_po.draw(self.shader_2d)
-
     except Exception:
         print()
         print()
