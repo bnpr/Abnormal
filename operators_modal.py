@@ -31,18 +31,18 @@ class ABN_OT_normal_editor_modal(Operator):
             self.report({'WARNING'}, "Left 3D View. Cancelling modal")
             return {"CANCELLED"}
 
-        self._mouse_abs_loc = [event.mouse_x, event.mouse_y]
-        self._mouse_reg_loc = [event.mouse_region_x, event.mouse_region_y]
+        self._mouse_abs_loc[:] = [event.mouse_x, event.mouse_y, 0.0]
+        self._mouse_reg_loc[:] = [
+            event.mouse_region_x, event.mouse_region_y, 0.0]
 
         self.act_reg, self.act_rv3d = check_area(self)
-        self._mouse_act_loc = [self._mouse_abs_loc[0] -
-                               self.act_reg.x, self._mouse_abs_loc[1]-self.act_reg.y]
+        # self._mouse_act_loc = [self._mouse_abs_loc[0]-self.act_reg.x, self._mouse_abs_loc[1]-self.act_reg.y]
 
         self._window.check_dimensions(context)
         status = {"RUNNING_MODAL"}
         # Check that mousemove is larger than a pixel to be tested
         mouse_move_check = True
-        if event.type == 'MOUSEMOVE' and Vector((self._mouse_reg_loc[0]-self._prev_mouse_loc[0], self._mouse_reg_loc[1]-self._prev_mouse_loc[1])).length < 1.0:
+        if event.type == 'MOUSEMOVE' and Vector(self._mouse_reg_loc-self._prev_mouse_loc).length < 1.0:
             mouse_move_check = False
 
         if mouse_move_check:
@@ -61,9 +61,10 @@ class ABN_OT_normal_editor_modal(Operator):
                     status = basic_ui_hover_keymap(self, context, event)
                 else:
                     status = basic_keymap(self, context, event)
-            self._prev_mouse_loc = self._mouse_reg_loc.copy()
+            self._prev_mouse_loc[:] = self._mouse_reg_loc
 
         refresh_batches(self, context)
+
         self._modal_running = True
         return status
 
@@ -92,11 +93,13 @@ class ABN_OT_normal_editor_modal(Operator):
             self._keymap_sel_prefs = self._addon_prefs.keymap_sel
             self._keymap_shortcut_prefs = self._addon_prefs.keymap_shortcut
             self._keymap_tool_prefs = self._addon_prefs.keymap_tool
-            self._mouse_abs_loc = [event.mouse_x, event.mouse_y]
-            self._mouse_reg_loc = [event.mouse_region_x, event.mouse_region_y]
-            self._prev_mouse_loc = [event.mouse_region_x, event.mouse_region_y]
+            self._mouse_abs_loc = np.array([event.mouse_x, event.mouse_y, 0.0])
+            self._mouse_reg_loc = np.array(
+                [event.mouse_region_x, event.mouse_region_y, 0.0])
+            self._prev_mouse_loc = np.array(
+                [event.mouse_region_x, event.mouse_region_y, 0.0])
 
-            self._mouse_init = None
+            self._mouse_init = np.array([0.0, 0.0, 0.0])
             self._active_point = None
             self._active_face = None
 
@@ -256,6 +259,8 @@ class ABN_OT_normal_editor_modal(Operator):
 
             add_to_undostack(self, 0)
             add_to_undostack(self, 1)
+
+            self._window.check_in_window()
 
             # SET MODAL
             context.window_manager.modal_handler_add(self)
