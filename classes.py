@@ -236,24 +236,31 @@ class ABNContainer:
         if self.scale_selection:
             world_norms = po_cos + \
                 (po_norms * 0.333 * self.normal_scale) @ self.matrix[:3, :3].T
-            world_norms[sel_mask] = po_cos[sel_mask] + \
-                (po_norms[sel_mask] * 0.666 *
-                 self.normal_scale) @ self.matrix[:3, :3].T
-            world_norms[act_mask] = po_cos[act_mask] + \
-                (po_norms[act_mask] *
-                 self.normal_scale) @ self.matrix[:3, :3].T
+
+            if exclude_active == False:
+                world_norms[sel_mask] = po_cos[sel_mask] + \
+                    (po_norms[sel_mask] * 0.666 *
+                        self.normal_scale) @ self.matrix[:3, :3].T
+                world_norms[act_mask] = po_cos[act_mask] + \
+                    (po_norms[act_mask] *
+                        self.normal_scale) @ self.matrix[:3, :3].T
         else:
             world_norms = po_cos + \
                 (po_norms * self.normal_scale) @ self.matrix[:3, :3].T
-
-        norms = np.array(list(zip(po_cos, world_norms)))
-        norms.ravel()
-        norms.shape = [po_cos.shape[0] * 2, 3]
 
         n_colors = np.array([self.rcol_normal]*po_cos.shape[0])
         n_colors.shape = [po_cos.shape[0], 4]
         n_colors[sel_mask] = self.rcol_normal_sel
         n_colors[act_mask] = self.rcol_normal_act
+
+        if self.draw_only_selected:
+            po_cos = po_cos[sel_mask]
+            world_norms = world_norms[sel_mask]
+            n_colors = n_colors[sel_mask]
+
+        norms = np.array(list(zip(po_cos, world_norms)))
+        norms.ravel()
+        norms.shape = [po_cos.shape[0] * 2, 3]
 
         norm_colors = np.array(list(zip(n_colors, n_colors)))
         norm_colors.ravel()
