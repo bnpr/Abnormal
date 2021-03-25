@@ -856,81 +856,119 @@ def ob_data_structures(self, ob):
 
 
 def add_to_undostack(self, stack_type):
+    if self._history_position > 0:
+        while self._history_position > 0:
+            if self._history_stack[0] == 0:
+                self._history_select_stack.pop(0)
+                self._history_select_position -= 1
+            elif self._history_stack[0] == 1:
+                self._history_normal_stack.pop(0)
+                self._history_normal_position -= 1
+
+            self._history_stack.pop(0)
+            self._history_position -= 1
+
+    if len(self._history_stack)+1 > self._history_steps:
+        if self._history_stack[-1] == 0:
+            self._history_select_stack.pop(-1)
+        elif self._history_stack[-1] == 1:
+            self._history_normal_stack.pop(-1)
+
+        self._history_stack.pop(-1)
+
+    # Selection status
     if stack_type == 0:
-        sel_status = (self._container.sel_status).nonzero()[0]
+        sel_status = self._container.sel_status.nonzero()[0]
         vis_status = self._container.hide_status.nonzero()[0]
+        act_status = self._container.act_status.nonzero()[0]
 
-        if self._history_position > 0:
-            while self._history_position > 0:
-                self._history_stack.pop(0)
-                self._history_position -= 1
-
-        if len(self._history_stack)+1 > self._history_steps:
-            self._history_stack.pop(-1)
-        self._history_stack.insert(0, [stack_type, sel_status, vis_status])
+        self._history_stack.insert(0, stack_type)
+        self._history_select_stack.insert(
+            0, [sel_status, vis_status, act_status])
 
         self.redraw = True
         update_orbit_empty(self)
 
-    else:
+    # Normals status
+    elif stack_type == 1:
         cur_normals = self._container.new_norms.copy()
-        if self._history_position > 0:
-            while self._history_position > 0:
-                self._history_stack.pop(0)
-                self._history_position -= 1
 
-        if len(self._history_stack)+1 > self._history_steps:
-            self._history_stack.pop(-1)
-        self._history_stack.insert(0, [stack_type, cur_normals])
+        self._history_stack.insert(0, stack_type)
+        self._history_normal_stack.insert(0, cur_normals)
+
+    # Initial status
+    elif stack_type == 2:
+        sel_status = self._container.sel_status.nonzero()[0]
+        vis_status = self._container.hide_status.nonzero()[0]
+        act_status = self._container.act_status.nonzero()[0]
+        cur_normals = self._container.new_norms.copy()
+
+        self._history_stack.insert(0, stack_type)
+
+        self._history_select_stack.insert(
+            0, [sel_status, vis_status, act_status])
+        self._history_normal_stack.insert(0, cur_normals)
+
+        self.redraw = True
+        update_orbit_empty(self)
 
     return
 
 
 def move_undostack(self, dir):
-    if dir > 0 and len(self._history_stack)-1 > self._history_position or dir < 0 and self._history_position > 0:
-        self._history_position += dir
-
-        state_type = self._history_stack[self._history_position][0]
-        state = self._history_stack[self._history_position][1]
+    if (dir > 0 and len(self._history_stack)-1 > self._history_position) or (dir < 0 and self._history_position > 0):
+        if dir > 0:
+            state_type = self._history_stack[self._history_position]
+            self._history_position += dir
+        else:
+            self._history_position += dir
+            state_type = self._history_stack[self._history_position]
 
         if state_type == 0:
-            vis_state = self._history_stack[self._history_position][2]
-            for po in self._container.points:
-                po.set_hide(True)
+            self._history_select_position += dir
+            state = self._history_select_stack[self._history_select_position]
 
-            for ind in vis_state:
-                po = self._container.points[ind[0]]
-                if po.valid:
-                    loop = po.loops[ind[1]]
-                    loop.set_hide(False)
+            self._container.sel_status[:] = False
+            self._container.sel_status[state[0]] = True
 
-                po.set_hidden_from_loops()
+            self._container.hide_status[:] = False
+            self._container.hide_status[state[1]] = True
 
-            for po in self._container.points:
-                po.set_select(False)
-
-            for ind in state:
-                po = self._container.points[ind[0]]
-                if po.hide == False and po.valid:
-                    loop = po.loops[ind[1]]
-                    if loop.hide == False:
-                        loop.set_select(True)
-
-                po.set_selection_from_loops()
-
-            if self._active_point != None:
-                if self._active_point.select == False:
-                    self._active_point = None
+            self._container.act_status[:] = False
+            self._container.act_status[state[2]] = True
 
             update_orbit_empty(self)
             self.redraw = True
 
-        if state_type == 1:
-            for po in self._container.points:
-                for loop in po.loops:
-                    loop.normal = state[po.index][loop.index].copy()
+        elif state_type == 1:
+            self._history_normal_position += dir
+            state = self._history_normal_stack[self._history_normal_position]
+
+            self._container.new_norms[:] = state
 
             set_new_normals(self)
+            self.redraw = True
+
+        if state_type == 2:
+            self._history_select_position += dir
+            self._history_normal_position += dir
+            sel_state = self._history_select_stack[self._history_select_position]
+            norm_state = self._history_normal_stack[self._history_normal_position]
+
+            self._container.sel_status[:] = False
+            self._container.sel_status[sel_state[0]] = True
+
+            self._container.hide_status[:] = False
+            self._container.hide_status[sel_state[1]] = True
+
+            self._container.act_status[:] = False
+            self._container.act_status[sel_state[2]] = True
+
+            self._container.new_norms[:] = norm_state
+
+            set_new_normals(self)
+            update_orbit_empty(self)
+            self.redraw = True
 
     return
 

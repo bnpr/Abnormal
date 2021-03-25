@@ -189,7 +189,11 @@ class ABN_OT_normal_editor_modal(Operator):
 
             # UNDO STACK STORAGE
             self._history_stack = []
+            self._history_select_stack = []
+            self._history_normal_stack = []
             self._history_position = 0
+            self._history_select_position = 0
+            self._history_normal_position = 0
             self._history_steps = 128
 
             # INITIALIZE OBJECTS
@@ -255,8 +259,7 @@ class ABN_OT_normal_editor_modal(Operator):
             dns["dh2d"] = self._draw_handle_2d
             dns["dh3d"] = self._draw_handle_3d
 
-            add_to_undostack(self, 0)
-            add_to_undostack(self, 1)
+            add_to_undostack(self, 2)
 
             self._window.check_in_window()
 
