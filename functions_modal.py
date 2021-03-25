@@ -1424,9 +1424,7 @@ def get_hidden_points(self):
     # Get indices of points that all connected loops are hidden
     hid_pos = self._container.hide_status[self._container.vert_link_ls]
     hid_pos[self._container.vert_link_ls < 0] = True
-    hid_pos = hid_pos.all(axis=1)
-    hid_pos = hid_pos.nonzero()[0]
-
+    hid_pos = (hid_pos.all(axis=1)).nonzero()[0]
     return hid_pos
 
 
@@ -1439,25 +1437,31 @@ def get_hidden_loops(self):
 def get_visible_points(self):
     # Get indices of points that all connected loops are visible
     vis_pos = self._container.hide_status[self._container.vert_link_ls]
-    vis_pos[self._container.vert_link_ls < 0] = False
-    vis_pos = vis_pos.all(axis=1)
-    vis_pos = (~vis_pos).nonzero()[0]
-
+    vis_pos[self._container.vert_link_ls < 0] = True
+    vis_pos = (~vis_pos.all(axis=1)).nonzero()[0]
     return vis_pos
 
 
 def get_selectable_points(self):
-    # Get indices of points that arent hidden and have a loop that is unselected
-    vis_pos = self._container.hide_status[self._container.vert_link_ls]
-    vis_pos[self._container.vert_link_ls < 0] = True
-    vis_pos = ~(vis_pos.all(axis=1))
+    # Get indices of points that have a loop that is unselected
+    hid_pos = self._container.hide_status[self._container.vert_link_ls]
+    hid_pos[self._container.vert_link_ls < 0] = True
+    hid_pos = (hid_pos.all(axis=1))
 
     sel_pos = self._container.sel_status[self._container.vert_link_ls]
     sel_pos[self._container.vert_link_ls < 0] = True
     sel_pos = sel_pos.all(axis=1)
+    sel_pos[hid_pos] = True
 
-    vis_pos[sel_pos] = False
-    return vis_pos
+    sel_pos = (~sel_pos).nonzero()[0]
+    return sel_pos
+
+
+def get_selectable_loops(self):
+    # Get indices of points that have a loop that is unselected
+    sel_ls = self._container.sel_status.copy()
+    sel_ls[self._container.hide_status] = True
+    return (~sel_ls).nonzero()[0]
 
 
 def get_selected_points(self, any_selected=False):
@@ -1469,8 +1473,8 @@ def get_selected_points(self, any_selected=False):
     else:
         vis_pos[self._container.vert_link_ls < 0] = True
         vis_pos = vis_pos.all(axis=1)
-    vis_pos = vis_pos.nonzero()[0]
 
+    vis_pos = vis_pos.nonzero()[0]
     return vis_pos
 
 
@@ -1632,6 +1636,28 @@ def set_group_selection(self, shift, ctrl, mask):
             self._container.act_status[act_ls] = self._container.sel_status[act_ls]
 
     return
+
+
+def filter_selection_points(self, shift, ctrl):
+    if shift:
+        avail_pos = get_selectable_points(self)
+    elif ctrl:
+        avail_pos = get_selected_points(self, any_selected=True)
+    else:
+        avail_pos = get_visible_points(self)
+    
+    return avail_pos
+
+
+def filter_selection_loops(self, shift, ctrl):
+    if shift:
+        avail_ls = get_selectable_loops(self)
+    elif ctrl:
+        avail_ls = self._container.sel_status.nonzero()[0]
+    else:
+        avail_ls = (~self._container.hide_status).nonzero()[0]
+
+    return avail_ls
 
 
 #
@@ -1865,29 +1891,31 @@ def group_loop_selection_test(self, loop_ind_array, tri_cos, shift, ctrl):
 
 
 def box_selection_test(self, shift, ctrl):
+    avail_pos = filter_selection_points(self, shift, ctrl)
+
     # Get coords in region space
-    rcos = get_np_region_cos(self._container.po_coords,
+    rcos = get_np_region_cos(self._container.po_coords[avail_pos],
                              self.act_reg, self.act_rv3d)
 
     x_cos = np.array([self._mouse_reg_loc[0], self._mode_cache[0][0][0]])
     y_cos = np.array([self._mouse_reg_loc[1], self._mode_cache[0][0][1]])
     in_range = np_box_selection_test(rcos, x_cos, y_cos)
-    in_range = filter_hidden_verts(self, in_range)
 
-    change = group_vert_selection_test(self, in_range, shift, ctrl)
+    change = group_vert_selection_test(self, avail_pos[in_range], shift, ctrl)
 
     # Test loop tris for selection
     if self._individual_loops:
+        avail_ls = filter_selection_loops(self, shift, ctrl)
+
         loop_tri_cos = self._container.loop_tri_coords.mean(axis=1)
 
         # Get coords in region space
-        rcos = get_np_region_cos(loop_tri_cos, self.act_reg, self.act_rv3d)
+        rcos = get_np_region_cos(loop_tri_cos[avail_ls], self.act_reg, self.act_rv3d)
 
         in_range = np_box_selection_test(rcos, x_cos, y_cos)
-        in_range = filter_hidden_loops(self, in_range)
 
         l_change = group_loop_selection_test(
-            self, in_range, loop_tri_cos, shift, ctrl)
+            self, avail_ls[in_range], loop_tri_cos, shift, ctrl)
         if l_change:
             change = l_change
 
@@ -1895,30 +1923,32 @@ def box_selection_test(self, shift, ctrl):
 
 
 def circle_selection_test(self, shift, ctrl, radius):
+    avail_pos = filter_selection_points(self, shift, ctrl)
+
     # Get coords in region space
-    rcos = get_np_region_cos(self._container.po_coords,
+    rcos = get_np_region_cos(self._container.po_coords[avail_pos],
                              self.act_reg, self.act_rv3d)
 
     # Get ordered list of closest points within the threshold
     in_range = get_np_vec_ordered_dists(
         rcos, self._mouse_reg_loc, threshold=radius)
-    in_range = filter_hidden_verts(self, in_range)
 
-    change = group_vert_selection_test(self, in_range, True, ctrl)
+    change = group_vert_selection_test(self, avail_pos[in_range], True, ctrl)
 
     # Test loop tris for selection
     if self._individual_loops:
+        avail_ls = filter_selection_loops(self, shift, ctrl)
+
         loop_tri_cos = self._container.loop_tri_coords.mean(axis=1)
 
         # Get coords in region space
-        rcos = get_np_region_cos(loop_tri_cos, self.act_reg, self.act_rv3d)
+        rcos = get_np_region_cos(loop_tri_cos[avail_ls], self.act_reg, self.act_rv3d)
 
         in_range = get_np_vec_ordered_dists(
             rcos, self._mouse_reg_loc, threshold=radius)
-        in_range = filter_hidden_loops(self, in_range)
 
         l_change = group_loop_selection_test(
-            self, in_range, loop_tri_cos, True, ctrl)
+            self, avail_ls[in_range], loop_tri_cos, True, ctrl)
         if l_change:
             change = l_change
 
@@ -1926,29 +1956,31 @@ def circle_selection_test(self, shift, ctrl, radius):
 
 
 def lasso_selection_test(self, shift, ctrl):
+    avail_pos = filter_selection_points(self, shift, ctrl)
+
     # Get coords in region space
-    rcos = get_np_region_cos(self._container.po_coords,
+    rcos = get_np_region_cos(self._container.po_coords[avail_pos],
                              self.act_reg, self.act_rv3d)
 
     # Get ordered list of closest points within the threshold
     lasso_shape = np.array(self._mode_cache[0])
     in_range = np_test_cos_in_shape(rcos, lasso_shape)
-    in_range = filter_hidden_verts(self, in_range)
 
-    change = group_vert_selection_test(self, in_range, shift, ctrl)
+    change = group_vert_selection_test(self, avail_pos[in_range], shift, ctrl)
 
     # Test loop tris for selection
     if self._individual_loops:
+        avail_ls = filter_selection_loops(self, shift, ctrl)
+
         loop_tri_cos = self._container.loop_tri_coords.mean(axis=1)
 
         # Get coords in region space
-        rcos = get_np_region_cos(loop_tri_cos, self.act_reg, self.act_rv3d)
+        rcos = get_np_region_cos(loop_tri_cos[avail_ls], self.act_reg, self.act_rv3d)
 
         in_range = np_test_cos_in_shape(rcos, lasso_shape)
-        in_range = filter_hidden_loops(self, in_range)
 
         l_change = group_loop_selection_test(
-            self, in_range, loop_tri_cos, shift, ctrl)
+            self, avail_ls[in_range], loop_tri_cos, shift, ctrl)
         if l_change:
             change = l_change
 
