@@ -192,8 +192,6 @@ class ABN_OT_normal_editor_modal(Operator):
             self._history_position = 0
             self._history_steps = 128
 
-            self._temp_po_draw = []
-
             # INITIALIZE OBJECTS
             self._objects_mod_status = []
             self._objects_sk_vis = []
