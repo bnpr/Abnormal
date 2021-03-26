@@ -176,7 +176,7 @@ def flatten_normals(self, axis):
 
     # Check for zero length vector after flattening
     # If zero then set it back to 1.0 on flattened axis
-    zero_len = np.sum(norms, axis=1) == 0.0
+    zero_len = np.sum(np.absolute(norms), axis=1) == 0.0
 
     # All vecs are zero length so no change occurs
     if zero_len.all():
@@ -302,7 +302,7 @@ def set_outside_inside(self, direction):
         new_norms[:] = f_norms
 
         sel_loops = sel_loops[loop_status]
-        new_norms = new_norms[loop_status]
+        new_norms = new_norms[loop_status] * direction
 
         self._container.new_norms[sel_loops] = new_norms
 
@@ -1226,6 +1226,8 @@ def start_sphereize_mode(self):
     self._current_tool = self._sphereize_tool
 
     keymap_target(self)
+    self.sphere_strength.set_value(self.target_strength)
+    self.sphere_strength.create_shape_data()
     # self._export_panel.set_visibility(False)
     self._tools_panel.set_visibility(False)
     self._sphere_panel.set_visibility(True)
@@ -1270,7 +1272,8 @@ def sphereize_normals(self):
     local_cos = get_np_matrix_transformed_vecs(
         self._container.loop_coords[self._container.sel_status], self._object.matrix_world.inverted())
 
-    self._container.new_norms[self._container.sel_status] = local_cos - targ_loc
+    cache_norms = self._container.cache_norms[self._container.sel_status]*(1.0-self.target_strength)
+    self._container.new_norms[self._container.sel_status] = (local_cos - targ_loc)*self.target_strength + cache_norms
 
     self.redraw_active = True
 
@@ -1302,6 +1305,8 @@ def start_point_mode(self):
     self._current_tool = self._point_tool
 
     keymap_target(self)
+    self.point_strength.set_value(self.target_strength)
+    self.point_strength.create_shape_data()
     # self._export_panel.set_visibility(False)
     self._tools_panel.set_visibility(False)
     self._point_panel.set_visibility(True)
@@ -1344,17 +1349,18 @@ def point_normals(self):
     targ_loc = get_np_matrix_transformed_vecs(
         np.array(self._target_emp.location), self._object.matrix_world.inverted())
 
+    cache_norms = self._container.cache_norms[self._container.sel_status]*(1.0-self.target_strength)
     if self.point_align:
         avg_loc = get_np_matrix_transformed_vecs(np.mean(
             self._container.loop_coords[self._container.sel_status], axis=0), self._object.matrix_world.inverted())
 
-        self._container.new_norms[self._container.sel_status] = targ_loc - avg_loc
+        self._container.new_norms[self._container.sel_status] = (targ_loc - avg_loc)*self.target_strength + cache_norms
 
     else:
         local_cos = get_np_matrix_transformed_vecs(
             self._container.loop_coords[self._container.sel_status], self._object.matrix_world.inverted())
 
-        self._container.new_norms[self._container.sel_status] = targ_loc - local_cos
+        self._container.new_norms[self._container.sel_status] = (targ_loc - local_cos)*self.target_strength + cache_norms
 
     self.redraw_active = True
 

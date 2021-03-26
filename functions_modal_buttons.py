@@ -128,10 +128,10 @@ def init_ui_panels(self, rw, rh, scale):
         but.set_click_up_func(finish_point_mode)
 
         row = box.add_row()
-        num = row.add_number(
+        self.point_strength = row.add_number(
             20, 'Point Strength', self.target_strength, 2, .01, .01, 1.0)
-        num.set_slide_factor(2)
-        num.set_value_change_func(change_target_strength)
+        self.point_strength.set_slide_factor(2)
+        self.point_strength.set_value_change_func(change_target_strength)
 
         row = box.add_row()
         bool = row.add_bool(20, 'Align Vectors', default=self.point_align)
@@ -162,10 +162,10 @@ def init_ui_panels(self, rw, rh, scale):
         but.set_click_up_func(finish_sphereize_mode)
 
         row = box.add_row()
-        num = row.add_number(
+        self.sphere_strength = row.add_number(
             20, 'Sphereize Strength', self.target_strength, 2, .01, .01, 1.0)
-        num.set_slide_factor(2)
-        num.set_value_change_func(change_target_strength)
+        self.sphere_strength.set_slide_factor(2)
+        self.sphere_strength.set_value_change_func(change_target_strength)
 
     # EXPORT PANEL
     if True:
