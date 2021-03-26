@@ -472,8 +472,6 @@ def init_ui_panels(self, rw, rh, scale):
         row = box.add_row()
         but = row.add_button(20, 'Store Active Normal')
         but.set_click_up_func(store_active)
-
-        row = box.add_row()
         but = row.add_button(20, 'Paste Stored Normal')
         but.set_click_up_func(paste_stored)
 
