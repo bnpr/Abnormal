@@ -32,8 +32,8 @@ def register():
             km.keymap_items.new('Select All', 'A', 'PRESS')
             km.keymap_items.new('Unselect All', 'A', 'PRESS', alt=True)
 
-            km.keymap_items.new('Box Start', 'B', 'PRESS')
-            km.keymap_items.new('Box Start Selection',
+            km.keymap_items.new('Box Select Start', 'B', 'PRESS')
+            km.keymap_items.new('Box Select Start Selection',
                                 'LEFTMOUSE', 'PRESS', any=True)
             km.keymap_items.new('Box New Selection',
                                 'LEFTMOUSE', 'RELEASE', any=True)
@@ -42,8 +42,8 @@ def register():
             km.keymap_items.new('Box Remove Selection',
                                 'LEFTMOUSE', 'RELEASE', ctrl=True)
 
-            km.keymap_items.new('Lasso Start', 'V', 'PRESS')
-            km.keymap_items.new('Lasso Start Selection',
+            km.keymap_items.new('Lasso Select Start', 'V', 'PRESS')
+            km.keymap_items.new('Lasso Select Start Selection',
                                 'LEFTMOUSE', 'PRESS', any=True)
             km.keymap_items.new('Lasso New Selection',
                                 'LEFTMOUSE', 'RELEASE', any=True)
@@ -52,13 +52,13 @@ def register():
             km.keymap_items.new('Lasso Remove Selection',
                                 'LEFTMOUSE', 'RELEASE', ctrl=True)
 
-            km.keymap_items.new('Circle Start', 'C', 'PRESS')
-            km.keymap_items.new('Circle Start Selection',
+            km.keymap_items.new('Circle Select Start', 'C', 'PRESS')
+            km.keymap_items.new('Circle Select Start Selection',
                                 'LEFTMOUSE', 'PRESS', any=True)
             km.keymap_items.new('Circle End Selection',
                                 'LEFTMOUSE', 'RELEASE', any=True)
             km.keymap_items.new('Circle Add Selection',
-                                'LEFTMOUSE', 'PRESS', shift=True)
+                                'LEFTMOUSE', 'PRESS')
             km.keymap_items.new('Circle Remove Selection',
                                 'LEFTMOUSE', 'PRESS', ctrl=True)
 

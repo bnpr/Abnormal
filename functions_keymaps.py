@@ -260,6 +260,7 @@ def basic_keymap(self, context, event):
             if self._container.sel_status.any():
                 self.tool_mode = True
                 self._current_tool = self._mirror_tool
+                keymap_mirror(self)
 
         # Smooth Normals
         if 'Smooth Normals' in keys:
@@ -271,12 +272,14 @@ def basic_keymap(self, context, event):
             if self._container.sel_status.any():
                 self.tool_mode = True
                 self._current_tool = self._flatten_tool
+                keymap_flatten(self)
 
         # Align Normals
         if 'Align Normals Start' in keys:
             if self._container.sel_status.any():
                 self.tool_mode = True
                 self._current_tool = self._align_tool
+                keymap_align(self)
 
         # Copy Active Normal
         if 'Copy Active Normal' in keys:
@@ -343,7 +346,7 @@ def basic_keymap(self, context, event):
             return status
 
         # box select
-        if 'Box Start' in keys:
+        if 'Box Select Start' in keys:
             bpy.context.window.cursor_modal_set('CROSSHAIR')
             self._current_tool = self._box_sel_tool
             self.tool_mode = True
@@ -353,7 +356,7 @@ def basic_keymap(self, context, event):
             return status
 
         # circle select
-        if 'Circle Start' in keys:
+        if 'Circle Select Start' in keys:
             bpy.context.window.cursor_modal_set('CROSSHAIR')
             self._current_tool = self._circle_sel_tool
             self.tool_mode = True
@@ -364,7 +367,7 @@ def basic_keymap(self, context, event):
             return status
 
         # lasso select
-        if 'Lasso Start' in keys:
+        if 'Lasso Select Start' in keys:
             bpy.context.window.cursor_modal_set('CROSSHAIR')
             self._current_tool = self._lasso_sel_tool
             self.tool_mode = True

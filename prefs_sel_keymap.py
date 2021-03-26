@@ -59,10 +59,10 @@ def draw(preference, context, layout):
     layout.separator()
     #
 
-    keymap_row(keymap_items, 'Box Start',
+    keymap_row(keymap_items, 'Box Select Start',
                layout.row(), 'Box Select Start Key')
-    keymap_row(keymap_items, 'Box Start Selection',
-               layout.row(), 'Box Start Selection Key')
+    keymap_row(keymap_items, 'Box Select Start Selection',
+               layout.row(), 'Box Select Start Selection Key')
     keymap_row(keymap_items, 'Box New Selection',
                layout.row(), 'Box New Selection Key')
     keymap_row(keymap_items, 'Box Add Selection',
@@ -74,10 +74,10 @@ def draw(preference, context, layout):
     layout.separator()
     #
 
-    keymap_row(keymap_items, 'Circle Start',
+    keymap_row(keymap_items, 'Circle Select Start',
                layout.row(), 'Circle Select Start Key')
-    keymap_row(keymap_items, 'Circle Start Selection',
-               layout.row(), 'Circle Start Selection Key')
+    keymap_row(keymap_items, 'Circle Select Start Selection',
+               layout.row(), 'Circle Select Start Selection Key')
     keymap_row(keymap_items, 'Circle End Selection',
                layout.row(), 'Circle End Selection Key')
     keymap_row(keymap_items, 'Circle Add Selection',
@@ -103,10 +103,10 @@ def draw(preference, context, layout):
     layout.separator()
     #
 
-    keymap_row(keymap_items, 'Lasso Start',
+    keymap_row(keymap_items, 'Lasso Select Start',
                layout.row(), 'Lasso Select Start Key')
-    keymap_row(keymap_items, 'Lasso Start Selection',
-               layout.row(), 'Lasso Start Selection Key')
+    keymap_row(keymap_items, 'Lasso Select Start Selection',
+               layout.row(), 'Lasso Select Start Selection Key')
     keymap_row(keymap_items, 'Lasso New Selection',
                layout.row(), 'Lasso New Selection Key')
     keymap_row(keymap_items, 'Lasso Add Selection',

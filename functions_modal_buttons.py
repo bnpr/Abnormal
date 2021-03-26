@@ -261,7 +261,7 @@ def init_ui_panels(self, rw, rh, scale):
         box = self._export_panel.add_box()
         box.add_header(True, 'Keymap', 20, False)
         box.set_header_font_size(14)
-        # box.set_collapsed(True)
+        box.set_collapsed(True)
         self._keymap_box = box.add_box()
         keymap_initialize(self)
 

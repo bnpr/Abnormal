@@ -1161,6 +1161,7 @@ def gizmo_click_init(self, event, giz_status):
 
         self._container.cache_norms[:] = self._container.new_norms
 
+        keymap_gizmo(self)
         self.gizmo_click = True
         self._current_tool = self._gizmo_tool
         self.tool_mode = True

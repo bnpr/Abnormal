@@ -14,7 +14,7 @@ def setup_tools(modal):
     # BOX SEL
     tool = modal.tools.add_tool(inherit_confirm=False)
     tool.set_use_start(True)
-    tool.add_start_argument('Box Start Selection', box_sel_start)
+    tool.add_start_argument('Box Select Start Selection', box_sel_start)
     tool.set_mouse_function(box_sel_mouse)
     tool.set_cancel_function(box_sel_cancel)
     tool.set_confirm_function(box_sel_confirm)
@@ -29,7 +29,7 @@ def setup_tools(modal):
     # LASSO SEL
     tool = modal.tools.add_tool(inherit_confirm=False)
     tool.set_use_start(True)
-    tool.add_start_argument('Lasso Start Selection', lasso_sel_start)
+    tool.add_start_argument('Lasso Select Start Selection', lasso_sel_start)
     tool.set_mouse_function(lasso_sel_mouse)
     tool.set_cancel_function(lasso_sel_cancel)
     tool.set_confirm_function(lasso_sel_confirm)
@@ -44,7 +44,7 @@ def setup_tools(modal):
     # CIRCLE SEL
     tool = modal.tools.add_tool(inherit_confirm=False)
     tool.set_use_start(True)
-    tool.add_start_argument('Circle Start Selection', circle_sel_start)
+    tool.add_start_argument('Circle Select Start Selection', circle_sel_start)
     tool.add_keymap_argument('Circle Increase Size 1',
                              circle_sel_inc, pre_start=True)
     tool.add_keymap_argument('Circle Increase Size 2',
@@ -180,6 +180,12 @@ def setup_tools(modal):
     return
 
 
+def tool_end(modal):
+    modal.tool_mode = False
+    keymap_refresh(modal)
+    return
+
+
 #
 # BOX SELECT FUNCS
 def box_sel_start(modal, context, event, keys, func_data):
@@ -225,25 +231,23 @@ def box_sel_confirm(modal, context, event, keys, func_data):
         if change:
             add_to_undostack(modal, 0)
 
-    modal.tool_mode = False
     modal.box_selecting = False
     modal._mode_cache.clear()
     modal._mouse_init[:] = nan
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
-    keymap_refresh(modal)
+    tool_end(modal)
     end_selection_drawing(modal)
     return
 
 
 def box_sel_cancel(modal, context, event, keys, func_data):
-    modal.tool_mode = False
     modal.box_selecting = False
     modal._mode_cache.clear()
     modal._mouse_init[:] = nan
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
-    keymap_refresh(modal)
+    tool_end(modal)
     end_selection_drawing(modal)
     return
 
@@ -297,25 +301,23 @@ def lasso_sel_confirm(modal, context, event, keys, func_data):
         if change:
             add_to_undostack(modal, 0)
 
-    modal.tool_mode = False
     modal.lasso_selecting = False
     modal._mode_cache.clear()
     modal._mouse_init[:] = nan
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
-    keymap_refresh(modal)
+    tool_end(modal)
     end_selection_drawing(modal)
     return
 
 
 def lasso_sel_cancel(modal, context, event, keys, func_data):
-    modal.tool_mode = False
     modal.lasso_selecting = False
     modal._mode_cache.clear()
     modal._mouse_init[:] = nan
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
-    keymap_refresh(modal)
+    tool_end(modal)
     end_selection_drawing(modal)
     return
 
@@ -384,13 +386,12 @@ def circle_sel_start_resize(modal, context, event, keys, func_data):
 
 def circle_sel_cancel(modal, context, event, keys, func_data):
     add_to_undostack(modal, 0)
-    modal.tool_mode = False
     modal.circle_selecting = False
     modal.circle_removing = False
     update_orbit_empty(modal)
     modal._mode_cache.clear()
     bpy.context.window.cursor_modal_set('DEFAULT')
-    keymap_refresh(modal)
+    tool_end(modal)
     end_selection_drawing(modal)
     return
 
@@ -468,9 +469,8 @@ def rotate_norms_confirm(modal, context, event, keys, func_data):
     modal._window.clear_status()
 
     modal.rotating = False
-    keymap_refresh(modal)
+    tool_end(modal)
     gizmo_update_hide(modal, True)
-    modal.tool_mode = False
     end_selection_drawing(modal)
     end_active_drawing(modal)
     return
@@ -490,9 +490,8 @@ def rotate_norms_cancel(modal, context, event, keys, func_data):
 
     modal.redraw = True
     modal.rotating = False
-    keymap_refresh(modal)
+    tool_end(modal)
     gizmo_update_hide(modal, True)
-    modal.tool_mode = False
     end_selection_drawing(modal)
     end_active_drawing(modal)
     return
@@ -565,7 +564,7 @@ def sphereize_start_move(modal, context, event, keys, func_data):
 
 
 def sphereize_reset(modal, context, event, keys, func_data):
-    modal._target_emp.location = modal._mode_cache[2]
+    modal._target_emp.location = modal._mode_cache[0]
     sphereize_normals(modal)
     return
 
@@ -690,7 +689,7 @@ def point_start_move(modal, context, event, keys, func_data):
 
 
 def point_reset(modal, context, event, keys, func_data):
-    modal._target_emp.location = modal._mode_cache[2]
+    modal._target_emp.location = modal._mode_cache[0]
     point_normals(modal)
     return
 
@@ -864,12 +863,12 @@ def gizmo_confirm(modal, context, event, keys, func_data):
         add_to_undostack(modal, 1)
 
     modal.gizmo_click = False
-    modal.tool_mode = False
     modal.translate_mode = 0
     modal.translate_axis = 2
     modal._mode_cache.clear()
     modal.click_hold = False
     end_active_drawing(modal)
+    tool_end(modal)
     return
 
 
@@ -887,11 +886,11 @@ def gizmo_cancel(modal, context, event, keys, func_data):
         gizmo.in_use = False
 
     modal.gizmo_click = False
-    modal.tool_mode = False
     modal.translate_mode = 0
     modal.translate_axis = 2
     modal._mode_cache.clear()
     end_active_drawing(modal)
+    tool_end(modal)
     modal.click_hold = False
     return
 
@@ -900,24 +899,24 @@ def gizmo_cancel(modal, context, event, keys, func_data):
 # MIRROR FUNCS
 def mirror_x(modal, context, event, keys, func_data):
     mirror_normals(modal, 0)
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
 def mirror_y(modal, context, event, keys, func_data):
     mirror_normals(modal, 1)
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
 def mirror_z(modal, context, event, keys, func_data):
     mirror_normals(modal, 2)
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
 def mirror_cancel(modal, context, event, keys, func_data):
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
@@ -925,24 +924,24 @@ def mirror_cancel(modal, context, event, keys, func_data):
 # FLATTEN FUNCS
 def flatten_x(modal, context, event, keys, func_data):
     flatten_normals(modal, 0)
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
 def flatten_y(modal, context, event, keys, func_data):
     flatten_normals(modal, 1)
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
 def flatten_z(modal, context, event, keys, func_data):
     flatten_normals(modal, 2)
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
 def flatten_cancel(modal, context, event, keys, func_data):
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
@@ -950,40 +949,40 @@ def flatten_cancel(modal, context, event, keys, func_data):
 # ALIGN FUNCS
 def align_pos_x(modal, context, event, keys, func_data):
     align_to_axis_normals(modal, 0, 1)
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
 def align_pos_y(modal, context, event, keys, func_data):
     align_to_axis_normals(modal, 1, 1)
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
 def align_pos_z(modal, context, event, keys, func_data):
     align_to_axis_normals(modal, 2, 1)
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
 def align_neg_x(modal, context, event, keys, func_data):
     align_to_axis_normals(modal, 0, -1)
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
 def align_neg_y(modal, context, event, keys, func_data):
     align_to_axis_normals(modal, 1, -1)
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
 def align_neg_z(modal, context, event, keys, func_data):
     align_to_axis_normals(modal, 2, -1)
-    modal.tool_mode = False
+    tool_end(modal)
     return
 
 
 def align_cancel(modal, context, event, keys, func_data):
-    modal.tool_mode = False
+    tool_end(modal)
     return
