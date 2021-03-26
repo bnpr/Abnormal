@@ -656,6 +656,15 @@ def toggle_individual_loops(self, arguments):
     arguments[0]._individual_loops = self.bool_val
     arguments[0]._container.set_draw_tris(
         arguments[0]._individual_loops)
+    
+    if self.bool_val == False:
+        sel_pos = get_selected_points(arguments[0], any_selected=True)
+        arguments[0]._container.sel_status[arguments[0]._container.vert_link_ls[sel_pos]] = True
+
+        if arguments[0]._container.act_status.any():
+            act_verts = arguments[0]._container.loop_verts[arguments[0]._container.act_status]
+            arguments[0]._container.act_status[arguments[0]._container.vert_link_ls[act_verts]] = True
+
 
     arguments[0].redraw = True
     return
