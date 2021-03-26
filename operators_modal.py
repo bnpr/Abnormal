@@ -237,11 +237,11 @@ class ABN_OT_normal_editor_modal(Operator):
             update_filter_weights(self)
 
             # INITIALIZE UI WINDOW
+            load_keymap(self)
             init_ui_panels(self, rw, rh, self._ui_scale)
 
             update_orbit_empty(self)
 
-            load_keymap(self)
             setup_tools(self)
 
             # SETUP BATCHES
