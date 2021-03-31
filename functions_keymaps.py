@@ -283,7 +283,7 @@ def basic_keymap(self, context, event):
 
         # Copy Active Normal
         if 'Copy Active Normal' in keys:
-            if self._container.act_status.any():
+            if self._container.sel_status.any():
                 store_active_normal(self)
 
         # Paste Stored Normal
