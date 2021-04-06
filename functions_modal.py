@@ -1273,8 +1273,10 @@ def sphereize_normals(self):
     local_cos = get_np_matrix_transformed_vecs(
         self._container.loop_coords[self._container.sel_status], self._object.matrix_world.inverted())
 
-    cache_norms = self._container.cache_norms[self._container.sel_status]*(1.0-self.target_strength)
-    self._container.new_norms[self._container.sel_status] = (local_cos - targ_loc)*self.target_strength + cache_norms
+    cache_norms = self._container.cache_norms[self._container.sel_status]*(
+        1.0-self.target_strength)
+    self._container.new_norms[self._container.sel_status] = (
+        local_cos - targ_loc)*self.target_strength + cache_norms
 
     self.redraw_active = True
 
@@ -1350,18 +1352,21 @@ def point_normals(self):
     targ_loc = get_np_matrix_transformed_vecs(
         np.array(self._target_emp.location), self._object.matrix_world.inverted())
 
-    cache_norms = self._container.cache_norms[self._container.sel_status]*(1.0-self.target_strength)
+    cache_norms = self._container.cache_norms[self._container.sel_status]*(
+        1.0-self.target_strength)
     if self.point_align:
         avg_loc = get_np_matrix_transformed_vecs(np.mean(
             self._container.loop_coords[self._container.sel_status], axis=0), self._object.matrix_world.inverted())
 
-        self._container.new_norms[self._container.sel_status] = (targ_loc - avg_loc)*self.target_strength + cache_norms
+        self._container.new_norms[self._container.sel_status] = (
+            targ_loc - avg_loc)*self.target_strength + cache_norms
 
     else:
         local_cos = get_np_matrix_transformed_vecs(
             self._container.loop_coords[self._container.sel_status], self._object.matrix_world.inverted())
 
-        self._container.new_norms[self._container.sel_status] = (targ_loc - local_cos)*self.target_strength + cache_norms
+        self._container.new_norms[self._container.sel_status] = (
+            targ_loc - local_cos)*self.target_strength + cache_norms
 
     self.redraw_active = True
 
@@ -1652,7 +1657,7 @@ def filter_selection_points(self, shift, ctrl):
         avail_pos = get_selected_points(self, any_selected=True)
     else:
         avail_pos = get_visible_points(self)
-    
+
     return avail_pos
 
 
@@ -1917,7 +1922,8 @@ def box_selection_test(self, shift, ctrl):
         loop_tri_cos = self._container.loop_tri_coords.mean(axis=1)
 
         # Get coords in region space
-        rcos = get_np_region_cos(loop_tri_cos[avail_ls], self.act_reg, self.act_rv3d)
+        rcos = get_np_region_cos(
+            loop_tri_cos[avail_ls], self.act_reg, self.act_rv3d)
 
         in_range = np_box_selection_test(rcos, x_cos, y_cos)
 
@@ -1949,7 +1955,8 @@ def circle_selection_test(self, shift, ctrl, radius):
         loop_tri_cos = self._container.loop_tri_coords.mean(axis=1)
 
         # Get coords in region space
-        rcos = get_np_region_cos(loop_tri_cos[avail_ls], self.act_reg, self.act_rv3d)
+        rcos = get_np_region_cos(
+            loop_tri_cos[avail_ls], self.act_reg, self.act_rv3d)
 
         in_range = get_np_vec_ordered_dists(
             rcos, self._mouse_reg_loc, threshold=radius)
@@ -1969,9 +1976,16 @@ def lasso_selection_test(self, shift, ctrl):
     rcos = get_np_region_cos(self._container.po_coords[avail_pos],
                              self.act_reg, self.act_rv3d)
 
-    # Get ordered list of closest points within the threshold
+    # First filter by box selection to reduce size of points to test with lasso
     lasso_shape = np.array(self._mode_cache[0])
-    in_range = np_test_cos_in_shape(rcos, lasso_shape)
+
+    x_cos = np.array([lasso_shape[:, 0].min(), lasso_shape[:, 0].max()])
+    y_cos = np.array([lasso_shape[:, 1].min(), lasso_shape[:, 1].max()])
+    box_in_range = np_box_selection_test(rcos, x_cos, y_cos)
+
+    # Test which of the valid points are inside the lasso shape
+    in_range = box_in_range[np_test_cos_in_shape(
+        rcos[box_in_range], lasso_shape)]
 
     change = group_vert_selection_test(self, avail_pos[in_range], shift, ctrl)
 
@@ -1979,12 +1993,15 @@ def lasso_selection_test(self, shift, ctrl):
     if self._individual_loops:
         avail_ls = filter_selection_loops(self, shift, ctrl)
 
-        loop_tri_cos = self._container.loop_tri_coords.mean(axis=1)
-
+        loop_tri_cos = self._container.loop_tri_coords[avail_ls].mean(axis=1)
         # Get coords in region space
-        rcos = get_np_region_cos(loop_tri_cos[avail_ls], self.act_reg, self.act_rv3d)
+        rcos = get_np_region_cos(
+            loop_tri_cos, self.act_reg, self.act_rv3d)
 
-        in_range = np_test_cos_in_shape(rcos, lasso_shape)
+        box_in_range = np_box_selection_test(rcos, x_cos, y_cos)
+
+        in_range = box_in_range[np_test_cos_in_shape(
+            rcos[box_in_range], lasso_shape)]
 
         l_change = group_loop_selection_test(
             self, avail_ls[in_range], loop_tri_cos, shift, ctrl)
