@@ -767,9 +767,6 @@ def np_test_co_in_shape(cos, shape_arr):
 
 
 def np_test_cos_in_shape(cos, shape_arr):
-
-
-def np_test_cos_in_shape(cos, shape_arr):
     #
     # Test if coords inside a shape
     # Gets vectors from the points to the shape coords
