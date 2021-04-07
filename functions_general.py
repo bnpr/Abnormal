@@ -767,6 +767,9 @@ def np_test_co_in_shape(cos, shape_arr):
 
 
 def np_test_cos_in_shape(cos, shape_arr):
+
+
+def np_test_cos_in_shape(cos, shape_arr):
     #
     # Test if coords inside a shape
     # Gets vectors from the points to the shape coords
@@ -775,18 +778,49 @@ def np_test_cos_in_shape(cos, shape_arr):
     # if the point is outisde shape the total rotation angle would be 0
     # inside is a sum rotation of 360 but I use 180 just to be safe
     #
-    vecs_a = shape_arr - cos[:, np.newaxis]
-    shape = vecs_a.shape
-    vecs_a.shape = [shape[0]*shape[1], 3]
-    vecs_a = get_np_normalized_vecs(vecs_a)
-    vecs_a.shape = shape
+    tot_rots = np.zeros(cos.shape[0], dtype=np.float32)
 
-    vecs_b = np.roll(vecs_a, 1, axis=1)
+    # Find the size of the array that will be created in megabytes
+    # If the size is larger than 128 megabytes then we will
+    # perform the shape test on sections of the array at a time
+    # This way we avoid creating giant arrays that use gigabytes of the users ram
+    # and avoid locking up or crashing someones machine
+    proj_size = (shape_arr.shape[0] * cos.nbytes)/1024/1000
+    divs = int(proj_size/128)
 
-    angs = np.arccos(np.sum(vecs_a * vecs_b, axis=2))
-    sign = np.sum(np.cross(vecs_a, vecs_b), axis=2)
-    angs[sign <= 0.0] *= -1
-    tot_rots = np.degrees(np.sum(angs, axis=1))
+    if divs > 0:
+        fac = int(cos.shape[0]/divs)
+        for i in range(divs+1):
+            vecs_a = shape_arr - cos[fac*i:fac*(i+1)][:, np.newaxis]
+
+            shape = vecs_a.shape
+            vecs_a.shape = [shape[0]*shape[1], 3]
+            vecs_a = get_np_normalized_vecs(vecs_a)
+            vecs_a.shape = shape
+
+            vecs_b = np.roll(vecs_a, 1, axis=1)
+
+            angs = np.arccos(np.sum(vecs_a * vecs_b, axis=2))
+            sign = np.sum(np.cross(vecs_a, vecs_b), axis=2)
+            angs[sign <= 0.0] *= -1
+
+            tot_rots[fac*i:fac*(i+1)] = np.degrees(np.sum(angs, axis=1))
+
+    else:
+        vecs_a = shape_arr - cos[:, np.newaxis]
+
+        shape = vecs_a.shape
+        vecs_a.shape = [shape[0]*shape[1], 3]
+        vecs_a = get_np_normalized_vecs(vecs_a)
+        vecs_a.shape = shape
+
+        vecs_b = np.roll(vecs_a, 1, axis=1)
+
+        angs = np.arccos(np.sum(vecs_a * vecs_b, axis=2))
+        sign = np.sum(np.cross(vecs_a, vecs_b), axis=2)
+        angs[sign <= 0.0] *= -1
+
+        tot_rots = np.degrees(np.sum(angs, axis=1))
 
     in_shape = np.absolute(tot_rots) >= 180
     return in_shape.nonzero()[0]
