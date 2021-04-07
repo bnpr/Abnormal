@@ -158,7 +158,6 @@ class ABNContainer:
                 (po_norms * self.normal_scale) @ self.matrix[:3, :3].T
 
         norm_lines = np.array(list(zip(po_cos, world_norms)))
-        norm_lines.ravel()
         norm_lines.shape = [po_cos.shape[0] * 2, 3]
 
         #
@@ -168,7 +167,6 @@ class ABNContainer:
         cols[act_status] = self.rcol_normal_act
 
         norm_colors = np.array(list(zip(cols, cols)))
-        norm_colors.ravel()
         norm_colors.shape = [po_cos.shape[0] * 2, 4]
 
         #
@@ -211,7 +209,6 @@ class ABNContainer:
             t_colors[act_mask] = self.rcol_tri_act
 
             tri_colors = np.array(list(zip(t_colors, t_colors, t_colors)))
-            tri_colors.ravel()
             tri_colors.shape = [tris.shape[0]*3, 4]
 
             tris.shape = [tris.shape[0]*3, 3]
@@ -260,11 +257,9 @@ class ABNContainer:
             n_colors = n_colors[sel_mask]
 
         norms = np.array(list(zip(po_cos, world_norms)))
-        norms.ravel()
         norms.shape = [po_cos.shape[0] * 2, 3]
 
         norm_colors = np.array(list(zip(n_colors, n_colors)))
-        norm_colors.ravel()
         norm_colors.shape = [n_colors.shape[0] * 2, 4]
 
         #
