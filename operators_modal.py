@@ -21,6 +21,8 @@ class ABN_OT_normal_editor_modal(Operator):
 
     def modal(self, context, event):
         self._modal_running = False
+        status = {"RUNNING_MODAL"}
+
         if bpy.context.area == None:
             finish_modal(self, True)
             self.report({'WARNING'}, "Something went wrong. Cancelling modal")
@@ -31,6 +33,11 @@ class ABN_OT_normal_editor_modal(Operator):
             self.report({'WARNING'}, "Left 3D View. Cancelling modal")
             return {"CANCELLED"}
 
+        # If event.type is blank avoid testing it agaisnt keys as it prints a lot of errors
+        if event.type == '':
+            self._modal_running = True
+            return status
+
         self._mouse_abs_loc[:] = [event.mouse_x, event.mouse_y, 0.0]
         self._mouse_reg_loc[:] = [
             event.mouse_region_x, event.mouse_region_y, 0.0]
@@ -39,7 +46,6 @@ class ABN_OT_normal_editor_modal(Operator):
         # self._mouse_act_loc = [self._mouse_abs_loc[0]-self.act_reg.x, self._mouse_abs_loc[1]-self.act_reg.y]
 
         self._window.check_dimensions(context)
-        status = {"RUNNING_MODAL"}
         # Check that mousemove is larger than a pixel to be tested
         mouse_move_check = True
         if event.type == 'MOUSEMOVE' and Vector(self._mouse_reg_loc-self._prev_mouse_loc).length < 1.0:
