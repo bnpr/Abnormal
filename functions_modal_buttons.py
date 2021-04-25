@@ -654,15 +654,15 @@ def toggle_individual_loops(self, arguments):
     arguments[0]._individual_loops = self.bool_val
     arguments[0]._container.set_draw_tris(
         arguments[0]._individual_loops)
-    
+
     if self.bool_val == False:
         sel_pos = get_selected_points(arguments[0], any_selected=True)
         arguments[0]._container.sel_status[arguments[0]._container.vert_link_ls[sel_pos]] = True
 
         if arguments[0]._container.act_status.any():
             act_verts = arguments[0]._container.loop_verts[arguments[0]._container.act_status]
-            arguments[0]._container.act_status[arguments[0]._container.vert_link_ls[act_verts]] = True
-
+            arguments[0]._container.act_status[arguments[0]
+                                               ._container.vert_link_ls[act_verts]] = True
 
     arguments[0].redraw = True
     return
@@ -805,13 +805,11 @@ def finish_point_mode(self, arguments):
 
 def end_modal(self, arguments):
     if self.custom_id[0] == 0:
-        finish_modal(arguments[0], False)
-        status = {'FINISHED'}
+        arguments[0]._confirm_modal = True
     if self.custom_id[0] == 1:
-        finish_modal(arguments[0], True)
-        status = {'CANCELLED'}
+        arguments[0]._cancel_modal = True
 
-    return status
+    return
 
 
 def reset_vectors(self, arguments):

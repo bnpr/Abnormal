@@ -69,6 +69,13 @@ class ABN_OT_normal_editor_modal(Operator):
                     status = basic_keymap(self, context, event)
             self._prev_mouse_loc[:] = self._mouse_reg_loc
 
+        if self._confirm_modal:
+            finish_modal(self, False)
+            status = {"FINISHED"}
+        elif self._cancel_modal:
+            finish_modal(self, True)
+            status = {"CANCELLED"}
+
         refresh_batches(self, context)
 
         self._modal_running = True
@@ -140,6 +147,9 @@ class ABN_OT_normal_editor_modal(Operator):
         self._mirror_x = False
         self._mirror_y = False
         self._mirror_z = False
+
+        self._confirm_modal = False
+        self._cancel_modal = False
 
         self._current_filter = ''
 
