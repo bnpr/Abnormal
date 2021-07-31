@@ -85,6 +85,7 @@ class ABNContainer:
             uniform float brightness;
 
             in vec4 rgba;
+            out vec4 gl_FragColor;
 
             void main()
             {
@@ -116,6 +117,7 @@ class ABNContainer:
             uniform float brightness;
 
             in vec4 rgba;
+            out vec4 gl_FragColor;
 
             void main()
             {
