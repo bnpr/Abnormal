@@ -3,7 +3,7 @@ Blender Abnormal add-on for vertex normal editing
 
 This add-on is funded by the BNPR community with the BEER dev fund.
 
-**Please Donate to Keep the Add-on Updated:** https://gum.co/abnormal
+**Please Donate to Keep the Add-on Updated:** https://bnpr.gumroad.com/l/abnormal
 
 ## Features:
 1. Vertex normal editing "mode"
@@ -25,13 +25,13 @@ This add-on is funded by the BNPR community with the BEER dev fund.
 9. Keymap guide
 
 ## First Installation:
-1. Download the add-on: https://github.com/BlenderNPR/Abnormal/archive/master.zip
+1. Download the add-on: https://github.com/bnpr/Abnormal/releases
 2. Install Abnormal: Preference > Add-on tab > Install
 3. Activate the add-on
 
 ## Reinstallation:
 1. Cleanly remove older Abnormal add-on: preference > Add-on tab, find Abnormal, click remove.
-2. Download the add-on: https://github.com/BlenderNPR/Abnormal/archive/master.zip
+2. Download the add-on: https://github.com/bnpr/Abnormal/releases
 3. Install Abnormal: Preference > Add-on tab > Install
 4. Restart Blender
 5. Activate the add-on (reactivate before Blender restart may cause error message to pop up)
