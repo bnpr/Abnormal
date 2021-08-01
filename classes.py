@@ -85,11 +85,11 @@ class ABNContainer:
             uniform float brightness;
 
             in vec4 rgba;
-            out vec4 gl_FragColor;
+            out vec4 fragColor ;
 
             void main()
             {
-                gl_FragColor = vec4(rgba.xyz * brightness, rgba.a);
+                fragColor  = vec4(rgba.xyz * brightness, rgba.a);
             }
         '''
 
@@ -117,11 +117,11 @@ class ABNContainer:
             uniform float brightness;
 
             in vec4 rgba;
-            out vec4 gl_FragColor;
+            out vec4 fragColor ;
 
             void main()
             {
-                gl_FragColor = vec4(rgba.xyz * brightness, rgba.a);
+                fragColor  = vec4(rgba.xyz * brightness, rgba.a);
             }
         '''
 
