@@ -39,6 +39,6 @@ This add-on is funded by the BNPR community with the BEER dev fund.
 ## Reporting a bug:
 1. Download the latest add-on version. Please see **Reinstallation** guide above.
 2. Recreate the bug in the new add-on
-3. Report the bug/issue via this link: https://github.com/BlenderNPR/Abnormal/issues/new
+3. Report the bug/issue via this link: https://github.com/bnpr/Abnormal/issues
 4. Please describe the bug with the final console print and propose a fix (if possible).
 
