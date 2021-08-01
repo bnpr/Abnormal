@@ -85,7 +85,7 @@ class ABNContainer:
             uniform float brightness;
 
             in vec4 rgba;
-            out vec4 fragColor ;
+            out vec4 fragColor;
 
             void main()
             {
@@ -117,7 +117,7 @@ class ABNContainer:
             uniform float brightness;
 
             in vec4 rgba;
-            out vec4 fragColor ;
+            out vec4 fragColor;
 
             void main()
             {
