@@ -5,7 +5,7 @@ This add-on is funded by the BNPR community with the BEER dev fund.
 
 **Please Donate to Keep the Add-on Updated:** https://bnpr.gumroad.com/l/abnormal
 
-## How to used Abnormal
+## How to use Abnormal
 Documentation, tips and tricks: https://bnpr.gitbook.io/abnormal-wiki/
 
 ## First Installation:
