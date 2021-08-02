@@ -85,11 +85,11 @@ class ABNContainer:
             uniform float brightness;
 
             in vec4 rgba;
-            out vec4 fragColor;
+            layout(location = 0) out vec4 diffuseColor;
 
             void main()
             {
-                fragColor  = vec4(rgba.xyz * brightness, rgba.a);
+                diffuseColor  = vec4(rgba.xyz * brightness, rgba.a);
             }
         '''
 
@@ -117,11 +117,11 @@ class ABNContainer:
             uniform float brightness;
 
             in vec4 rgba;
-            out vec4 fragColor;
+            layout(location = 0) out vec4 diffuseColor;
 
             void main()
             {
-                fragColor  = vec4(rgba.xyz * brightness, rgba.a);
+                diffuseColor  = vec4(rgba.xyz * brightness, rgba.a);
             }
         '''
 
