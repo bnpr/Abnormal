@@ -3,14 +3,14 @@ from bpy.props import *
 from bpy.types import Operator
 from mathutils import Vector
 from .properties import *
-from .functions_general import *
-from .functions_drawing import *
-from .functions_modal import *
+# from .functions_general import *
+# from .functions_drawing import *
+# from .functions_modal import *
 from .functions_keymaps import *
 from .functions_modal_buttons import *
 from .functions_modal_keymap import *
 from .functions_tools import *
-from .classes import *
+# from .classes import *
 
 
 class ABN_OT_normal_editor_modal(Operator):
@@ -41,7 +41,8 @@ class ABN_OT_normal_editor_modal(Operator):
         self._mouse_reg_loc[:] = [
             event.mouse_region_x, event.mouse_region_y, 0.0]
 
-        self.act_reg, self.act_rv3d = check_area(self)
+        self.act_reg, self.act_rv3d = context.region, context.region_data
+        # self.act_reg, self.act_rv3d = check_area(self)
         # self._mouse_act_loc = [self._mouse_abs_loc[0]-self.act_reg.x, self._mouse_abs_loc[1]-self.act_reg.y]
 
         self._window.check_dimensions(context)
@@ -81,7 +82,8 @@ class ABN_OT_normal_editor_modal(Operator):
         return status
 
     def invoke(self, context, event):
-        self.act_reg, self.act_rv3d = check_area(self)
+        self.act_reg, self.act_rv3d = context.region, context.region_data
+        # self.act_reg, self.act_rv3d = check_area(self)
         rh = self.act_reg.height
         rw = self.act_reg.width
 
