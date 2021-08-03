@@ -990,7 +990,10 @@ def img_load(img_name, path):
 
     if not_there:
         img = bpy.data.images.load(img_fp)
-    img.colorspace_settings.name = 'Raw'
+    try:
+        img.colorspace_settings.name = 'Raw'
+    except:
+        pass
 
     if img.gl_load():
         raise Exception()
