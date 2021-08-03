@@ -5,6 +5,7 @@ from bpy.props import *
 
 
 class prefs(PropertyGroup):
+    mac_drawing: BoolProperty(default=False)
     individual_loops: BoolProperty(default=False)
     rotate_gizmo_use: BoolProperty(default=True)
 
@@ -15,6 +16,8 @@ def label_row(path, prop, row, label):
 
 
 def draw(preference, context, layout):
+    label_row(preference.behavior, 'mac_drawing',
+              layout.row(), 'Use Alternate Mac Drawing')
     label_row(preference.behavior, 'rotate_gizmo_use',
               layout.row(), 'Use Rotation Gizmo')
     label_row(preference.behavior, 'individual_loops',

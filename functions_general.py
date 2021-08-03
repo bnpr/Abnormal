@@ -3,7 +3,6 @@ import bmesh
 import math
 import numpy as np
 from mathutils import Vector, kdtree, Matrix
-from mathutils.geometry import intersect_point_tri_2d
 from bpy_extras import view3d_utils
 
 gen_mods = ['ARRAY', 'BEVEL', 'BOOLEAN', 'BUILD', 'DECIMATE',

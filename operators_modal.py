@@ -11,7 +11,6 @@ from .functions_modal_buttons import *
 from .functions_modal_keymap import *
 from .functions_tools import *
 from .classes import *
-import time
 
 
 class ABN_OT_normal_editor_modal(Operator):

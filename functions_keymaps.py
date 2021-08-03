@@ -162,11 +162,9 @@ def basic_keymap(self, context, event):
             move_undostack(self, 1)
         return status
 
-
     #
     #
     #
-    
 
     keys = keys_find(self.keymap.keymap_items, event)
     if len(keys) == 0:
