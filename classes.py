@@ -139,14 +139,14 @@ class ABNContainer:
     def clear_batches(self):
         if self.mac_shader:
             self.batch_po = batch_for_shader(
-                self.point_shader, 'POINTS', {"pos": [], "size": [], "color": []})
-        else:
-            self.batch_po = batch_for_shader(
                 self.shader, 'POINTS', {"pos": [], "color": []})
             self.batch_po_sel = batch_for_shader(
                 self.shader, 'POINTS', {"pos": [], "color": []})
             self.batch_po_act = batch_for_shader(
                 self.shader, 'POINTS', {"pos": [], "color": []})
+        else:
+            self.batch_po = batch_for_shader(
+                self.point_shader, 'POINTS', {"pos": [], "size": [], "color": []})
 
         self.batch_normal = batch_for_shader(
             self.shader, 'LINES', {"pos": [], "color": []})
@@ -214,14 +214,14 @@ class ABNContainer:
 
         if self.mac_shader:
             self.batch_po = batch_for_shader(
-                self.point_shader, 'POINTS', {"pos": list(points), "size": list(sizes), "color": list(po_colors)})
-        else:
-            self.batch_po = batch_for_shader(
                 self.shader, 'POINTS', {"pos": list(points[~sel_mask]), "color": list(po_colors[~sel_mask])})
             self.batch_po_sel = batch_for_shader(
                 self.shader, 'POINTS', {"pos": list(points[sel_mask]), "color": list(po_colors[sel_mask])})
             self.batch_po_act = batch_for_shader(
                 self.shader, 'POINTS', {"pos": list(points[act_mask]), "color": list(po_colors[act_mask])})
+        else:
+            self.batch_po = batch_for_shader(
+                self.point_shader, 'POINTS', {"pos": list(points), "size": list(sizes), "color": list(po_colors)})
 
         #
 
@@ -329,15 +329,6 @@ class ABNContainer:
             self.batch_tri.draw(self.shader)
 
         if self.mac_shader:
-            # Static Points
-            self.point_shader.bind()
-            self.point_shader.uniform_float("viewProjectionMatrix", matrix)
-            self.point_shader.uniform_float("brightness", self.brightness)
-            # self.point_shader.uniform_float("opacity", self.opacity)
-            # self.point_shader.uniform_float("color", po_color)
-            self.batch_po.draw(self.point_shader)
-
-        else:
             bgl.glPointSize(5*self.size)
             # Static Non Sel Points
             self.shader.bind()
@@ -352,6 +343,15 @@ class ABNContainer:
             bgl.glPointSize(11*self.size)
             self.shader.bind()
             self.batch_po_act.draw(self.shader)
+
+        else:
+            # Static Points
+            self.point_shader.bind()
+            self.point_shader.uniform_float("viewProjectionMatrix", matrix)
+            self.point_shader.uniform_float("brightness", self.brightness)
+            # self.point_shader.uniform_float("opacity", self.opacity)
+            # self.point_shader.uniform_float("color", po_color)
+            self.batch_po.draw(self.point_shader)
 
         # Static Normals
         self.shader.bind()
