@@ -212,12 +212,23 @@ class ABNContainer:
         po_colors[sel_mask] = self.rcol_po_sel
         po_colors[act_mask] = self.rcol_po_act
 
+        if self.mac_shader:
+            self.batch_po = batch_for_shader(
+                self.point_shader, 'POINTS', {"pos": list(points), "size": list(sizes), "color": list(po_colors)})
+        else:
+            self.batch_po = batch_for_shader(
+                self.shader, 'POINTS', {"pos": list(points[~sel_mask]), "color": list(po_colors[~sel_mask])})
+            self.batch_po_sel = batch_for_shader(
+                self.shader, 'POINTS', {"pos": list(points[sel_mask]), "color": list(po_colors[sel_mask])})
+            self.batch_po_act = batch_for_shader(
+                self.shader, 'POINTS', {"pos": list(points[act_mask]), "color": list(po_colors[act_mask])})
+
         #
 
-        tris = []
-        tri_colors = []
         # LOOP TRIS
         # all loop tris are static if used
+        tris = []
+        tri_colors = []
         if self.draw_tris:
             tris = self.loop_tri_coords[~self.hide_status]
             tris[:, 1] = (tris[:, 1]-tris[:, 0]) * self.loop_scale + tris[:, 0]
@@ -233,6 +244,9 @@ class ABNContainer:
 
             tris.shape = [tris.shape[0]*3, 3]
 
+        self.batch_tri = batch_for_shader(
+            self.shader, 'TRIS', {"pos": list(tris), "color": list(tri_colors)})
+
         #
 
         # NORMALS
@@ -246,10 +260,11 @@ class ABNContainer:
             po_norms = self.new_norms[~self.hide_status][non_sel_status]
             sel_mask = []
             act_mask = []
-
         else:
             po_cos = self.loop_coords[~self.hide_status]
             po_norms = self.new_norms[~self.hide_status]
+
+        #
 
         if self.scale_selection:
             world_norms = po_cos + \
@@ -282,23 +297,9 @@ class ABNContainer:
         norm_colors = np.array(list(zip(n_colors, n_colors)))
         norm_colors.shape = [n_colors.shape[0] * 2, 4]
 
-        #
-
-        if self.mac_shader:
-            self.batch_po = batch_for_shader(
-                self.point_shader, 'POINTS', {"pos": list(points), "size": list(sizes), "color": list(po_colors)})
-        else:
-            self.batch_po = batch_for_shader(
-                self.shader, 'POINTS', {"pos": list(points[~sel_mask]), "color": list(po_colors[~sel_mask])})
-            self.batch_po_sel = batch_for_shader(
-                self.shader, 'POINTS', {"pos": list(points[sel_mask]), "color": list(po_colors[sel_mask])})
-            self.batch_po_act = batch_for_shader(
-                self.shader, 'POINTS', {"pos": list(points[act_mask]), "color": list(po_colors[act_mask])})
-
         self.batch_normal = batch_for_shader(
             self.shader, 'LINES', {"pos": list(norms), "color": list(norm_colors)})
-        self.batch_tri = batch_for_shader(
-            self.shader, 'TRIS', {"pos": list(tris), "color": list(tri_colors)})
+
         return
 
     def update_color_render(self):

@@ -208,7 +208,7 @@ def box_sel_mouse(modal, context, event, func_data):
 
             modal._mouse_init[:] = modal._mouse_reg_loc
     else:
-        modal._mouse_init[:] = nan
+        modal._mouse_init[:] = np.nan
 
         modal._mode_cache[0].pop(-1)
         modal._mode_cache[0].append(modal._mouse_reg_loc.tolist())
@@ -233,7 +233,7 @@ def box_sel_confirm(modal, context, event, keys, func_data):
 
     modal.box_selecting = False
     modal._mode_cache.clear()
-    modal._mouse_init[:] = nan
+    modal._mouse_init[:] = np.nan
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     tool_end(modal)
@@ -244,7 +244,7 @@ def box_sel_confirm(modal, context, event, keys, func_data):
 def box_sel_cancel(modal, context, event, keys, func_data):
     modal.box_selecting = False
     modal._mode_cache.clear()
-    modal._mouse_init[:] = nan
+    modal._mouse_init[:] = np.nan
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     tool_end(modal)
@@ -274,7 +274,7 @@ def lasso_sel_mouse(modal, context, event, func_data):
             modal._mouse_init[:] = modal._mouse_reg_loc
 
     else:
-        modal._mouse_init[:] = nan
+        modal._mouse_init[:] = np.nan
 
         prev_loc = Vector(modal._mode_cache[0][-1])
         cur_loc = Vector(modal._mouse_reg_loc)
@@ -303,7 +303,7 @@ def lasso_sel_confirm(modal, context, event, keys, func_data):
 
     modal.lasso_selecting = False
     modal._mode_cache.clear()
-    modal._mouse_init[:] = nan
+    modal._mouse_init[:] = np.nan
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     tool_end(modal)
@@ -314,7 +314,7 @@ def lasso_sel_confirm(modal, context, event, keys, func_data):
 def lasso_sel_cancel(modal, context, event, keys, func_data):
     modal.lasso_selecting = False
     modal._mode_cache.clear()
-    modal._mouse_init[:] = nan
+    modal._mouse_init[:] = np.nan
     bpy.context.window.cursor_modal_set('DEFAULT')
     update_orbit_empty(modal)
     tool_end(modal)
@@ -461,7 +461,7 @@ def rotate_norms_confirm(modal, context, event, keys, func_data):
 
     add_to_undostack(modal, 1)
     modal._mode_cache.clear()
-    modal._mouse_init[:] = nan
+    modal._mouse_init[:] = np.nan
 
     modal.translate_axis = 2
     modal.translate_mode = 0
@@ -481,7 +481,7 @@ def rotate_norms_cancel(modal, context, event, keys, func_data):
 
     set_new_normals(modal)
     modal._mode_cache.clear()
-    modal._mouse_init[:] = nan
+    modal._mouse_init[:] = np.nan
 
     modal.translate_axis = 2
     modal.translate_mode = 0
