@@ -91,11 +91,10 @@ def mirror_normals(self, axis):
 def incremental_rotate_vectors(self, axis, direction):
     self.translate_mode = 2
     self.translate_axis = axis
+    self._container.cache_norms[:] = self._container.new_norms
     rotate_vectors(self, math.radians(direction * self._rot_increment))
     self.translate_mode = 0
     self.translate_axis = 2
-
-    self._container.cache_norms[:] = self._container.new_norms
 
     self.redraw = True
     return
