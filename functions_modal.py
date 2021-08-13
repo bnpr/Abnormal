@@ -821,7 +821,7 @@ def init_nav_list(self):
              'View Selected', 'View Camera Center', 'View All', 'View Axis',
              'View Orbit', 'View Roll', 'View Persp/Ortho', 'Frame Selected']
 
-    config = bpy.context.window_manager.keyconfigs.get('blender')
+    config = bpy.context.window_manager.keyconfigs.active
     if config:
         for item in config.keymaps['3D View'].keymap_items:
             if item.name in names:
@@ -829,16 +829,6 @@ def init_nav_list(self):
                             item.ctrl, item.shift, item.alt]
                 if item_dat not in self.nav_list:
                     self.nav_list.append(item_dat)
-
-    config = bpy.context.window_manager.keyconfigs.get('blender user')
-    if config:
-        for item in config.keymaps['3D View'].keymap_items:
-            if item.name in names:
-                item_dat = [item.type, item.value, item.any,
-                            item.ctrl, item.shift, item.alt]
-                if item_dat not in self.nav_list:
-                    self.nav_list.append(item_dat)
-
     return
 
 
