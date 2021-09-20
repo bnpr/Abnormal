@@ -1,7 +1,7 @@
 import bpy
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
-from mathutils.geometry import intersect_line_plane
+from mathutils.geometry import intersect_line_plane, intersect_point_tri_2d
 import numpy as np
 import os
 from bpy_extras import view3d_utils
