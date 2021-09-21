@@ -819,9 +819,9 @@ def init_nav_list(self):
 
     names = ['Zoom View', 'Rotate View', 'Pan View', 'Dolly View',
              'View Selected', 'View Camera Center', 'View All', 'View Axis',
-             'View Orbit', 'View Roll', 'View Persp/Ortho', 'Frame Selected']
+             'View Orbit', 'View Roll', 'View Persp/Ortho', 'View Camera', 'Frame Selected']
 
-    config = bpy.context.window_manager.keyconfigs.active
+    config = bpy.context.window_manager.keyconfigs.user
     if config:
         for item in config.keymaps['3D View'].keymap_items:
             if item.name in names:
