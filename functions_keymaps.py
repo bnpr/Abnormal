@@ -3,7 +3,6 @@ from bpy_extras import view3d_utils
 from .functions_drawing import *
 from .functions_modal import *
 from .classes import *
-import time
 
 
 def basic_ui_hover_keymap(self, context, event):
@@ -30,12 +29,13 @@ def basic_ui_hover_keymap(self, context, event):
         if scroll_status:
             status = {'RUNNING_MODAL'}
 
-    # undo
-    if event.type == 'Z' and event.value == 'PRESS' and event.ctrl and event.shift == False:
-        move_undostack(self, 1)
-    # redo
-    if event.type == 'Z' and event.value == 'PRESS' and event.ctrl and event.shift:
-        move_undostack(self, -1)
+    if event.type == 'Z' and event.value == 'PRESS' and event.ctrl:
+        if event.shift:
+            move_undostack(self, -1)
+            self._window.set_key('Undo')
+        else:
+            move_undostack(self, 1)
+            self._window.set_key('Redo')
 
     if event.type == 'LEFTMOUSE' and event.value == 'PRESS' and not event.ctrl:
         status = {'RUNNING_MODAL'}
@@ -83,7 +83,8 @@ def basic_ui_hover_keymap(self, context, event):
     #     status = {"RUNNING_MODAL"}
 
     # Toggle Gizmo
-    if 'Toggle Gizmo' in keys:
+    key = 'Toggle Gizmo'
+    if key in keys:
         self._use_gizmo = not self._use_gizmo
         self._gizmo_bool.toggle_bool()
         update_orbit_empty(self)
@@ -91,6 +92,7 @@ def basic_ui_hover_keymap(self, context, event):
             gizmo_update_hide(self, True)
         else:
             gizmo_update_hide(self, False)
+        self._window.set_key(key)
         return status
 
     # Cancel modal
@@ -158,8 +160,10 @@ def basic_keymap(self, context, event):
     if event.type == 'Z' and event.value == 'PRESS' and event.ctrl:
         if event.shift:
             move_undostack(self, -1)
+            self._window.set_key('Undo')
         else:
             move_undostack(self, 1)
+            self._window.set_key('Redo')
         return status
 
     #
@@ -168,6 +172,7 @@ def basic_keymap(self, context, event):
 
     keys = keys_find(self.keymap.keymap_items, event)
     if len(keys) == 0:
+        # self._window.set_key('Navigation')
         return {'PASS_THROUGH'}
 
     #
@@ -176,41 +181,50 @@ def basic_keymap(self, context, event):
     # SHORTCUT KEYS
     if True:
         # hide unselected normals
-        if 'Hide Unselected' in keys:
+        key = 'Hide Unselected'
+        if key in keys:
             if self._container.sel_status.all() == False:
                 self._container.hide_status[~self._container.sel_status] = True
                 add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # hide selected normals
-        if 'Hide Selected' in keys:
+        key = 'Hide Selected'
+        if key in keys:
             if self._container.sel_status.any():
                 self._container.hide_status[self._container.sel_status] = True
                 self._container.sel_status[:] = False
                 self._container.act_status[:] = False
                 add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # unhide normals
-        if 'Unhide' in keys:
+        key = 'Unhide'
+        if key in keys:
             if self._container.hide_status.any():
                 self._container.sel_status[self._container.hide_status] = True
                 self._container.hide_status[:] = False
                 add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # clear rotation
-        if 'Reset Gizmo Rotation' in keys:
+        key = 'Reset Gizmo Rotation'
+        if key in keys:
             if self._use_gizmo:
                 loc = self._orbit_ob.location.copy()
                 self._orbit_ob.matrix_world = self._object.matrix_world
                 self._orbit_ob.matrix_world.translation = loc
                 self._window.update_gizmo_orientation(
                     self._orbit_ob.matrix_world)
+            self._window.set_key(key)
             return status
 
         # Rotate Normals
-        if 'Rotate Normals' in keys:
+        key = 'Rotate Normals'
+        if key in keys:
             update_filter_weights(self)
 
             if self._container.sel_status.any():
@@ -234,16 +248,20 @@ def basic_keymap(self, context, event):
                 gizmo_update_hide(self, False)
                 self.selection_drawing = True
                 start_active_drawing(self)
+            self._window.set_key(key)
             return status
 
         # toggle xray
-        if 'Toggle X-Ray' in keys:
+        key = 'Toggle X-Ray'
+        if key in keys:
             self._x_ray_mode = not self._x_ray_mode
             self._xray_bool.toggle_bool()
+            self._window.set_key(key)
             return status
 
         # Toggle Gizmo
-        if 'Toggle Gizmo' in keys:
+        key = 'Toggle Gizmo'
+        if key in keys:
             self._use_gizmo = not self._use_gizmo
             self._gizmo_bool.toggle_bool()
             update_orbit_empty(self)
@@ -251,83 +269,112 @@ def basic_keymap(self, context, event):
                 gizmo_update_hide(self, True)
             else:
                 gizmo_update_hide(self, False)
+            self._window.set_key(key)
             return status
 
         # Mirror Normals
-        if 'Mirror Normals Start' in keys:
+        key = 'Mirror Normals Start'
+        if key in keys:
             if self._container.sel_status.any():
                 self.tool_mode = True
                 self._current_tool = self._mirror_tool
                 keymap_mirror(self)
+                self._window.set_key(key)
 
         # Smooth Normals
-        if 'Smooth Normals' in keys:
+        key = 'Smooth Normals'
+        if key in keys:
             if self._container.sel_status.any():
                 smooth_normals(self, 0.5)
+                self._window.set_key(key)
 
         # Flatten Normals
-        if 'Flatten Normals Start' in keys:
+        key = 'Flatten Normals Start'
+        if key in keys:
             if self._container.sel_status.any():
                 self.tool_mode = True
                 self._current_tool = self._flatten_tool
                 keymap_flatten(self)
+                self._window.set_key(key)
 
         # Align Normals
-        if 'Align Normals Start' in keys:
+        key = 'Align Normals Start'
+        if key in keys:
             if self._container.sel_status.any():
                 self.tool_mode = True
                 self._current_tool = self._align_tool
                 keymap_align(self)
+                self._window.set_key(key)
 
         # Copy Active Normal
-        if 'Copy Active Normal' in keys:
+        key = 'Copy Active Normal'
+        if key in keys:
             if self._container.act_status.any():
                 store_active_normal(self)
+                self._window.set_key(key)
 
         # Paste Stored Normal
-        if 'Paste Stored Normal' in keys:
+        key = 'Paste Stored Normal'
+        if key in keys:
             if self._container.sel_status.any():
                 paste_normal(self)
+                self._window.set_key(key)
 
         # Paste Active Normal to Selected
-        if 'Paste Active Normal to Selected' in keys:
+        key = 'Paste Active Normal to Selected'
+        if key in keys:
             if self._container.act_status.any():
                 copy_active_to_selected(self)
+                self._window.set_key(key)
 
         # Set Normals Outside
-        if 'Set Normals Outside' in keys:
+        key = 'Set Normals Outside'
+        if key in keys:
             if self._container.sel_status.any():
                 set_outside_inside(self, 1)
+                self._window.set_key(key)
 
         # Set Normals Inside
-        if 'Set Normals Inside' in keys:
+        key = 'Set Normals Inside'
+        if key in keys:
             if self._container.sel_status.any():
                 set_outside_inside(self, -1)
+                self._window.set_key(key)
 
         # Flip Normals
-        if 'Flip Normals' in keys:
+        key = 'Flip Normals'
+        if key in keys:
             if self._container.sel_status.any():
                 flip_normals(self)
+                self._window.set_key(key)
 
         # Reset Vectors
-        if 'Reset Vectors' in keys:
+        key = 'Reset Vectors'
+        if key in keys:
             if self._container.sel_status.any():
                 reset_normals(self)
+                self._window.set_key(key)
 
         # Average Individual Normals
-        if 'Average Individual Normals' in keys:
+        key = 'Average Individual Normals'
+        if key in keys:
             if self._container.sel_status.any():
                 average_vertex_normals(self)
+                self._window.set_key(key)
 
         # Average Selected Normals
-        if 'Average Selected Normals' in keys:
+        key = 'Average Selected Normals'
+        if key in keys:
             if self._container.sel_status.any():
                 average_selected_normals(self)
+                self._window.set_key(key)
 
         # Set Normals from Faces
-        if 'Set Normals From Faces' in keys:
+        key = 'Set Normals From Faces'
+        if key in keys:
             if self._container.sel_status.any():
                 set_normals_from_faces(self)
+                self._window.set_key(key)
 
     #
     #
@@ -335,26 +382,31 @@ def basic_keymap(self, context, event):
     # SELECTION KEYS
     if True:
         # invert selection
-        if 'Invert Selection' in keys:
+        key = 'Invert Selection'
+        if key in keys:
             if self._container.hide_status.all() == False:
                 self._container.act_status[:] = False
                 self._container.sel_status[~self._container.hide_status] = ~self._container.sel_status[~self._container.hide_status]
                 self._active_face = None
                 add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # box select
-        if 'Box Select Start' in keys:
+        key = 'Box Select Start'
+        if key in keys:
             bpy.context.window.cursor_modal_set('CROSSHAIR')
             self._current_tool = self._box_sel_tool
             self.tool_mode = True
             self.selection_drawing = True
             keymap_box_selecting(self)
             gizmo_update_hide(self, False)
+            self._window.set_key(key)
             return status
 
         # circle select
-        if 'Circle Select Start' in keys:
+        key = 'Circle Select Start'
+        if key in keys:
             bpy.context.window.cursor_modal_set('CROSSHAIR')
             self._current_tool = self._circle_sel_tool
             self.tool_mode = True
@@ -362,29 +414,35 @@ def basic_keymap(self, context, event):
             self.circle_selecting = True
             keymap_circle_selecting(self)
             gizmo_update_hide(self, False)
+            self._window.set_key(key)
             return status
 
         # lasso select
-        if 'Lasso Select Start' in keys:
+        key = 'Lasso Select Start'
+        if key in keys:
             bpy.context.window.cursor_modal_set('CROSSHAIR')
             self._current_tool = self._lasso_sel_tool
             self.tool_mode = True
             self.selection_drawing = True
             keymap_lasso_selecting(self)
             gizmo_update_hide(self, False)
+            self._window.set_key(key)
             return status
 
         # select all normals
-        if 'Select All' in keys:
+        key = 'Select All'
+        if key in keys:
             change = not self._container.sel_status.all()
             if change:
                 self._container.sel_status[:] = True
                 self._active_face = None
                 add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # unselect all normals
-        if 'Unselect All' in keys:
+        key = 'Unselect All'
+        if key in keys:
             change = self._container.sel_status.any()
             if change:
                 self._container.sel_status[:] = False
@@ -393,10 +451,12 @@ def basic_keymap(self, context, event):
                 self._active_point = None
                 self._active_face = None
                 add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # select linked normals
-        if 'Select Linked' in keys:
+        key = 'Select Linked'
+        if key in keys:
             change = False
             if self._container.sel_status.any():
                 vis_pos = get_visible_points(self)
@@ -409,10 +469,12 @@ def basic_keymap(self, context, event):
                     self._container.sel_status[get_vert_ls(
                         self, new_sel)] = True
                     add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # select linked under cursor normals
-        if 'Select Hover Linked' in keys:
+        key = 'Select Hover Linked'
+        if key in keys:
             # selection test
             face_res = ray_cast_to_mouse(self)
             if face_res != None:
@@ -427,48 +489,61 @@ def basic_keymap(self, context, event):
                     self._container.sel_status[get_vert_ls(
                         self, new_sel)] = True
                     add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # New Click selection
-        if 'New Click Selection' in keys:
+        key = 'New Click Selection'
+        if key in keys:
             sel_res = selection_test(self, False)
             if sel_res:
                 add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # Add Click selection
-        if 'Add Click Selection' in keys:
+        key = 'Add Click Selection'
+        if key in keys:
             sel_res = selection_test(self, True)
             if sel_res:
                 add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # New Edge loop selection
-        if 'New Loop Selection' in keys:
+        key = 'New Loop Selection'
+        if key in keys:
             sel_res = loop_selection_test(self, False)
             if sel_res:
                 add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # Add Edge loop selection
-        if 'Add Loop Selection' in keys:
+        key = 'Add Loop Selection'
+        if key in keys:
             sel_res = loop_selection_test(self, True)
             if sel_res:
                 add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # New Vertex Path selection
-        if 'New Shortest Path Selection' in keys:
+        key = 'New Shortest Path Selection'
+        if key in keys:
             sel_res = path_selection_test(self, False)
             if sel_res:
                 add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
         # Add Vertex Path selection
-        if 'Add Shortest Path Selection' in keys:
+        key = 'Add Shortest Path Selection'
+        if key in keys:
             sel_res = path_selection_test(self, True)
             if sel_res:
                 add_to_undostack(self, 0)
+            self._window.set_key(key)
             return status
 
     #
@@ -506,6 +581,7 @@ def basic_keymap(self, context, event):
     if nav_status:
         # allow navigation
         status = {'PASS_THROUGH'}
+        self._window.set_key('Navigation')
 
     return status
 
