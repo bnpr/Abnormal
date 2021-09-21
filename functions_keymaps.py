@@ -172,7 +172,9 @@ def basic_keymap(self, context, event):
 
     keys = keys_find(self.keymap.keymap_items, event)
     if len(keys) == 0:
-        # self._window.set_key('Navigation')
+        nav_status = test_navigation_key(self.nav_list, event)
+        if nav_status:
+            self._window.set_key('Navigation')
         return {'PASS_THROUGH'}
 
     #
