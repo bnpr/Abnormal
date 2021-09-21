@@ -26,6 +26,13 @@ class CUIWindowContainer:
         self.color_status = (0.0, 0.8, 1.0, 1.0)
         self.color_status_render = hsv_to_rgb_list(self.color_status)
 
+        self.key_text = ''
+        self.key_pos = [0, 0]
+        self.key_size = 14
+        self.key_font = 0
+        self.color_key = (0.0, 0.8, 1.0, 1.0)
+        self.color_key_render = hsv_to_rgb_list(self.color_key)
+
         self.color_font = (0.0, 0.0, 1.0, 1.0)
         self.color_panel = (0.0, 0.0, 0.1, 0.7)
         self.color_box = (0.0, 0.0, 0.2, 1.0)
@@ -64,6 +71,7 @@ class CUIWindowContainer:
             self.border.draw()
 
         self.status_draw()
+        self.key_draw()
         return
 
     def gizmo_draw(self):
@@ -78,6 +86,17 @@ class CUIWindowContainer:
                 self.status_font, self.color_status_render[0], self.color_status_render[1], self.color_status_render[2], self.color_status_render[3])
             blf.size(self.status_font, self.status_size, 72)
             blf.draw(self.status_font, self.status_text)
+
+        return
+
+    def key_draw(self):
+        if self.key_text != '':
+            blf.position(self.key_font,
+                         self.key_pos[0], self.key_pos[1], 0)
+            blf.color(
+                self.key_font, self.color_status_render[0], self.color_status_render[1], self.color_status_render[2], self.color_status_render[3])
+            blf.size(self.key_font, self.key_size, 72)
+            blf.draw(self.key_font, self.key_text)
 
         return
 
@@ -478,6 +497,36 @@ class CUIWindowContainer:
 
         self.status_pos[0] = round(bpy.context.region.width/2 - size[0]/2)
         self.status_pos[1] = 15
+        return
+
+    def set_key_color(self, color):
+        self.color_key = color
+        self.color_key_render = hsv_to_rgb_list(self.color_key)
+        return
+
+    def clear_key(self):
+        self.key_text = ''
+        return
+
+    def set_key(self, text):
+        self.key_text = text
+        self.place_key_text()
+        return
+
+    def set_key_size(self, size):
+        blf.size(self.key_font, self.key_size, 72)
+        size = text_size_int(self.key_font, self.key_text)
+
+        self.key_size = size * self.scale
+        self.place_key_text()
+        return
+
+    def place_key_text(self):
+        blf.size(self.key_font, self.key_size, 72)
+        size = blf.dimensions(self.key_font, self.key_text)
+
+        self.key_pos[0] = round(bpy.context.region.width - size[0] - 15)
+        self.key_pos[1] = 15
         return
 
     #
