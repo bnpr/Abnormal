@@ -625,6 +625,7 @@ def cache_point_data(self):
         for l, loop in enumerate(f.loops):
             l_l_inds[l] = loop.index
             l_tangents[loop.index] = loop.calc_tangent()
+            l_e_inds[l] = loop.edge.index
 
         face_normals.append(f.normal)
 
