@@ -465,7 +465,7 @@ def translate_axis_draw(self):
         mat = self._object.matrix_world.normalized()
         mat.translation = self._mode_cache[0]
 
-    if mat != None:
+    if mat is not None:
         self.translate_draw_line.clear()
 
         if self.translate_axis == 0:
@@ -833,7 +833,7 @@ def init_nav_list(self):
 
 
 def ob_data_structures(self, ob):
-    if ob.data.shape_keys != None:
+    if ob.data.shape_keys is not None:
         for sk in ob.data.shape_keys.key_blocks:
             self._objects_sk_vis.append(sk.mute)
             sk.mute = True
@@ -1003,7 +1003,7 @@ def finish_modal(self, restore):
     self._display_prefs.ui_scale = self._ui_scale
     self._display_prefs.display_wireframe = self._use_wireframe_overlay
 
-    if bpy.context.area != None:
+    if bpy.context.area is not None:
         if bpy.context.area.type == 'VIEW_3D':
             for space in bpy.context.area.spaces:
                 if space.type == 'VIEW_3D':
@@ -1037,7 +1037,7 @@ def finish_modal(self, restore):
     abn_props.object = ''
 
     delete_orbit_empty(self)
-    if self._target_emp != None:
+    if self._target_emp is not None:
         try:
             bpy.data.objects.remove(self._target_emp)
         except:
@@ -1049,7 +1049,7 @@ def finish_modal(self, restore):
 
 
 def restore_modifiers(self):
-    if self._object.data.shape_keys != None:
+    if self._object.data.shape_keys is not None:
         for s in range(len(self._object.data.shape_keys.key_blocks)):
             self._object.data.shape_keys.key_blocks[s].mute = self._objects_sk_vis[s]
 
@@ -1170,7 +1170,7 @@ def relocate_gizmo_panel(self):
     rco = view3d_utils.location_3d_to_region_2d(
         self.act_reg, self.act_rv3d, self._orbit_ob.location)
 
-    if rco != None:
+    if rco is not None:
         self._gizmo_panel.set_new_position(
             [rco[0]+self.gizmo_reposition_offset[0], rco[1]+self.gizmo_reposition_offset[1]], self._window.dimensions)
     return
@@ -1627,13 +1627,13 @@ def set_group_selection(self, shift, ctrl, mask):
 
     # Check if active point/face lost is no longer selected
     act_face = get_active_face(self)
-    if act_face != None:
+    if act_face is not None:
         act_ls = get_face_ls(self, [act_face])
         if self._container.sel_status[act_ls].all() == False:
             self._container.act_status[:] = False
 
     act_point = get_active_point(self)
-    if act_point != None:
+    if act_point is not None:
         act_ls = get_vert_ls(self, [act_point])
 
         if self._individual_loops:
@@ -1696,7 +1696,7 @@ def selection_test(self, shift):
         else:
             po_ind = d_order[0]
 
-        if po_ind != None:
+        if po_ind is not None:
             mask = get_vert_ls(self, po_ind)
             set_click_selection(self, shift, mask)
             change = True
@@ -1705,7 +1705,7 @@ def selection_test(self, shift):
     if change == False:
         face_res = ray_cast_to_mouse(self)
 
-        if face_res != None:
+        if face_res is not None:
             hidden = filter_hidden_faces(self, np.array([face_res[1]]))
             if hidden.size > 0:
                 # If using individual loops first test for loop a tri selection
@@ -1740,7 +1740,7 @@ def selection_test(self, shift):
 def loop_selection_test(self, shift):
     change = False
     face_res = ray_cast_to_mouse(self)
-    if face_res != None:
+    if face_res is not None:
         # Get edges of clicked face
         face_edges = self._container.face_link_eds[face_res[1]]
         face_edges = face_edges[face_edges >= 0]
@@ -1805,11 +1805,11 @@ def loop_selection_test(self, shift):
 def path_selection_test(self, shift):
     change = False
     face_res = ray_cast_to_mouse(self)
-    if face_res != None:
+    if face_res is not None:
         act_face = get_active_face(self)
 
         # Test for face path
-        if act_face != None:
+        if act_face is not None:
             self._container.act_status[:] = False
             if shift == False:
                 self._container.sel_status[:] = False
@@ -1829,7 +1829,7 @@ def path_selection_test(self, shift):
         else:
             act_point = get_active_point(self)
 
-            if act_point != None:
+            if act_point is not None:
                 near_ind = self._object_kd.find(face_res[0])
 
                 if near_ind[1] != act_point:
@@ -2056,7 +2056,7 @@ def update_orbit_empty(self):
 
 
 def delete_orbit_empty(self):
-    if self._orbit_ob != None:
+    if self._orbit_ob is not None:
         try:
             bpy.data.objects.remove(self._orbit_ob)
         except:
