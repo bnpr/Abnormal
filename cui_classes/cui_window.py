@@ -669,29 +669,29 @@ class CUIWindowContainer:
 
         if axis[0]:
             giz = CUIRotateGizmo(size,
-                                self.scale,
-                                0,
-                                'ROT_X', 
-                                [0.8, 0.0, 0.0, 0.35],
-                                thickness)
+                                 self.scale,
+                                 0,
+                                 'ROT_X',
+                                 [0.8, 0.0, 0.0, 0.35],
+                                 thickness)
             gizmo_cont.gizmos.append(giz)
 
         if axis[1]:
             giz = CUIRotateGizmo(size,
-                                self.scale,
-                                1,
-                                'ROT_Y', 
-                                [0.0, 0.8, 0.0, 0.35],
-                                thickness)
+                                 self.scale,
+                                 1,
+                                 'ROT_Y',
+                                 [0.0, 0.8, 0.0, 0.35],
+                                 thickness)
             gizmo_cont.gizmos.append(giz)
 
         if axis[2]:
             giz = CUIRotateGizmo(size,
-                                self.scale,
-                                2,
-                                'ROT_Z', 
-                                [0.0, 0.0, 0.8, 0.35],
-                                thickness)
+                                 self.scale,
+                                 2,
+                                 'ROT_Z',
+                                 [0.0, 0.0, 0.8, 0.35],
+                                 thickness)
             gizmo_cont.gizmos.append(giz)
 
         self.gizmo_sets.append(gizmo_cont)
@@ -704,26 +704,26 @@ class CUIWindowContainer:
 
         if axis[0]:
             giz = CUIRotateGizmo(size,
-                                self.scale,
-                                0,
-                                [0.8, 0.0, 0.0, 0.5],
-                                thickness)
+                                 self.scale,
+                                 0,
+                                 [0.8, 0.0, 0.0, 0.5],
+                                 thickness)
             gizmo_cont.gizmos.append(giz)
 
         if axis[1]:
             giz = CUIRotateGizmo(size,
-                                self.scale,
-                                1,
-                                [0.0, 0.8, 0.0, 0.5],
-                                thickness)
+                                 self.scale,
+                                 1,
+                                 [0.0, 0.8, 0.0, 0.5],
+                                 thickness)
             gizmo_cont.gizmos.append(giz)
 
         if axis[2]:
             giz = CUIRotateGizmo(size,
-                                self.scale,
-                                2,
-                                [0.0, 0.0, 0.8, 0.5],
-                                thickness)
+                                 self.scale,
+                                 2,
+                                 [0.0, 0.0, 0.8, 0.5],
+                                 thickness)
             gizmo_cont.gizmos.append(giz)
 
         self.gizmo_sets.append(gizmo_cont)
@@ -926,6 +926,8 @@ class CUIWindowContainer:
 
         return
 
+    #
+
     def set_key_color(self, color):
         self.color_key = color
         self.color_key_render = hsv_to_rgb_list(self.color_key)
@@ -935,7 +937,7 @@ class CUIWindowContainer:
         self.key_text = ''
         return
 
-    def set_status(self, text):
+    def set_key(self, text):
         self.key_text = text
         self.place_key_text()
         return
