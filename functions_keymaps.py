@@ -237,7 +237,6 @@ def basic_keymap(self, context, event):
 
                 self._container.cache_norms[:] = self._container.new_norms
 
-                self._mode_cache.clear()
                 self._mode_cache.append(avg_loc)
                 self._mode_cache.append(0)
                 self._mode_cache.append(1)

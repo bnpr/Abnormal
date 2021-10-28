@@ -1091,8 +1091,6 @@ def gizmo_click_init(self, event, giz_status):
             if self._container.sel_status.any() == False:
                 return True
 
-        self._mode_cache.clear()
-
         # Cache current normals before rotation starts and setup gizmo as being used
         if event.alt == False:
 
@@ -1258,7 +1256,6 @@ def end_sphereize_mode(self, keep_normals):
 
     self.sphereize_mode = False
     self.tool_mode = False
-    self._mode_cache.clear()
     keymap_refresh(self)
     return
 
@@ -1339,7 +1336,6 @@ def end_point_mode(self, keep_normals):
 
     self.point_mode = False
     self.tool_mode = False
-    self._mode_cache.clear()
     keymap_refresh(self)
     return
 
