@@ -808,28 +808,26 @@ def update_filter_weights(self):
 
 
 def init_nav_list(self):
-    self.nav_list = [['LEFTMOUSE', 'CLICK', True, False, False, False],
-                     ['LEFTMOUSE', 'PRESS', True, False, False, False],
-                     ['LEFTMOUSE', 'RELEASE', True, False, False, False],
-                     #  ['MOUSEMOVE', 'PRESS', True, False, False, False],
-                     #  ['MOUSEMOVE', 'RELEASE', True, False, False, False],
-                     ['WHEELUPMOUSE', 'PRESS', True, False, False, False],
-                     ['WHEELDOWNMOUSE', 'PRESS', True, False, False, False],
-                     ['N', 'PRESS', True, False, False, False],
-                     ['MIDDLEMOUSE', 'PRESS', True, False, False, False], ]
+    self.nav_list = []
 
     names = ['Zoom View', 'Rotate View', 'Pan View', 'Dolly View',
              'View Selected', 'View Camera Center', 'View All', 'View Axis',
              'View Orbit', 'View Roll', 'View Persp/Ortho', 'View Camera', 'Frame Selected']
+    key_settings = []
 
     config = bpy.context.window_manager.keyconfigs.user
     if config:
         for item in config.keymaps['3D View'].keymap_items:
             if item.name in names:
-                item_dat = [item.type, item.value, item.any,
-                            item.ctrl, item.shift, item.alt]
-                if item_dat not in self.nav_list:
-                    self.nav_list.append(item_dat)
+                if [item.name, item.type, item.value, item.any, item.ctrl, item.shift, item.alt] not in key_settings:
+                    key_settings.append(
+                        [item.name, item.type, item.value, item.any, item.ctrl, item.shift, item.alt])
+                    self.nav_list.append(item)
+
+    # Add basic pass thru keys
+    for item in self.keymap.keymap_items:
+        if 'Pass Thru' in item.name:
+            self.nav_list.append(item)
     return
 
 
@@ -1158,7 +1156,6 @@ def gizmo_click_init(self, event, giz_status):
         keymap_gizmo(self)
         self.gizmo_click = True
         self._current_tool = self._gizmo_tool
-        self.tool_mode = True
         start_active_drawing(self)
 
         return False
@@ -1216,8 +1213,6 @@ def start_sphereize_mode(self):
     self._mode_cache.append(avg_loc)
 
     gizmo_update_hide(self, False)
-    self.sphereize_mode = True
-    self.tool_mode = True
     self._current_tool = self._sphereize_tool
 
     keymap_target(self)
@@ -1254,8 +1249,7 @@ def end_sphereize_mode(self, keep_normals):
     gizmo_update_hide(self, True)
     end_active_drawing(self)
 
-    self.sphereize_mode = False
-    self.tool_mode = False
+    self._current_tool = self._basic_tool
     keymap_refresh(self)
     return
 
@@ -1296,8 +1290,6 @@ def start_point_mode(self):
     self._mode_cache.append(avg_loc)
 
     gizmo_update_hide(self, False)
-    self.point_mode = True
-    self.tool_mode = True
     self._current_tool = self._point_tool
 
     keymap_target(self)
@@ -1334,8 +1326,7 @@ def end_point_mode(self, keep_normals):
     gizmo_update_hide(self, True)
     end_active_drawing(self)
 
-    self.point_mode = False
-    self.tool_mode = False
+    self._current_tool = self._basic_tool
     keymap_refresh(self)
     return
 

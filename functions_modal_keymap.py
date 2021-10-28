@@ -76,7 +76,7 @@ def keymap_initialize(self):
     kt.add_text_row(text_height, keymap_string_find(
         self.keymap.keymap_items, 'Select All'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Unselect All'))
+        self.keymap.keymap_items, 'Deselect All'))
     kt.add_text_row(text_height, keymap_string_find(
         self.keymap.keymap_items, 'Select Hover Linked'))
     kt.add_text_row(text_height, keymap_string_find(

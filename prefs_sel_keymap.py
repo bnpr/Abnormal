@@ -52,8 +52,10 @@ def draw(preference, context, layout):
                layout.row(), 'Select Linked Key')
     keymap_row(keymap_items, 'Select Hover Linked',
                layout.row(), 'Select Hover Linked Key')
-    keymap_row(keymap_items, 'Select All', layout.row(), 'Select All Key')
-    keymap_row(keymap_items, 'Unselect All', layout.row(), 'Unselect All Key')
+    keymap_row(keymap_items, 'Select All',
+               layout.row(), 'Select All Key')
+    keymap_row(keymap_items, 'Deselect All',
+               layout.row(), 'Deselect All Key')
 
     #
     layout.separator()

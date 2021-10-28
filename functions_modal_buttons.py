@@ -130,7 +130,7 @@ def init_ui_panels(self, rw, rh, scale):
         self.point_strength = row.add_number(
             20, 'Point Strength', self.target_strength, 2, .01, .01, 1.0)
         self.point_strength.set_slide_factor(2)
-        self.point_strength.set_value_change_func(change_target_strength)
+        self.point_strength.set_value_change_func(change_point_strength)
 
         row = box.add_row()
         bool = row.add_bool(20, 'Align Vectors', default=self.point_align)
@@ -164,7 +164,7 @@ def init_ui_panels(self, rw, rh, scale):
         self.sphere_strength = row.add_number(
             20, 'Sphereize Strength', self.target_strength, 2, .01, .01, 1.0)
         self.sphere_strength.set_slide_factor(2)
-        self.sphere_strength.set_value_change_func(change_target_strength)
+        self.sphere_strength.set_value_change_func(change_sphereize_strength)
 
     # DISPLAY SETTINGS PANEL
     if True:
@@ -572,14 +572,19 @@ def change_normal_size(self, arguments):
     return
 
 
-def change_target_strength(self, arguments):
+def change_sphereize_strength(self, arguments):
     arguments[0].target_strength = self.value
 
     if arguments[0]._container.sel_status.any():
-        if arguments[0].sphereize_mode:
-            sphereize_normals(arguments[0])
-        elif arguments[0].point_mode:
-            point_normals(arguments[0])
+        sphereize_normals(arguments[0])
+    return
+
+
+def change_point_strength(self, arguments):
+    arguments[0].target_strength = self.value
+
+    if arguments[0]._container.sel_status.any():
+        point_normals(arguments[0])
     return
 
 

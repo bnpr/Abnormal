@@ -36,7 +36,7 @@ def register():
                                 'L', 'PRESS')
             km.keymap_items.new('Select All',
                                 'A', 'PRESS')
-            km.keymap_items.new('Unselect All',
+            km.keymap_items.new('Deselect All',
                                 'A', 'PRESS', alt=True)
 
             km.keymap_items.new('Box Select Start',
@@ -111,8 +111,8 @@ def register():
             km.keymap_items.new('Mirror Normals Z',
                                 'Z', 'PRESS')
 
-            km.keymap_items.new('Sharpen Edge',
-                                'S', 'PRESS', shift=True)
+            # km.keymap_items.new('Sharpen Edge',
+            #                     'S', 'PRESS', shift=True)
             km.keymap_items.new('Smooth Normals',
                                 'S', 'PRESS')
 
@@ -170,6 +170,11 @@ def register():
             km.keymap_items.new('Confirm Modal',
                                 'TAB', 'PRESS')
 
+            km.keymap_items.new('History Undo',
+                                'Z', 'PRESS', ctrl=True)
+            km.keymap_items.new('History Redo',
+                                'Z', 'PRESS', ctrl=True, shift=True)
+
         # TOOLS KEYMAP
         if True:
             km.keymap_items.new('Rotate X Axis',
@@ -219,16 +224,6 @@ def register():
 
             km.keymap_items.new('Toggle Cyclic Status',
                                 'F', 'PRESS')
-            km.keymap_items.new('Toggle Cyclic Status',
-                                'F', 'PRESS')
-
-            km.keymap_items.new('Toggle Cyclic Status',
-                                'F', 'PRESS')
-            km.keymap_items.new('Toggle Cyclic Status',
-                                'F', 'PRESS')
-
-            km.keymap_items.new('Toggle Cyclic Status',
-                                'X', 'PRESS')
 
             km.keymap_items.new('Reset Point Rotate',
                                 'R', 'PRESS', alt=True)
@@ -242,6 +237,15 @@ def register():
 
             km.keymap_items.new('Delete Selected Points',
                                 'X', 'PRESS')
+
+        km.keymap_items.new('Pass Thru 1',
+                            'LEFTMOUSE', 'PRESS', any=True)
+        km.keymap_items.new('Pass Thru 2',
+                            'LEFTMOUSE', 'RELEASE', any=True)
+        km.keymap_items.new('Pass Thru 3',
+                            'LEFTMOUSE', 'CLICK', any=True)
+        km.keymap_items.new('Pass Thru 4',
+                            'N', 'PRESS')
 
         addon_keymaps.append(km)
 

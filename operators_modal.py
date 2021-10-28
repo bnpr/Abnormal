@@ -6,7 +6,6 @@ from .properties import *
 # from .functions_general import *
 # from .functions_drawing import *
 # from .functions_modal import *
-from .functions_keymaps import *
 from .functions_modal_buttons import *
 from .functions_modal_keymap import *
 from .functions_tools import *
@@ -52,21 +51,9 @@ class ABN_OT_normal_editor_modal(Operator):
             mouse_move_check = False
 
         if mouse_move_check:
-            if self.typing:
-                status = typing_keymap(self, context, event)
+            status = self._current_tool.test_mode(
+                self, context, event, self.keymap, None)
 
-            elif self.tool_mode and self._current_tool != None:
-                if self.ui_hover:
-                    status = basic_ui_hover_keymap(self, context, event)
-                else:
-                    status = self._current_tool.test_mode(
-                        self, context, event, self.keymap, None)
-
-            else:
-                if self.ui_hover:
-                    status = basic_ui_hover_keymap(self, context, event)
-                else:
-                    status = basic_keymap(self, context, event)
             self._prev_mouse_loc[:] = self._mouse_reg_loc
 
         if self._confirm_modal:
@@ -182,15 +169,9 @@ class ABN_OT_normal_editor_modal(Operator):
         # CACHE VIEWPORT SETTINGS
         viewport_change_cache(self, context)
 
-        # NAVIGATION KEYS LIST
-        init_nav_list(self)
-
         # MODES
         self.rotating = False
-        self.sphereize_mode = False
-        self.point_mode = False
         self.gizmo_click = False
-        self.waiting = False
 
         self.box_selecting = False
         self.lasso_selecting = False
@@ -198,14 +179,17 @@ class ABN_OT_normal_editor_modal(Operator):
         self.circle_resizing = False
         self.circle_removing = False
 
-        self._current_tool = None
-        self.tool_mode = False
+        self._popup_panel = None
+
+        self._hover_timer = None
+        self._hover_stop_time = 0.0
+        self._hover_delay_passed = False
+        self._hover_delay = 0.7
 
         self.click_hold = False
-        self.selection_drawing = True
-        self.typing = False
-        self.bezier_changing = False
         self.ui_hover = False
+        self.selection_drawing = True
+        self.bezier_changing = False
 
         # UNDO STACK STORAGE
         self._history_stack = []
@@ -258,6 +242,10 @@ class ABN_OT_normal_editor_modal(Operator):
 
         # INITIALIZE UI WINDOW
         load_keymap(self)
+
+        # NAVIGATION KEYS LIST
+        init_nav_list(self)
+
         init_ui_panels(self, rw, rh, self._ui_scale)
 
         update_orbit_empty(self)
