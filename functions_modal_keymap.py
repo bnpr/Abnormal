@@ -1,4 +1,3 @@
-import bpy
 
 
 def keymap_string_find(keymap_items, key_name, name_replace=None):
