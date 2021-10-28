@@ -11,6 +11,10 @@ def init_ui_panels(self, rw, rh, scale):
     self._rot_gizmo = self._window.add_rot_gizmo(
         self._object.matrix_world, self._display_prefs.gizmo_size, [True, True, True], 0.045)
 
+    self._window.add_tooltip_box()
+    self._window.tooltip_box.set_color(
+        color=(0.0, 0.1, 0.1, 1.0))
+
     # INITIALIZE BORDER
     if True:
         self._border = self._window.add_border()
@@ -271,8 +275,6 @@ def init_ui_panels(self, rw, rh, scale):
         hbut.set_hover_down_func(display_panel_show)
         # hbut.set_hover_up_func(display_panel_hide)
         hbut.set_font_size(16)
-        hbut.add_tooltip_text_line(
-            'Hover for display settings')
 
         self._display_panel.set_hover_ref(row)
 
@@ -307,6 +309,10 @@ def init_ui_panels(self, rw, rh, scale):
         bool = row.add_bool(20, 'Edit Individual Loop Normals',
                             default=self._individual_loops)
         bool.set_click_up_func(toggle_individual_loops)
+        bool.add_tooltip_text_line(
+            'Allows enabling each separate face corner normal')
+        bool.add_tooltip_text_line(
+            'instead of every face normal connected to a vertex')
 
         row = box.add_row()
 
@@ -318,16 +324,22 @@ def init_ui_panels(self, rw, rh, scale):
         bool.set_custom_id([0])
         bool.set_width_min_max(max=50)
         bool.set_click_up_func(toggle_mirror_axis)
+        bool.add_tooltip_text_line(
+            'Auto mirror normals as you edit on the X axis')
 
         bool = row.add_bool(20, 'Y', default=self._mirror_y)
         bool.set_custom_id([1])
         bool.set_width_min_max(max=50)
         bool.set_click_up_func(toggle_mirror_axis)
+        bool.add_tooltip_text_line(
+            'Auto mirror normals as you edit on the Y axis')
 
         bool = row.add_bool(20, 'Z', default=self._mirror_z)
         bool.set_custom_id([2])
         bool.set_width_min_max(max=50)
         bool.set_click_up_func(toggle_mirror_axis)
+        bool.add_tooltip_text_line(
+            'Auto mirror normals as you edit on the Z axis')
 
         # row = box.add_row()
         # num = row.add_number(
@@ -348,16 +360,22 @@ def init_ui_panels(self, rw, rh, scale):
         but.set_custom_id([0])
         but.set_width_min_max(max=35)
         but.set_click_up_func(mirror_selection)
+        but.add_tooltip_text_line(
+            'Mirror selected normals on the X axis')
 
         but = row.add_button(20, 'Y')
         but.set_custom_id([1])
         but.set_width_min_max(max=35)
         but.set_click_up_func(mirror_selection)
+        but.add_tooltip_text_line(
+            'Mirror selected normals on the Y axis')
 
         but = row.add_button(20, 'Z')
         but.set_custom_id([2])
         but.set_width_min_max(max=35)
         but.set_click_up_func(mirror_selection)
+        but.add_tooltip_text_line(
+            'Mirror selected normals on the Z axis')
 
         box.add_text_row(20, 'Flatten Normals on Axis', font_size=12)
 
@@ -366,16 +384,22 @@ def init_ui_panels(self, rw, rh, scale):
         but.set_custom_id([0])
         but.set_width_min_max(max=35)
         but.set_click_up_func(flatten_axis)
+        but.add_tooltip_text_line(
+            'Set selected normals to 0 on the X axis')
 
         but = row.add_button(20, 'Y')
         but.set_custom_id([1])
         but.set_width_min_max(max=35)
         but.set_click_up_func(flatten_axis)
+        but.add_tooltip_text_line(
+            'Set selected normals to 0 on the Y axis')
 
         but = row.add_button(20, 'Z')
         but.set_custom_id([2])
         but.set_width_min_max(max=35)
         but.set_click_up_func(flatten_axis)
+        but.add_tooltip_text_line(
+            'Set selected normals to 0 on the Z axis')
 
         box.add_text_row(20, 'Align to Axis', font_size=12)
 
@@ -384,31 +408,43 @@ def init_ui_panels(self, rw, rh, scale):
         but.set_custom_id([0])
         but.set_width_min_max(max=35)
         but.set_click_up_func(algin_to_axis)
+        but.add_tooltip_text_line(
+            'Set selected normals to the local positive X axis')
 
         but = row.add_button(20, '-X')
         but.set_custom_id([1])
         but.set_width_min_max(max=35)
         but.set_click_up_func(algin_to_axis)
+        but.add_tooltip_text_line(
+            'Set selected normals to the local negative X axis')
 
         but = row.add_button(20, '+Y')
         but.set_custom_id([2])
         but.set_width_min_max(max=35)
         but.set_click_up_func(algin_to_axis)
+        but.add_tooltip_text_line(
+            'Set selected normals to the local positive Y axis')
 
         but = row.add_button(20, '-Y')
         but.set_custom_id([3])
         but.set_width_min_max(max=35)
         but.set_click_up_func(algin_to_axis)
+        but.add_tooltip_text_line(
+            'Set selected normals to the local negative Y axis')
 
         but = row.add_button(20, '+Z')
         but.set_custom_id([4])
         but.set_width_min_max(max=35)
         but.set_click_up_func(algin_to_axis)
+        but.add_tooltip_text_line(
+            'Set selected normals to the local positive Z axis')
 
         but = row.add_button(20, '-Z')
         but.set_custom_id([5])
         but.set_width_min_max(max=35)
         but.set_click_up_func(algin_to_axis)
+        but.add_tooltip_text_line(
+            'Set selected normals to the local negative Z axis')
 
         box = self._tools_panel.add_box()
         box.add_header(True, 'Normal Direction', 20, False)
@@ -418,23 +454,35 @@ def init_ui_panels(self, rw, rh, scale):
         row = box.add_row()
         but = row.add_button(20, 'Flip Normals')
         but.set_click_up_func(flip_selection)
+        but.add_tooltip_text_line(
+            'Set selected normals to the opposite direction')
 
         row = box.add_row()
         but = row.add_button(20, 'Set Outside')
         but.set_custom_id([0])
         but.set_click_up_func(set_direction)
+        but.add_tooltip_text_line(
+            'Set selected normals to pointing towards the outside face direction')
 
         but = row.add_button(20, 'Set Inside')
         but.set_custom_id([1])
         but.set_click_up_func(set_direction)
+        but.add_tooltip_text_line(
+            'Set selected normals to pointing towards the inside face direction')
 
         row = box.add_row()
         but = row.add_button(20, 'Reset Vectors')
         but.set_click_up_func(reset_vectors)
+        but.add_tooltip_text_line(
+            'Reset selected normals to their original direction when you started Abnormal')
 
         row = box.add_row()
         but = row.add_button(20, 'Set Normals From Faces')
         but.set_click_up_func(set_from_faces)
+        but.add_tooltip_text_line(
+            'Set normals for all selected normals based on what faces are selected')
+        but.add_tooltip_text_line(
+            'Useful for creating hard edges based on which faces are selected')
 
         box = self._tools_panel.add_box()
         box.add_header(True, 'Manipulate Normals', 20, False)
@@ -449,34 +497,54 @@ def init_ui_panels(self, rw, rh, scale):
         row = box.add_row()
         but = row.add_button(20, 'Average Individual Vertex Normals')
         but.set_click_up_func(average_individual)
+        but.add_tooltip_text_line(
+            'Average the individual face corner normals of each selected vertex')
 
         row = box.add_row()
         but = row.add_button(20, 'Average All Selected Normals')
         but.set_click_up_func(average_selection)
+        but.add_tooltip_text_line(
+            'Average the normals of all selected normals into 1 direction')
 
         row = box.add_row()
         but = row.add_button(20, 'Smooth Selected Normals')
         but.set_click_up_func(smooth_selection)
+        but.add_tooltip_text_line(
+            'Smooth selected normals with their connected points')
+
+        row = box.add_row()
+        but = row.add_button(20, 'Sharpen Selected Edges')
+        but.set_click_up_func(sharpen_edges)
+        but.add_tooltip_text_line(
+            'Create shape normal transitions based on fully selected points')
 
         row = box.add_row()
         num = row.add_number(
             20, 'Smooth Strength', self._smooth_strength, 2, .1, .01, 5.0)
         num.set_slide_factor(15)
         num.set_value_change_func(change_smooth_strength)
+        num.add_tooltip_text_line(
+            'Strength of each smooth iteration')
 
         num = row.add_number(
             20, 'Smooth Iterations', self._smooth_iterations, 0, 1, 1, 25)
         num.set_slide_factor(15)
         num.set_value_change_func(change_smooth_iterations)
+        num.add_tooltip_text_line(
+            'Number of times to smooth the selected normals')
 
         row = box.add_row()
         but = row.add_button(20, 'Set Smooth Shading')
         but.set_custom_id([0])
         but.set_click_up_func(change_shading)
+        but.add_tooltip_text_line(
+            'Set the object to Smooth Shading while preserving the current normals')
 
         but = row.add_button(20, 'Set Flat Shading')
         but.set_custom_id([1])
         but.set_click_up_func(change_shading)
+        but.add_tooltip_text_line(
+            'Set the object to Flat Shading while preserving the current normals')
 
         box = self._tools_panel.add_box()
         box.add_header(True, 'Copy/Paste Normals', 20, False)
@@ -486,12 +554,18 @@ def init_ui_panels(self, rw, rh, scale):
         row = box.add_row()
         but = row.add_button(20, 'Copy Active Normal to Selected')
         but.set_click_up_func(active_to_selection)
+        but.add_tooltip_text_line(
+            'Copy the active loop/vertex normal onto selected points')
 
         row = box.add_row()
         but = row.add_button(20, 'Store Active Normal')
         but.set_click_up_func(store_active)
+        but.add_tooltip_text_line(
+            'Stores the active loop/vertex normal for pasting')
         but = row.add_button(20, 'Paste Stored Normal')
         but.set_click_up_func(paste_stored)
+        but.add_tooltip_text_line(
+            'Paste the stored loop/vertex normal onto selected points')
 
         box = self._tools_panel.add_box()
         box.add_header(True, 'Target Normals', 20, False)
@@ -501,10 +575,13 @@ def init_ui_panels(self, rw, rh, scale):
         row = box.add_row()
         but = row.add_button(20, 'Sphereize Normals')
         but.set_click_up_func(begin_sphereize_mode)
-
+        but.add_tooltip_text_line(
+            'Start the Sphereize Normals mode')
         row = box.add_row()
         but = row.add_button(20, 'Point Normals at Target')
         but.set_click_up_func(begin_point_mode)
+        but.add_tooltip_text_line(
+            'Start the Point Normals at Target mode')
 
     self._window.set_scale(self._ui_scale)
     self._window.create_shape_data()
