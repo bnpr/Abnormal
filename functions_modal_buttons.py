@@ -35,10 +35,6 @@ def init_ui_panels(self, rw, rh, scale):
 
     # GIZMO PANEL
     if True:
-        x_icon = img_load('XAxis.png', __file__)
-        y_icon = img_load('YAxis.png', __file__)
-        z_icon = img_load('ZAxis.png', __file__)
-
         self._gizmo_panel = self._window.add_minimizable_panel(
             [int(rw/2), int(rh/2)], 250)
         self._gizmo_panel.set_separation(8)
@@ -72,7 +68,8 @@ def init_ui_panels(self, rw, rh, scale):
 
         row = box.add_row()
         label = row.add_label(20, 'X ')
-        label.set_icon_data(image=x_icon, width=15, height=15)
+        label.set_icon_image('XAxis.png', __file__)
+        label.set_icon_data(width=15, height=15)
 
         but = row.add_button(20, '-')
         but.set_custom_id([0, -1])
@@ -83,7 +80,8 @@ def init_ui_panels(self, rw, rh, scale):
 
         row = box.add_row()
         label = row.add_label(20, 'Y ')
-        label.set_icon_data(image=y_icon, width=15, height=15)
+        label.set_icon_image('YAxis.png', __file__)
+        label.set_icon_data(width=15, height=15)
 
         but = row.add_button(20, '-')
         but.set_custom_id([1, -1])
@@ -94,7 +92,8 @@ def init_ui_panels(self, rw, rh, scale):
 
         row = box.add_row()
         label = row.add_label(20, 'Z ')
-        label.set_icon_data(image=z_icon, width=15, height=15)
+        label.set_icon_image('ZAxis.png', __file__)
+        label.set_icon_data(width=15, height=15)
 
         but = row.add_button(20, '-')
         but.set_custom_id([2, -1])
@@ -167,37 +166,20 @@ def init_ui_panels(self, rw, rh, scale):
         self.sphere_strength.set_slide_factor(2)
         self.sphere_strength.set_value_change_func(change_target_strength)
 
-    # EXPORT PANEL
+    # DISPLAY SETTINGS PANEL
     if True:
-        self._export_panel = self._window.add_panel(
-            [rw-25, rh-75], 250)
-        self._export_panel.set_separation(8)
-        self._export_panel.set_horizontal_alignment('RIGHT')
-        self._export_panel.add_header(
-            True, 'Addon Settings', 30, False)
-        self._export_panel.set_header_font_size(20)
-        self._export_panel.set_height_min_max(
-            max=self.act_reg.height*0.95)
-        self._export_panel.header.set_draw_box(False)
+        panel = self._window.add_subpanel_popup(
+            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
+        self._display_panel = panel
+        panel.set_separation(8)
+        panel.set_horizontal_alignment('LEFT')
+        panel.set_visibility(False)
+        panel.set_close_on_click(False)
+        panel.set_close_margin(2)
+        panel.set_height_min_max(
+            max=bpy.context.region.height*0.9)
 
-        box = self._export_panel.add_box()
-        box.add_header(True, 'Finish Modal', 20, False)
-        box.header.set_draw_box(False)
-        box.set_header_font_size(14)
-
-        row = box.add_row()
-        but = row.add_button(20, 'Confirm Changes')
-        but.set_custom_id([0])
-        but.set_click_up_func(end_modal)
-
-        but = row.add_button(20, 'Cancel Changes')
-        but.set_custom_id([1])
-        but.set_click_up_func(end_modal)
-
-        box = self._export_panel.add_box()
-        box.add_header(True, 'Viewport Settings', 20, False)
-        box.header.set_draw_box(False)
-        box.set_header_font_size(14)
+        box = self._display_panel.add_box()
 
         row = box.add_row()
         bool = row.add_bool(20, 'Show Only Selected Normals',
@@ -210,7 +192,8 @@ def init_ui_panels(self, rw, rh, scale):
         bool.set_click_up_func(toggle_selected_scale)
 
         row = box.add_row()
-        self._xray_bool = row.add_bool(20, 'X-Ray', default=self._x_ray_mode)
+        self._xray_bool = row.add_bool(
+            20, 'X-Ray', default=self._x_ray_mode)
         self._xray_bool.set_click_up_func(toggle_x_ray)
 
         row = box.add_row()
@@ -258,6 +241,45 @@ def init_ui_panels(self, rw, rh, scale):
         but = row.add_button(20, 'Save Addon Preferences')
         but.set_click_up_func(save_preferences)
 
+    # EXPORT PANEL
+    if True:
+        self._export_panel = self._window.add_panel(
+            [rw-25, rh-75], 250)
+        self._export_panel.set_separation(8)
+        self._export_panel.set_horizontal_alignment('RIGHT')
+        self._export_panel.add_header(
+            True, 'Addon Settings', 30, False)
+        self._export_panel.set_header_font_size(20)
+        self._export_panel.set_height_min_max(
+            max=self.act_reg.height*0.95)
+        self._export_panel.header.set_draw_box(False)
+
+        box = self._export_panel.add_box()
+        box.add_header(True, 'Finish Modal', 20, False)
+        box.header.set_draw_box(False)
+        box.set_header_font_size(14)
+
+        row = box.add_row()
+        but = row.add_button(20, 'Confirm Changes')
+        but.set_custom_id([0])
+        but.set_click_up_func(end_modal)
+
+        but = row.add_button(20, 'Cancel Changes')
+        but.set_custom_id([1])
+        but.set_click_up_func(end_modal)
+
+        row = box.add_row()
+        hbut = row.add_hover_button(30,
+                                    'VIEWPORT SETTINGS')
+        hbut.set_bev(3, 3)
+        hbut.set_hover_down_func(display_panel_show)
+        # hbut.set_hover_up_func(display_panel_hide)
+        hbut.set_font_size(16)
+        hbut.add_tooltip_text_line(
+            'Hover for display settings')
+
+        self._display_panel.set_hover_ref(row)
+
         box = self._export_panel.add_box()
         box.add_header(True, 'Keymap', 20, False)
         box.set_header_font_size(14)
@@ -267,8 +289,6 @@ def init_ui_panels(self, rw, rh, scale):
 
     # TOOLS PANEL
     if True:
-        icon = img_load('AbLogo.png', __file__)
-
         self._tools_panel = self._window.add_panel([25, rh-75], 275)
         self._tools_panel.set_separation(8)
         self._tools_panel.set_horizontal_alignment('LEFT')
@@ -276,8 +296,10 @@ def init_ui_panels(self, rw, rh, scale):
         self._tools_panel.set_header_font_size(20)
         self._tools_panel.set_height_min_max(
             max=self.act_reg.height*0.95)
+        self._tools_panel.set_header_icon_image(
+            'AbLogo.png', __file__)
         self._tools_panel.set_header_icon_data(
-            image=icon, width=35, height=35)
+            width=35, height=35)
         self._tools_panel.header.set_draw_box(False)
 
         box = self._tools_panel.add_box()
@@ -665,6 +687,39 @@ def toggle_individual_loops(self, arguments):
                                                ._container.vert_link_ls[act_verts]] = True
 
     arguments[0].redraw = True
+    return
+
+
+#
+
+
+def display_panel_show(ui_item, arguments):
+    ref_item = arguments[0]._display_panel.hover_ref
+
+    pos = [ref_item.final_pos[0]+ui_item.scale_width, ref_item.final_pos[1]]
+
+    if pos[0] + arguments[0]._display_panel.scale_width > arguments[0]._window.dimensions[0]:
+        pos = [ref_item.final_pos[0] -
+               arguments[0]._display_panel.scale_width, ref_item.final_pos[1]]
+
+    arguments[0]._display_panel.set_new_position(
+        pos, arguments[0]._window.dimensions)
+
+    arguments[0]._display_panel.set_visibility(True)
+
+    arguments[0]._current_tool = arguments[0]._popup_tool
+    arguments[0]._popup_panel = arguments[0]._display_panel
+
+    return
+
+
+def display_panel_hide(ui_item, arguments):
+    if arguments[0]._display_panel.hover == False:
+        arguments[0]._display_panel.set_visibility(False)
+
+        arguments[0]._current_tool = arguments[0]._ui_tool
+        arguments[0]._popup_panel = None
+
     return
 
 
