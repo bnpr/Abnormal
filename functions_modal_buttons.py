@@ -255,10 +255,6 @@ def init_ui_panels(self, rw, rh, scale):
         self._export_panel.header.set_draw_box(False)
 
         box = self._export_panel.add_box()
-        box.add_header(True, 'Finish Modal', 20, False)
-        box.header.set_draw_box(False)
-        box.set_header_font_size(14)
-
         row = box.add_row()
         but = row.add_button(20, 'Confirm Changes')
         but.set_custom_id([0])
