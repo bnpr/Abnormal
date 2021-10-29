@@ -35,65 +35,65 @@ def keymap_string_find(keymap_items, key_name, name_replace=None):
 #
 
 
-def keymap_initialize(self):
-    kt = self._keymap_box
+def keymap_initialize(modal):
+    kt = modal._keymap_box
     kt.clear_rows()
 
     text_height = 8
     sep_height = 4
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Cancel Modal', name_replace='Cancel Normal Editing'))
-    kt.add_text_row(text_height, keymap_string_find(self.keymap.keymap_items,
+        modal.keymap.keymap_items, 'Cancel Modal', name_replace='Cancel Normal Editing'))
+    kt.add_text_row(text_height, keymap_string_find(modal.keymap.keymap_items,
                     'Confirm Modal', name_replace='End and Confirm Normal Editing'))
 
     kt.add_text_row(sep_height, '')
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'New Click Selection'))
+        modal.keymap.keymap_items, 'New Click Selection'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Add Click Selection'))
+        modal.keymap.keymap_items, 'Add Click Selection'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'New Loop Selection'))
+        modal.keymap.keymap_items, 'New Loop Selection'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Add Loop Selection'))
+        modal.keymap.keymap_items, 'Add Loop Selection'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'New Shortest Path Selection'))
+        modal.keymap.keymap_items, 'New Shortest Path Selection'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Add Shortest Path Selection'))
+        modal.keymap.keymap_items, 'Add Shortest Path Selection'))
 
     kt.add_text_row(sep_height, '')
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Circle Select Start'))
+        modal.keymap.keymap_items, 'Circle Select Start'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Box Select Start'))
+        modal.keymap.keymap_items, 'Box Select Start'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Lasso Select Start'))
+        modal.keymap.keymap_items, 'Lasso Select Start'))
 
     kt.add_text_row(sep_height, '')
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Select All'))
+        modal.keymap.keymap_items, 'Select All'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Deselect All'))
+        modal.keymap.keymap_items, 'Deselect All'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Select Hover Linked'))
+        modal.keymap.keymap_items, 'Select Hover Linked'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Select Linked'))
+        modal.keymap.keymap_items, 'Select Linked'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Invert Selection'))
+        modal.keymap.keymap_items, 'Invert Selection'))
 
     kt.add_text_row(sep_height, '')
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Hide Selected'))
+        modal.keymap.keymap_items, 'Hide Selected'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Hide Unselected'))
+        modal.keymap.keymap_items, 'Hide Unselected'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Unhide'))
+        modal.keymap.keymap_items, 'Unhide'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Toggle X-Ray'))
+        modal.keymap.keymap_items, 'Toggle X-Ray'))
 
     kt.add_text_row(sep_height, '')
 
@@ -103,61 +103,61 @@ def keymap_initialize(self):
     kt.add_text_row(sep_height, '')
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Rotate Normals'))
+        modal.keymap.keymap_items, 'Rotate Normals'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Toggle Gizmo'))
+        modal.keymap.keymap_items, 'Toggle Gizmo'))
 
-    if self._use_gizmo:
+    if modal._use_gizmo:
         kt.add_text_row(text_height, keymap_string_find(
-            self.keymap.keymap_items, 'Reset Gizmo Rotation'))
+            modal.keymap.keymap_items, 'Reset Gizmo Rotation'))
         kt.add_text_row(text_height, 'LEFTMOUSE+ALT - Reorient Gizmo')
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Mirror Normals Start'))
+        modal.keymap.keymap_items, 'Mirror Normals Start'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Flatten Normals Start'))
+        modal.keymap.keymap_items, 'Flatten Normals Start'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Align Normals Start'))
+        modal.keymap.keymap_items, 'Align Normals Start'))
 
     kt.add_text_row(sep_height, '')
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Copy Active Normal'))
+        modal.keymap.keymap_items, 'Copy Active Normal'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Paste Stored Normal'))
+        modal.keymap.keymap_items, 'Paste Stored Normal'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Paste Active Normal to Selected'))
+        modal.keymap.keymap_items, 'Paste Active Normal to Selected'))
 
     kt.add_text_row(sep_height, '')
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Set Normals Outside'))
+        modal.keymap.keymap_items, 'Set Normals Outside'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Set Normals Inside'))
+        modal.keymap.keymap_items, 'Set Normals Inside'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Flip Normals'))
+        modal.keymap.keymap_items, 'Flip Normals'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Reset Vectors'))
+        modal.keymap.keymap_items, 'Reset Vectors'))
 
     kt.add_text_row(sep_height, '')
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Sharpen Edge'))
+        modal.keymap.keymap_items, 'Sharpen Edge'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Smooth Normals'))
+        modal.keymap.keymap_items, 'Smooth Normals'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Set Normals From Faces'))
+        modal.keymap.keymap_items, 'Set Normals From Faces'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Average Individual Normals'))
+        modal.keymap.keymap_items, 'Average Individual Normals'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Average Selected Normals'))
+        modal.keymap.keymap_items, 'Average Selected Normals'))
 
     return
 
 
-def keymap_refresh(self):
-    keymap_initialize(self)
-    self._export_panel.create_shape_data()
+def keymap_refresh(modal):
+    keymap_initialize(modal)
+    modal._export_panel.create_shape_data()
     return
 
 
@@ -165,194 +165,194 @@ def keymap_refresh(self):
 #
 
 
-def keymap_gizmo(self):
-    kt = self._keymap_box
+def keymap_gizmo(modal):
+    kt = modal._keymap_box
     kt.clear_rows()
     text_height = 8
 
     kt.add_text_row(text_height, 'HOLD SHIFT - Precise Rotation')
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Confirm Tool 1', name_replace='Confirm Rotation'))
+        modal.keymap.keymap_items, 'Confirm Tool 1', name_replace='Confirm Rotation'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Rotation'))
-    self._export_panel.create_shape_data()
+        modal.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Rotation'))
+    modal._export_panel.create_shape_data()
     return
 
 
-def keymap_target(self):
-    kt = self._keymap_box
+def keymap_target(modal):
+    kt = modal._keymap_box
     kt.clear_rows()
     text_height = 8
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Target Move Start'))
+        modal.keymap.keymap_items, 'Target Move Start'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Target Center Reset'))
+        modal.keymap.keymap_items, 'Target Center Reset'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Toggle X-Ray'))
+        modal.keymap.keymap_items, 'Toggle X-Ray'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Cancel Tool 1', name_replace='Cancel'))
-    self._export_panel.create_shape_data()
+        modal.keymap.keymap_items, 'Cancel Tool 1', name_replace='Cancel'))
+    modal._export_panel.create_shape_data()
     return
 
 
-def keymap_mirror(self):
-    kt = self._keymap_box
+def keymap_mirror(modal):
+    kt = modal._keymap_box
     kt.clear_rows()
     text_height = 8
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Mirror Normals X'))
+        modal.keymap.keymap_items, 'Mirror Normals X'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Mirror Normals Y'))
+        modal.keymap.keymap_items, 'Mirror Normals Y'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Mirror Normals Z'))
+        modal.keymap.keymap_items, 'Mirror Normals Z'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Mirror'))
-    self._export_panel.create_shape_data()
+        modal.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Mirror'))
+    modal._export_panel.create_shape_data()
     return
 
 
-def keymap_flatten(self):
-    kt = self._keymap_box
+def keymap_flatten(modal):
+    kt = modal._keymap_box
     kt.clear_rows()
     text_height = 8
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Flatten Normals X'))
+        modal.keymap.keymap_items, 'Flatten Normals X'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Flatten Normals Y'))
+        modal.keymap.keymap_items, 'Flatten Normals Y'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Flatten Normals Z'))
+        modal.keymap.keymap_items, 'Flatten Normals Z'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Flatten'))
-    self._export_panel.create_shape_data()
+        modal.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Flatten'))
+    modal._export_panel.create_shape_data()
     return
 
 
-def keymap_align(self):
-    kt = self._keymap_box
+def keymap_align(modal):
+    kt = modal._keymap_box
     kt.clear_rows()
     text_height = 8
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Align Normals Pos X'))
+        modal.keymap.keymap_items, 'Align Normals Pos X'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Align Normals Pos Y'))
+        modal.keymap.keymap_items, 'Align Normals Pos Y'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Align Normals Pos Z'))
+        modal.keymap.keymap_items, 'Align Normals Pos Z'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Align Normals Neg X'))
+        modal.keymap.keymap_items, 'Align Normals Neg X'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Align Normals Neg Y'))
+        modal.keymap.keymap_items, 'Align Normals Neg Y'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Align Normals Neg Z'))
+        modal.keymap.keymap_items, 'Align Normals Neg Z'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Align'))
-    self._export_panel.create_shape_data()
+        modal.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Align'))
+    modal._export_panel.create_shape_data()
     return
 
 
-def keymap_target_move(self):
-    kt = self._keymap_box
+def keymap_target_move(modal):
+    kt = modal._keymap_box
     kt.clear_rows()
     text_height = 8
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Target Move X Axis'))
+        modal.keymap.keymap_items, 'Target Move X Axis'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Target Move Y Axis'))
+        modal.keymap.keymap_items, 'Target Move Y Axis'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Target Move Z Axis'))
+        modal.keymap.keymap_items, 'Target Move Z Axis'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Confirm Tool 1', name_replace='Confirm Move'))
+        modal.keymap.keymap_items, 'Confirm Tool 1', name_replace='Confirm Move'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Move'))
-    self._export_panel.create_shape_data()
+        modal.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Move'))
+    modal._export_panel.create_shape_data()
     return
 
 
-def keymap_rotating(self):
-    kt = self._keymap_box
+def keymap_rotating(modal):
+    kt = modal._keymap_box
     kt.clear_rows()
     text_height = 8
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Rotate X Axis'))
+        modal.keymap.keymap_items, 'Rotate X Axis'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Rotate Y Axis'))
+        modal.keymap.keymap_items, 'Rotate Y Axis'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Rotate Z Axis'))
+        modal.keymap.keymap_items, 'Rotate Z Axis'))
     kt.add_text_row(text_height, 'HOLD SHIFT - Precise Rotation')
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Confirm Tool 1', name_replace='Confirm Rotation'))
+        modal.keymap.keymap_items, 'Confirm Tool 1', name_replace='Confirm Rotation'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Rotation'))
-    self._export_panel.create_shape_data()
+        modal.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Rotation'))
+    modal._export_panel.create_shape_data()
     return
 
 
-def keymap_box_selecting(self):
-    kt = self._keymap_box
+def keymap_box_selecting(modal):
+    kt = modal._keymap_box
     kt.clear_rows()
     text_height = 8
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Box New Selection'))
+        modal.keymap.keymap_items, 'Box New Selection'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Box Add Selection'))
+        modal.keymap.keymap_items, 'Box Add Selection'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Box Remove Selection'))
+        modal.keymap.keymap_items, 'Box Remove Selection'))
     kt.add_text_row(text_height, 'HOLD ALT - Move Box')
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Selection'))
-    self._export_panel.create_shape_data()
+        modal.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Selection'))
+    modal._export_panel.create_shape_data()
     return
 
 
-def keymap_circle_selecting(self):
-    kt = self._keymap_box
+def keymap_circle_selecting(modal):
+    kt = modal._keymap_box
     kt.clear_rows()
     text_height = 8
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Circle Add Selection'))
+        modal.keymap.keymap_items, 'Circle Add Selection'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Circle Remove Selection'))
+        modal.keymap.keymap_items, 'Circle Remove Selection'))
 
     kt.add_text_row(text_height, ''
                     )
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Circle Resize Mode Start'))
+        modal.keymap.keymap_items, 'Circle Resize Mode Start'))
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Circle Increase Size 1'))
+        modal.keymap.keymap_items, 'Circle Increase Size 1'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Circle Increase Size 2'))
+        modal.keymap.keymap_items, 'Circle Increase Size 2'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Circle Decrease Size 1'))
+        modal.keymap.keymap_items, 'Circle Decrease Size 1'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Circle Decrease Size 2'))
+        modal.keymap.keymap_items, 'Circle Decrease Size 2'))
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Selection'))
-    self._export_panel.create_shape_data()
+        modal.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Selection'))
+    modal._export_panel.create_shape_data()
     return
 
 
-def keymap_lasso_selecting(self):
-    kt = self._keymap_box
+def keymap_lasso_selecting(modal):
+    kt = modal._keymap_box
     kt.clear_rows()
     text_height = 8
 
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Lasso New Selection'))
+        modal.keymap.keymap_items, 'Lasso New Selection'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Lasso Add Selection'))
+        modal.keymap.keymap_items, 'Lasso Add Selection'))
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Lasso Remove Selection'))
+        modal.keymap.keymap_items, 'Lasso Remove Selection'))
     kt.add_text_row(text_height, 'HOLD ALT - Move Lasso')
     kt.add_text_row(text_height, keymap_string_find(
-        self.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Selection'))
-    self._export_panel.create_shape_data()
+        modal.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Selection'))
+    modal._export_panel.create_shape_data()
     return

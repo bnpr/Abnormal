@@ -3,34 +3,34 @@ from .functions_modal import *
 from .cui_classes.cui_window import *
 
 
-def init_ui_panels(self, rw, rh, scale):
-    self._window = CUIWindowContainer(self, bpy.context, scale)
-    self._window.set_style_color(color_panel=(0.0, 0.0, 0.1, 0.2), color_box=(0.0, 0.0, 0.1, 0.8), color_row=(
+def init_ui_panels(modal, rw, rh, scale):
+    modal._window = CUIWindowContainer(modal, bpy.context, scale)
+    modal._window.set_style_color(color_panel=(0.0, 0.0, 0.1, 0.2), color_box=(0.0, 0.0, 0.1, 0.8), color_row=(
         0.0, 0.0, 0.2, 1.0), color_item=(0.0, 0.0, 0.2, 1.0), color_hover=(0.0, 0.0, 0.37, 1.0), color_click=(0.0, 0.0, 0.5, 1.0))
 
-    self._rot_gizmo = self._window.add_rot_gizmo(
-        self._object.matrix_world, self._display_prefs.gizmo_size, [True, True, True], 0.045)
+    modal._rot_gizmo = modal._window.add_rot_gizmo(
+        modal._object.matrix_world, modal._display_prefs.gizmo_size, [True, True, True], 0.045)
 
-    self._window.add_tooltip_box()
-    self._window.tooltip_box.set_color(
+    modal._window.add_tooltip_box()
+    modal._window.tooltip_box.set_color(
         color=(0.0, 0.1, 0.1, 1.0))
 
     # INITIALIZE BORDER
     if True:
-        self._border = self._window.add_border()
-        self._border.set_use_header(False)
-        self._border.set_color(color=(0.72, 0.77, 0.70, 0.75))
-        self._border.thickness = 2
+        modal._border = modal._window.add_border()
+        modal._border.set_use_header(False)
+        modal._border.set_color(color=(0.72, 0.77, 0.70, 0.75))
+        modal._border.thickness = 2
 
     # RESET UI PANEL
     if True:
-        self._reset_panel = self._window.add_panel([rw-10, 50], 150)
-        self._reset_panel.set_movable(False)
-        self._reset_panel.set_resizable(False)
-        self._reset_panel.set_horizontal_alignment('RIGHT')
-        self._reset_panel.set_vertical_alignment('BOTTOM')
+        modal._reset_panel = modal._window.add_panel([rw-10, 50], 150)
+        modal._reset_panel.set_movable(False)
+        modal._reset_panel.set_resizable(False)
+        modal._reset_panel.set_horizontal_alignment('RIGHT')
+        modal._reset_panel.set_vertical_alignment('BOTTOM')
 
-        box = self._reset_panel.add_box()
+        box = modal._reset_panel.add_box()
         box.set_margins(0, 0)
 
         row = box.add_row()
@@ -39,34 +39,34 @@ def init_ui_panels(self, rw, rh, scale):
 
     # GIZMO PANEL
     if True:
-        self._gizmo_panel = self._window.add_minimizable_panel(
+        modal._gizmo_panel = modal._window.add_minimizable_panel(
             [int(rw/2), int(rh/2)], 250)
-        self._gizmo_panel.set_separation(8)
-        self._gizmo_panel.set_horizontal_alignment('LEFT')
-        self._gizmo_panel.add_header(
+        modal._gizmo_panel.set_separation(8)
+        modal._gizmo_panel.set_horizontal_alignment('LEFT')
+        modal._gizmo_panel.add_header(
             False, 'Incremental Rotations', 30, False)
-        self._gizmo_panel.set_header_font_size(20)
-        self._gizmo_panel.set_height_min_max(
-            max=self.act_reg.height*0.95)
-        self._gizmo_panel.header.set_draw_box(False)
-        self._gizmo_panel.set_open_on_hover(True)
-        self.gizmo_reposition_offset = [
-            self._rot_gizmo.size/2+25, self._rot_gizmo.size/2]
-        self._gizmo_panel.set_visibility(False)
+        modal._gizmo_panel.set_header_font_size(20)
+        modal._gizmo_panel.set_height_min_max(
+            max=modal.act_reg.height*0.95)
+        modal._gizmo_panel.header.set_draw_box(False)
+        modal._gizmo_panel.set_open_on_hover(True)
+        modal.gizmo_reposition_offset = [
+            modal._rot_gizmo.size/2+25, modal._rot_gizmo.size/2]
+        modal._gizmo_panel.set_visibility(False)
 
-        box = self._gizmo_panel.add_box()
+        box = modal._gizmo_panel.add_box()
 
-        self._rot_increment_row = box.add_row()
-        bool = self._rot_increment_row.add_bool(
-            20, '+/-1°', default=self._rot_increment_one)
+        modal._rot_increment_row = box.add_row()
+        bool = modal._rot_increment_row.add_bool(
+            20, '+/-1°', default=modal._rot_increment_one)
         bool.set_custom_id([0])
         bool.set_click_up_func(change_rotation_increment)
-        bool = self._rot_increment_row.add_bool(
-            20, '+/-5°', default=self._rot_increment_five)
+        bool = modal._rot_increment_row.add_bool(
+            20, '+/-5°', default=modal._rot_increment_five)
         bool.set_custom_id([1])
         bool.set_click_up_func(change_rotation_increment)
-        bool = self._rot_increment_row.add_bool(
-            20, '+/-10°', default=self._rot_increment_ten)
+        bool = modal._rot_increment_row.add_bool(
+            20, '+/-10°', default=modal._rot_increment_ten)
         bool.set_custom_id([2])
         bool.set_click_up_func(change_rotation_increment)
 
@@ -108,19 +108,19 @@ def init_ui_panels(self, rw, rh, scale):
 
     # POINT AT PANEL
     if True:
-        self._point_panel = self._window.add_panel(
-            self._mouse_reg_loc.tolist(), 250)
-        self._point_panel.set_separation(8)
-        self._point_panel.set_horizontal_alignment('LEFT')
-        self._point_panel.add_header(
+        modal._point_panel = modal._window.add_panel(
+            modal._mouse_reg_loc.tolist(), 250)
+        modal._point_panel.set_separation(8)
+        modal._point_panel.set_horizontal_alignment('LEFT')
+        modal._point_panel.add_header(
             False, 'Point Normals at Target', 30, False)
-        self._point_panel.set_header_font_size(20)
-        self._point_panel.set_height_min_max(
-            max=self.act_reg.height*0.95)
-        self._point_panel.header.set_draw_box(False)
-        self._point_panel.set_visibility(False)
+        modal._point_panel.set_header_font_size(20)
+        modal._point_panel.set_height_min_max(
+            max=modal.act_reg.height*0.95)
+        modal._point_panel.header.set_draw_box(False)
+        modal._point_panel.set_visibility(False)
 
-        box = self._point_panel.add_box()
+        box = modal._point_panel.add_box()
         row = box.add_row()
 
         but = row.add_button(20, 'Confirm Point')
@@ -131,30 +131,30 @@ def init_ui_panels(self, rw, rh, scale):
         but.set_click_up_func(finish_point_mode)
 
         row = box.add_row()
-        self.point_strength = row.add_number(
-            20, 'Point Strength', self.target_strength, 2, .01, .01, 1.0)
-        self.point_strength.set_slide_factor(2)
-        self.point_strength.set_value_change_func(change_point_strength)
+        modal.point_strength = row.add_number(
+            20, 'Point Strength', modal.target_strength, 2, .01, .01, 1.0)
+        modal.point_strength.set_slide_factor(2)
+        modal.point_strength.set_value_change_func(change_point_strength)
 
         row = box.add_row()
-        bool = row.add_bool(20, 'Align Vectors', default=self.point_align)
+        bool = row.add_bool(20, 'Align Vectors', default=modal.point_align)
         bool.set_click_up_func(toggle_align_vectors)
 
     # SPHEREIZE PANEL
     if True:
-        self._sphere_panel = self._window.add_panel(
-            self._mouse_reg_loc.tolist(), 250)
-        self._sphere_panel.set_separation(8)
-        self._sphere_panel.set_horizontal_alignment('LEFT')
-        self._sphere_panel.add_header(
+        modal._sphere_panel = modal._window.add_panel(
+            modal._mouse_reg_loc.tolist(), 250)
+        modal._sphere_panel.set_separation(8)
+        modal._sphere_panel.set_horizontal_alignment('LEFT')
+        modal._sphere_panel.add_header(
             False, 'Sphereize Normals', 30, False)
-        self._sphere_panel.set_header_font_size(20)
-        self._sphere_panel.set_height_min_max(
-            max=self.act_reg.height*0.95)
-        self._sphere_panel.header.set_draw_box(False)
-        self._sphere_panel.set_visibility(False)
+        modal._sphere_panel.set_header_font_size(20)
+        modal._sphere_panel.set_height_min_max(
+            max=modal.act_reg.height*0.95)
+        modal._sphere_panel.header.set_draw_box(False)
+        modal._sphere_panel.set_visibility(False)
 
-        box = self._sphere_panel.add_box()
+        box = modal._sphere_panel.add_box()
         row = box.add_row()
 
         but = row.add_button(20, 'Confirm Sphereize')
@@ -165,18 +165,18 @@ def init_ui_panels(self, rw, rh, scale):
         but.set_click_up_func(finish_sphereize_mode)
 
         row = box.add_row()
-        self.sphere_strength = row.add_number(
-            20, 'Sphereize Strength', self.target_strength, 2, .01, .01, 1.0)
-        self.sphere_strength.set_slide_factor(2)
-        self.sphere_strength.set_value_change_func(change_sphereize_strength)
+        modal.sphere_strength = row.add_number(
+            20, 'Sphereize Strength', modal.target_strength, 2, .01, .01, 1.0)
+        modal.sphere_strength.set_slide_factor(2)
+        modal.sphere_strength.set_value_change_func(change_sphereize_strength)
 
     #
 
     # DISPLAY SETTINGS PANEL
     if True:
-        panel = self._window.add_subpanel_popup(
-            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
-        self._display_panel = panel
+        panel = modal._window.add_subpanel_popup(
+            [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
+        modal._display_panel = panel
         panel.set_separation(8)
         panel.set_horizontal_alignment('LEFT')
         panel.set_visibility(False)
@@ -185,61 +185,61 @@ def init_ui_panels(self, rw, rh, scale):
         panel.set_height_min_max(
             max=bpy.context.region.height*0.9)
 
-        box = self._display_panel.add_box()
+        box = modal._display_panel.add_box()
 
         row = box.add_row()
         bool = row.add_bool(20, 'Show Only Selected Normals',
-                            default=self._selected_only)
+                            default=modal._selected_only)
         bool.set_click_up_func(toggle_show_only_selected)
 
         row = box.add_row()
         bool = row.add_bool(20, 'Scale Up Selected Normals',
-                            default=self._selected_scale)
+                            default=modal._selected_scale)
         bool.set_click_up_func(toggle_selected_scale)
 
         row = box.add_row()
-        self._xray_bool = row.add_bool(
-            20, 'X-Ray', default=self._x_ray_mode)
-        self._xray_bool.set_click_up_func(toggle_x_ray)
+        modal._xray_bool = row.add_bool(
+            20, 'X-Ray', default=modal._x_ray_mode)
+        modal._xray_bool.set_click_up_func(toggle_x_ray)
 
         row = box.add_row()
         num = row.add_number(
-            20, 'Normals Length', self._normal_size, 2, .01, .01, 10.0)
+            20, 'Normals Length', modal._normal_size, 2, .01, .01, 10.0)
         num.set_slide_factor(2)
         num.set_value_change_func(change_normal_size)
 
         row = box.add_row()
         num = row.add_number(
-            20, 'Normals Brightness', self._line_brightness, 2, .01, .01, 2.0)
+            20, 'Normals Brightness', modal._line_brightness, 2, .01, .01, 2.0)
         num.set_slide_factor(2)
         num.set_value_change_func(change_line_brightness)
 
         row = box.add_row()
         num = row.add_number(
-            20, 'Vertex Point Size', self._point_size, 1, .1, .1, 10.0)
+            20, 'Vertex Point Size', modal._point_size, 1, .1, .1, 10.0)
         num.set_slide_factor(2)
         num.set_value_change_func(change_point_size)
 
         row = box.add_row()
         num = row.add_number(
-            20, 'Loop Size', self._loop_tri_size, 2, .1, 0.0, 1.0)
+            20, 'Loop Size', modal._loop_tri_size, 2, .1, 0.0, 1.0)
         num.set_slide_factor(2)
         num.set_value_change_func(change_loop_tri_size)
 
         row = box.add_row()
         bool = row.add_bool(20, 'Display Wireframe',
-                            default=self._use_wireframe_overlay)
+                            default=modal._use_wireframe_overlay)
         bool.set_click_up_func(toggle_wireframe)
 
         row = box.add_row()
         num = row.add_number(
-            20, 'Gizmo Size', self._gizmo_size, 0, 10, 100, 1000)
+            20, 'Gizmo Size', modal._gizmo_size, 0, 10, 100, 1000)
         num.set_slide_factor(2)
         num.set_value_change_func(change_gizmo_size)
 
         row = box.add_row()
         num = row.add_number(
-            20, 'UI Scale', self._ui_scale, 2, .1, 0.5, 3.0)
+            20, 'UI Scale', modal._ui_scale, 2, .1, 0.5, 3.0)
         num.set_slide_factor(2)
         num.set_value_change_func(change_ui_scale)
 
@@ -249,9 +249,9 @@ def init_ui_panels(self, rw, rh, scale):
 
     # SYMMETRY PANEL
     if True:
-        panel = self._window.add_subpanel_popup(
-            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
-        self._symmetry_panel = panel
+        panel = modal._window.add_subpanel_popup(
+            [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
+        modal._symmetry_panel = panel
         panel.set_separation(8)
         panel.set_horizontal_alignment('LEFT')
         panel.set_visibility(False)
@@ -260,7 +260,7 @@ def init_ui_panels(self, rw, rh, scale):
         panel.set_height_min_max(
             max=bpy.context.region.height*0.9)
 
-        box = self._symmetry_panel.add_box()
+        box = modal._symmetry_panel.add_box()
 
         box.add_text_row(20, 'Mirror Selected Normals:', font_size=12)
 
@@ -289,21 +289,21 @@ def init_ui_panels(self, rw, rh, scale):
         box.add_text_row(20, 'Auto Mirror Axis:', font_size=12)
 
         row = box.add_row()
-        bool = row.add_bool(20, 'X', default=self._mirror_x)
+        bool = row.add_bool(20, 'X', default=modal._mirror_x)
         bool.set_custom_id([0])
         bool.set_width_min_max(max=50)
         bool.set_click_up_func(toggle_mirror_axis)
         bool.add_tooltip_text_line(
             'Auto mirror normals as you edit on the X axis')
 
-        bool = row.add_bool(20, 'Y', default=self._mirror_y)
+        bool = row.add_bool(20, 'Y', default=modal._mirror_y)
         bool.set_custom_id([1])
         bool.set_width_min_max(max=50)
         bool.set_click_up_func(toggle_mirror_axis)
         bool.add_tooltip_text_line(
             'Auto mirror normals as you edit on the Y axis')
 
-        bool = row.add_bool(20, 'Z', default=self._mirror_z)
+        bool = row.add_bool(20, 'Z', default=modal._mirror_z)
         bool.set_custom_id([2])
         bool.set_width_min_max(max=50)
         bool.set_click_up_func(toggle_mirror_axis)
@@ -312,15 +312,15 @@ def init_ui_panels(self, rw, rh, scale):
 
         # row = box.add_row()
         # num = row.add_number(
-        #     20, 'Mirror Search Range', self._mirror_range, 2, .1, .01, 5.0)
+        #     20, 'Mirror Search Range', modal._mirror_range, 2, .1, .01, 5.0)
         # num.set_slide_factor(2)
         # num.set_value_change_func(change_mirror_range)
 
     # ALIGNMENT PANEL
     if True:
-        panel = self._window.add_subpanel_popup(
-            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
-        self._alignment_panel = panel
+        panel = modal._window.add_subpanel_popup(
+            [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
+        modal._alignment_panel = panel
         panel.set_separation(8)
         panel.set_horizontal_alignment('LEFT')
         panel.set_visibility(False)
@@ -329,7 +329,7 @@ def init_ui_panels(self, rw, rh, scale):
         panel.set_height_min_max(
             max=bpy.context.region.height*0.9)
 
-        box = self._alignment_panel.add_box()
+        box = modal._alignment_panel.add_box()
 
         box.add_text_row(20, 'Flatten Normals on Axis', font_size=12)
 
@@ -402,9 +402,9 @@ def init_ui_panels(self, rw, rh, scale):
 
     # NORMAL DIRECTION PANEL
     if True:
-        panel = self._window.add_subpanel_popup(
-            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
-        self._direction_panel = panel
+        panel = modal._window.add_subpanel_popup(
+            [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
+        modal._direction_panel = panel
         panel.set_separation(8)
         panel.set_horizontal_alignment('LEFT')
         panel.set_visibility(False)
@@ -413,7 +413,7 @@ def init_ui_panels(self, rw, rh, scale):
         panel.set_height_min_max(
             max=bpy.context.region.height*0.9)
 
-        box = self._direction_panel.add_box()
+        box = modal._direction_panel.add_box()
 
         row = box.add_row()
         but = row.add_button(20, 'Flip Normals')
@@ -450,9 +450,9 @@ def init_ui_panels(self, rw, rh, scale):
 
     # MODIFY NORMALS PANEL
     if True:
-        panel = self._window.add_subpanel_popup(
-            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
-        self._modify_panel = panel
+        panel = modal._window.add_subpanel_popup(
+            [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
+        modal._modify_panel = panel
         panel.set_separation(8)
         panel.set_horizontal_alignment('LEFT')
         panel.set_visibility(False)
@@ -461,12 +461,12 @@ def init_ui_panels(self, rw, rh, scale):
         panel.set_height_min_max(
             max=bpy.context.region.height*0.9)
 
-        box = self._modify_panel.add_box()
+        box = modal._modify_panel.add_box()
 
         row = box.add_row()
-        self._gizmo_bool = row.add_bool(20, 'Use Rotation Gizmo',
-                                        default=self._use_gizmo)
-        self._gizmo_bool.set_click_up_func(toggle_use_gizmo)
+        modal._gizmo_bool = row.add_bool(20, 'Use Rotation Gizmo',
+                                         default=modal._use_gizmo)
+        modal._gizmo_bool.set_click_up_func(toggle_use_gizmo)
 
         row = box.add_row()
         but = row.add_button(20, 'Average Individual Vertex Normals')
@@ -494,14 +494,14 @@ def init_ui_panels(self, rw, rh, scale):
 
         row = box.add_row()
         num = row.add_number(
-            20, 'Smooth Strength', self._smooth_strength, 2, .1, .01, 5.0)
+            20, 'Smooth Strength', modal._smooth_strength, 2, .1, .01, 5.0)
         num.set_slide_factor(15)
         num.set_value_change_func(change_smooth_strength)
         num.add_tooltip_text_line(
             'Strength of each smooth iteration')
 
         num = row.add_number(
-            20, 'Smooth Iterations', self._smooth_iterations, 0, 1, 1, 25)
+            20, 'Smooth Iterations', modal._smooth_iterations, 0, 1, 1, 25)
         num.set_slide_factor(15)
         num.set_value_change_func(change_smooth_iterations)
         num.add_tooltip_text_line(
@@ -522,9 +522,9 @@ def init_ui_panels(self, rw, rh, scale):
 
     # COPY/PASTE PANEL
     if True:
-        panel = self._window.add_subpanel_popup(
-            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
-        self._copy_panel = panel
+        panel = modal._window.add_subpanel_popup(
+            [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
+        modal._copy_panel = panel
         panel.set_separation(8)
         panel.set_horizontal_alignment('LEFT')
         panel.set_visibility(False)
@@ -533,7 +533,7 @@ def init_ui_panels(self, rw, rh, scale):
         panel.set_height_min_max(
             max=bpy.context.region.height*0.9)
 
-        box = self._copy_panel.add_box()
+        box = modal._copy_panel.add_box()
 
         row = box.add_row()
         but = row.add_button(20, 'Copy Active Normal to Selected')
@@ -553,9 +553,9 @@ def init_ui_panels(self, rw, rh, scale):
 
     # TARGET MODES PANEL
     if True:
-        panel = self._window.add_subpanel_popup(
-            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
-        self._modes_panel = panel
+        panel = modal._window.add_subpanel_popup(
+            [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
+        modal._modes_panel = panel
         panel.set_separation(8)
         panel.set_horizontal_alignment('LEFT')
         panel.set_visibility(False)
@@ -564,7 +564,7 @@ def init_ui_panels(self, rw, rh, scale):
         panel.set_height_min_max(
             max=bpy.context.region.height*0.9)
 
-        box = self._modes_panel.add_box()
+        box = modal._modes_panel.add_box()
 
         row = box.add_row()
         but = row.add_button(20, 'Sphereize Normals')
@@ -579,18 +579,18 @@ def init_ui_panels(self, rw, rh, scale):
 
     # EXPORT PANEL
     if True:
-        self._export_panel = self._window.add_panel(
+        modal._export_panel = modal._window.add_panel(
             [rw-25, rh-75], 250)
-        self._export_panel.set_separation(8)
-        self._export_panel.set_horizontal_alignment('RIGHT')
-        self._export_panel.add_header(
+        modal._export_panel.set_separation(8)
+        modal._export_panel.set_horizontal_alignment('RIGHT')
+        modal._export_panel.add_header(
             True, 'Addon Settings', 30, False)
-        self._export_panel.set_header_font_size(20)
-        self._export_panel.set_height_min_max(
-            max=self.act_reg.height*0.95)
-        self._export_panel.header.set_draw_box(False)
+        modal._export_panel.set_header_font_size(20)
+        modal._export_panel.set_height_min_max(
+            max=modal.act_reg.height*0.95)
+        modal._export_panel.header.set_draw_box(False)
 
-        box = self._export_panel.add_box()
+        box = modal._export_panel.add_box()
         row = box.add_row()
         but = row.add_button(20, 'Confirm Changes')
         but.set_custom_id([0])
@@ -608,7 +608,7 @@ def init_ui_panels(self, rw, rh, scale):
         hbut.set_hover_down_func(display_panel_show)
         hbut.set_font_size(16)
 
-        self._display_panel.set_hover_ref(row)
+        modal._display_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
@@ -616,57 +616,57 @@ def init_ui_panels(self, rw, rh, scale):
             boxx.set_visibility(False)
             row = boxx.add_row()
             bool = row.add_bool(20, 'Show Only Selected Normals',
-                                default=self._selected_only)
+                                default=modal._selected_only)
             bool.set_click_up_func(toggle_show_only_selected)
 
             row = boxx.add_row()
             bool = row.add_bool(20, 'Scale Up Selected Normals',
-                                default=self._selected_scale)
+                                default=modal._selected_scale)
             bool.set_click_up_func(toggle_selected_scale)
 
             row = boxx.add_row()
-            self._xray_bool = row.add_bool(
-                20, 'X-Ray', default=self._x_ray_mode)
-            self._xray_bool.set_click_up_func(toggle_x_ray)
+            modal._xray_bool = row.add_bool(
+                20, 'X-Ray', default=modal._x_ray_mode)
+            modal._xray_bool.set_click_up_func(toggle_x_ray)
 
             row = boxx.add_row()
             num = row.add_number(
-                20, 'Normals Length', self._normal_size, 2, .01, .01, 10.0)
+                20, 'Normals Length', modal._normal_size, 2, .01, .01, 10.0)
             num.set_slide_factor(2)
             num.set_value_change_func(change_normal_size)
 
             row = boxx.add_row()
             num = row.add_number(
-                20, 'Normals Brightness', self._line_brightness, 2, .01, .01, 2.0)
+                20, 'Normals Brightness', modal._line_brightness, 2, .01, .01, 2.0)
             num.set_slide_factor(2)
             num.set_value_change_func(change_line_brightness)
 
             row = boxx.add_row()
             num = row.add_number(
-                20, 'Vertex Point Size', self._point_size, 1, .1, .1, 10.0)
+                20, 'Vertex Point Size', modal._point_size, 1, .1, .1, 10.0)
             num.set_slide_factor(2)
             num.set_value_change_func(change_point_size)
 
             row = boxx.add_row()
             num = row.add_number(
-                20, 'Loop Size', self._loop_tri_size, 2, .1, 0.0, 1.0)
+                20, 'Loop Size', modal._loop_tri_size, 2, .1, 0.0, 1.0)
             num.set_slide_factor(2)
             num.set_value_change_func(change_loop_tri_size)
 
             row = boxx.add_row()
             bool = row.add_bool(20, 'Display Wireframe',
-                                default=self._use_wireframe_overlay)
+                                default=modal._use_wireframe_overlay)
             bool.set_click_up_func(toggle_wireframe)
 
             row = boxx.add_row()
             num = row.add_number(
-                20, 'Gizmo Size', self._gizmo_size, 0, 10, 100, 1000)
+                20, 'Gizmo Size', modal._gizmo_size, 0, 10, 100, 1000)
             num.set_slide_factor(2)
             num.set_value_change_func(change_gizmo_size)
 
             row = boxx.add_row()
             num = row.add_number(
-                20, 'UI Scale', self._ui_scale, 2, .1, 0.5, 3.0)
+                20, 'UI Scale', modal._ui_scale, 2, .1, 0.5, 3.0)
             num.set_slide_factor(2)
             num.set_value_change_func(change_ui_scale)
 
@@ -674,39 +674,39 @@ def init_ui_panels(self, rw, rh, scale):
             but = row.add_button(20, 'Save Addon Preferences')
             but.set_click_up_func(save_preferences)
 
-            self._display_box = boxx
+            modal._display_box = boxx
 
-        box = self._export_panel.add_box()
+        box = modal._export_panel.add_box()
         box.add_header(True, 'Keymap', 20, False)
         box.set_header_font_size(14)
         box.set_collapsed(True)
-        self._keymap_box = box.add_box()
-        keymap_initialize(self)
+        modal._keymap_box = box.add_box()
+        keymap_initialize(modal)
 
     # TOOLS PANEL
     if True:
-        self._tools_panel = self._window.add_panel([25, rh-75], 275)
-        self._tools_panel.set_separation(8)
-        self._tools_panel.set_horizontal_alignment('LEFT')
-        self._tools_panel.add_header(True, 'Abnormal', 30, False)
-        self._tools_panel.set_header_font_size(20)
-        self._tools_panel.set_height_min_max(
-            max=self.act_reg.height*0.95)
-        self._tools_panel.set_header_icon_image(
+        modal._tools_panel = modal._window.add_panel([25, rh-75], 275)
+        modal._tools_panel.set_separation(8)
+        modal._tools_panel.set_horizontal_alignment('LEFT')
+        modal._tools_panel.add_header(True, 'Abnormal', 30, False)
+        modal._tools_panel.set_header_font_size(20)
+        modal._tools_panel.set_height_min_max(
+            max=modal.act_reg.height*0.95)
+        modal._tools_panel.set_header_icon_image(
             'AbLogo.png', __file__)
-        self._tools_panel.set_header_icon_data(
+        modal._tools_panel.set_header_icon_data(
             width=35, height=35)
-        self._tools_panel.header.set_draw_box(False)
+        modal._tools_panel.header.set_draw_box(False)
 
         #
         #
         #
 
-        box = self._tools_panel.add_box()
+        box = modal._tools_panel.add_box()
 
         row = box.add_row()
         bool = row.add_bool(20, 'Edit Individual Loop Normals',
-                            default=self._individual_loops)
+                            default=modal._individual_loops)
         bool.set_click_up_func(toggle_individual_loops)
         bool.add_tooltip_text_line(
             'Allows enabling each separate face corner normal')
@@ -723,7 +723,7 @@ def init_ui_panels(self, rw, rh, scale):
         hbut.set_hover_down_func(symmetry_panel_show)
         hbut.set_font_size(16)
 
-        self._symmetry_panel.set_hover_ref(row)
+        modal._symmetry_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
@@ -757,21 +757,21 @@ def init_ui_panels(self, rw, rh, scale):
             boxx.add_text_row(20, 'Auto Mirror Axis:', font_size=12)
 
             row = boxx.add_row()
-            bool = row.add_bool(20, 'X', default=self._mirror_x)
+            bool = row.add_bool(20, 'X', default=modal._mirror_x)
             bool.set_custom_id([0])
             bool.set_width_min_max(max=50)
             bool.set_click_up_func(toggle_mirror_axis)
             bool.add_tooltip_text_line(
                 'Auto mirror normals as you edit on the X axis')
 
-            bool = row.add_bool(20, 'Y', default=self._mirror_y)
+            bool = row.add_bool(20, 'Y', default=modal._mirror_y)
             bool.set_custom_id([1])
             bool.set_width_min_max(max=50)
             bool.set_click_up_func(toggle_mirror_axis)
             bool.add_tooltip_text_line(
                 'Auto mirror normals as you edit on the Y axis')
 
-            bool = row.add_bool(20, 'Z', default=self._mirror_z)
+            bool = row.add_bool(20, 'Z', default=modal._mirror_z)
             bool.set_custom_id([2])
             bool.set_width_min_max(max=50)
             bool.set_click_up_func(toggle_mirror_axis)
@@ -780,11 +780,11 @@ def init_ui_panels(self, rw, rh, scale):
 
             # row = boxx.add_row()
             # num = row.add_number(
-            #     20, 'Mirror Search Range', self._mirror_range, 2, .1, .01, 5.0)
+            #     20, 'Mirror Search Range', modal._mirror_range, 2, .1, .01, 5.0)
             # num.set_slide_factor(2)
             # num.set_value_change_func(change_mirror_range)
 
-            self._symmetry_box = boxx
+            modal._symmetry_box = boxx
 
         #
         #
@@ -798,7 +798,7 @@ def init_ui_panels(self, rw, rh, scale):
         hbut.set_hover_down_func(alignment_panel_show)
         hbut.set_font_size(16)
 
-        self._alignment_panel.set_hover_ref(row)
+        modal._alignment_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
@@ -874,7 +874,7 @@ def init_ui_panels(self, rw, rh, scale):
             but.add_tooltip_text_line(
                 'Set selected normals to the local negative Z axis')
 
-            self._alignment_box = boxx
+            modal._alignment_box = boxx
 
         #
         #
@@ -888,7 +888,7 @@ def init_ui_panels(self, rw, rh, scale):
         hbut.set_hover_down_func(direction_panel_show)
         hbut.set_font_size(16)
 
-        self._direction_panel.set_hover_ref(row)
+        modal._direction_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
@@ -928,7 +928,7 @@ def init_ui_panels(self, rw, rh, scale):
             but.add_tooltip_text_line(
                 'Useful for creating hard edges based on which faces are selected')
 
-            self._direction_box = boxx
+            modal._direction_box = boxx
 
         #
         #
@@ -942,7 +942,7 @@ def init_ui_panels(self, rw, rh, scale):
         hbut.set_hover_down_func(modify_panel_show)
         hbut.set_font_size(16)
 
-        self._modify_panel.set_hover_ref(row)
+        modal._modify_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
@@ -950,9 +950,9 @@ def init_ui_panels(self, rw, rh, scale):
             boxx.set_visibility(False)
 
             row = boxx.add_row()
-            self._gizmo_bool = row.add_bool(20, 'Use Rotation Gizmo',
-                                            default=self._use_gizmo)
-            self._gizmo_bool.set_click_up_func(toggle_use_gizmo)
+            modal._gizmo_bool = row.add_bool(20, 'Use Rotation Gizmo',
+                                             default=modal._use_gizmo)
+            modal._gizmo_bool.set_click_up_func(toggle_use_gizmo)
 
             row = boxx.add_row()
             but = row.add_button(20, 'Average Individual Vertex Normals')
@@ -980,14 +980,14 @@ def init_ui_panels(self, rw, rh, scale):
 
             row = boxx.add_row()
             num = row.add_number(
-                20, 'Smooth Strength', self._smooth_strength, 2, .1, .01, 5.0)
+                20, 'Smooth Strength', modal._smooth_strength, 2, .1, .01, 5.0)
             num.set_slide_factor(15)
             num.set_value_change_func(change_smooth_strength)
             num.add_tooltip_text_line(
                 'Strength of each smooth iteration')
 
             num = row.add_number(
-                20, 'Smooth Iterations', self._smooth_iterations, 0, 1, 1, 25)
+                20, 'Smooth Iterations', modal._smooth_iterations, 0, 1, 1, 25)
             num.set_slide_factor(15)
             num.set_value_change_func(change_smooth_iterations)
             num.add_tooltip_text_line(
@@ -1006,7 +1006,7 @@ def init_ui_panels(self, rw, rh, scale):
             but.add_tooltip_text_line(
                 'Set the object to Flat Shading while preserving the current normals')
 
-            self._modify_box = boxx
+            modal._modify_box = boxx
 
         #
         #
@@ -1020,7 +1020,7 @@ def init_ui_panels(self, rw, rh, scale):
         hbut.set_hover_down_func(copy_panel_show)
         hbut.set_font_size(16)
 
-        self._copy_panel.set_hover_ref(row)
+        modal._copy_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
@@ -1043,7 +1043,7 @@ def init_ui_panels(self, rw, rh, scale):
             but.add_tooltip_text_line(
                 'Paste the stored loop/vertex normal onto selected points')
 
-            self._copy_box = boxx
+            modal._copy_box = boxx
 
         #
         #
@@ -1057,7 +1057,7 @@ def init_ui_panels(self, rw, rh, scale):
         hbut.set_hover_down_func(modes_panel_show)
         hbut.set_font_size(16)
 
-        self._modes_panel.set_hover_ref(row)
+        modal._modes_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
@@ -1075,10 +1075,10 @@ def init_ui_panels(self, rw, rh, scale):
             but.add_tooltip_text_line(
                 'Start the Point Normals at Target mode')
 
-            self._modes_box = boxx
+            modal._modes_box = boxx
 
-    self._window.set_scale(self._ui_scale)
-    self._window.create_shape_data()
+    modal._window.set_scale(modal._ui_scale)
+    modal._window.create_shape_data()
     return
 
 
@@ -1088,44 +1088,44 @@ def init_ui_panels(self, rw, rh, scale):
 
 
 # BUTTON FUNCTIONS
-def change_ui_scale(self, arguments):
-    arguments[0]._ui_scale = self.value
+def change_ui_scale(modal, arguments):
+    arguments[0]._ui_scale = modal.value
 
     arguments[0]._window.set_scale(arguments[0]._ui_scale)
     arguments[0]._window.create_shape_data()
     return True
 
 
-def change_gizmo_size(self, arguments):
-    arguments[0]._gizmo_size = self.value
-    arguments[0]._rot_gizmo.update_size(self.value)
+def change_gizmo_size(modal, arguments):
+    arguments[0]._gizmo_size = modal.value
+    arguments[0]._rot_gizmo.update_size(modal.value)
     return
 
 
-def change_point_size(self, arguments):
-    arguments[0]._point_size = self.value
+def change_point_size(modal, arguments):
+    arguments[0]._point_size = modal.value
     arguments[0]._container.set_point_size(
         arguments[0]._point_size)
     arguments[0].redraw = True
     return
 
 
-def change_loop_tri_size(self, arguments):
-    arguments[0]._loop_tri_size = self.value
+def change_loop_tri_size(modal, arguments):
+    arguments[0]._loop_tri_size = modal.value
     arguments[0]._container.set_loop_scale(
         arguments[0]._loop_tri_size)
     arguments[0].redraw = True
     return
 
 
-def change_mirror_range(self, arguments):
-    arguments[0]._mirror_range = self.value
+def change_mirror_range(modal, arguments):
+    arguments[0]._mirror_range = modal.value
     cache_mirror_data(arguments[0])
     return
 
 
-def change_line_brightness(self, arguments):
-    arguments[0]._line_brightness = self.value
+def change_line_brightness(modal, arguments):
+    arguments[0]._line_brightness = modal.value
     arguments[0]._container.set_brightess(
         arguments[0]._line_brightness)
 
@@ -1134,55 +1134,55 @@ def change_line_brightness(self, arguments):
     return
 
 
-def change_normal_size(self, arguments):
-    arguments[0]._normal_size = self.value
+def change_normal_size(modal, arguments):
+    arguments[0]._normal_size = modal.value
     arguments[0]._container.set_normal_scale(
         arguments[0]._normal_size)
     arguments[0].redraw = True
     return
 
 
-def change_sphereize_strength(self, arguments):
-    arguments[0].target_strength = self.value
+def change_sphereize_strength(modal, arguments):
+    arguments[0].target_strength = modal.value
 
     if arguments[0]._container.sel_status.any():
         sphereize_normals(arguments[0])
     return
 
 
-def change_point_strength(self, arguments):
-    arguments[0].target_strength = self.value
+def change_point_strength(modal, arguments):
+    arguments[0].target_strength = modal.value
 
     if arguments[0]._container.sel_status.any():
         point_normals(arguments[0])
     return
 
 
-def change_smooth_strength(self, arguments):
-    arguments[0]._smooth_strength = self.value
+def change_smooth_strength(modal, arguments):
+    arguments[0]._smooth_strength = modal.value
     return
 
 
-def change_smooth_iterations(self, arguments):
-    arguments[0]._smooth_iterations = self.value
+def change_smooth_iterations(modal, arguments):
+    arguments[0]._smooth_iterations = modal.value
     return
 
 
-def change_rotation_increment(self, arguments):
+def change_rotation_increment(modal, arguments):
     for item in arguments[0]._rot_increment_row.items:
         if item.item_type == 'BOOLEAN':
             item.set_bool(False)
 
-    if self.custom_id[0] == 0:
-        self.set_bool(True)
+    if modal.custom_id[0] == 0:
+        modal.set_bool(True)
         arguments[0]._rot_increment_one = True
         arguments[0]._rot_increment = 1
-    if self.custom_id[0] == 1:
-        self.set_bool(True)
+    if modal.custom_id[0] == 1:
+        modal.set_bool(True)
         arguments[0]._rot_increment_five = True
         arguments[0]._rot_increment = 5
-    if self.custom_id[0] == 2:
-        self.set_bool(True)
+    if modal.custom_id[0] == 2:
+        modal.set_bool(True)
         arguments[0]._rot_increment_ten = True
         arguments[0]._rot_increment = 10
 
@@ -1192,67 +1192,67 @@ def change_rotation_increment(self, arguments):
 #
 
 
-def toggle_use_gizmo(self, arguments):
-    arguments[0]._use_gizmo = self.bool_val
+def toggle_use_gizmo(modal, arguments):
+    arguments[0]._use_gizmo = modal.bool_val
     update_orbit_empty(arguments[0])
     gizmo_update_hide(arguments[0], arguments[0]._use_gizmo)
     return
 
 
-def toggle_x_ray(self, arguments):
-    arguments[0]._x_ray_mode = self.bool_val
+def toggle_x_ray(modal, arguments):
+    arguments[0]._x_ray_mode = modal.bool_val
     return
 
 
-def toggle_wireframe(self, arguments):
-    arguments[0]._use_wireframe_overlay = self.bool_val
+def toggle_wireframe(modal, arguments):
+    arguments[0]._use_wireframe_overlay = modal.bool_val
     for space in arguments[0]._draw_area.spaces:
         if space.type == 'VIEW_3D':
-            space.overlay.show_wireframes = self.bool_val
+            space.overlay.show_wireframes = modal.bool_val
             space.overlay.wireframe_threshold = 1.0
     return
 
 
-def toggle_selected_scale(self, arguments):
-    arguments[0]._selected_scale = self.bool_val
+def toggle_selected_scale(modal, arguments):
+    arguments[0]._selected_scale = modal.bool_val
     arguments[0]._container.set_scale_selection(
         arguments[0]._selected_scale)
     arguments[0].redraw = True
     return
 
 
-def toggle_show_only_selected(self, arguments):
-    arguments[0]._selected_only = self.bool_val
+def toggle_show_only_selected(modal, arguments):
+    arguments[0]._selected_only = modal.bool_val
     arguments[0]._container.set_draw_only_selected(
         arguments[0]._selected_only)
     arguments[0].redraw = True
     return
 
 
-def toggle_mirror_axis(self, arguments):
-    if self.custom_id[0] == 0:
-        arguments[0]._mirror_x = self.bool_val
-    if self.custom_id[0] == 1:
-        arguments[0]._mirror_y = self.bool_val
-    if self.custom_id[0] == 2:
-        arguments[0]._mirror_z = self.bool_val
+def toggle_mirror_axis(modal, arguments):
+    if modal.custom_id[0] == 0:
+        arguments[0]._mirror_x = modal.bool_val
+    if modal.custom_id[0] == 1:
+        arguments[0]._mirror_y = modal.bool_val
+    if modal.custom_id[0] == 2:
+        arguments[0]._mirror_z = modal.bool_val
     return
 
 
-def toggle_align_vectors(self, arguments):
-    arguments[0].point_align = self.bool_val
+def toggle_align_vectors(modal, arguments):
+    arguments[0].point_align = modal.bool_val
 
     if arguments[0]._container.sel_status.any():
         point_normals(arguments[0])
     return
 
 
-def toggle_individual_loops(self, arguments):
-    arguments[0]._individual_loops = self.bool_val
+def toggle_individual_loops(modal, arguments):
+    arguments[0]._individual_loops = modal.bool_val
     arguments[0]._container.set_draw_tris(
         arguments[0]._individual_loops)
 
-    if self.bool_val == False:
+    if modal.bool_val == False:
         sel_pos = get_selected_points(arguments[0], any_selected=True)
         arguments[0]._container.sel_status[arguments[0]._container.vert_link_ls[sel_pos]] = True
 
@@ -1455,91 +1455,91 @@ def modes_panel_show(ui_item, arguments):
 #
 
 
-def mirror_selection(self, arguments):
+def mirror_selection(modal, arguments):
     if arguments[0]._container.sel_status.any():
-        mirror_normals(arguments[0], self.custom_id[0])
+        mirror_normals(arguments[0], modal.custom_id[0])
     return
 
 
-def flatten_axis(self, arguments):
+def flatten_axis(modal, arguments):
     if arguments[0]._container.sel_status.any():
-        flatten_normals(arguments[0], self.custom_id[0])
+        flatten_normals(arguments[0], modal.custom_id[0])
     return
 
 
-def algin_to_axis(self, arguments):
+def algin_to_axis(modal, arguments):
     if arguments[0]._container.sel_status.any():
-        if self.custom_id[0] == 0:
+        if modal.custom_id[0] == 0:
             align_to_axis_normals(arguments[0], 0, 1)
-        if self.custom_id[0] == 1:
+        if modal.custom_id[0] == 1:
             align_to_axis_normals(arguments[0], 0, -1)
-        if self.custom_id[0] == 2:
+        if modal.custom_id[0] == 2:
             align_to_axis_normals(arguments[0], 1, 1)
-        if self.custom_id[0] == 3:
+        if modal.custom_id[0] == 3:
             align_to_axis_normals(arguments[0], 1, -1)
-        if self.custom_id[0] == 4:
+        if modal.custom_id[0] == 4:
             align_to_axis_normals(arguments[0], 2, 1)
-        if self.custom_id[0] == 5:
+        if modal.custom_id[0] == 5:
             align_to_axis_normals(arguments[0], 2, -1)
 
     return
 
 
-def flip_selection(self, arguments):
+def flip_selection(modal, arguments):
     if arguments[0]._container.sel_status.any():
         flip_normals(arguments[0])
     return
 
 
-def set_direction(self, arguments):
+def set_direction(modal, arguments):
     if arguments[0]._container.sel_status.any():
-        if self.custom_id[0] == 0:
+        if modal.custom_id[0] == 0:
             set_outside_inside(arguments[0], 1)
-        if self.custom_id[0] == 1:
+        if modal.custom_id[0] == 1:
             set_outside_inside(arguments[0], -1)
 
     return
 
 
-def set_from_faces(self, arguments):
+def set_from_faces(modal, arguments):
     if arguments[0]._container.sel_status.any():
         set_normals_from_faces(arguments[0])
 
     return
 
 
-def average_individual(self, arguments):
+def average_individual(modal, arguments):
     if arguments[0]._container.sel_status.any():
         average_vertex_normals(arguments[0])
     return
 
 
-def average_selection(self, arguments):
+def average_selection(modal, arguments):
     if arguments[0]._container.sel_status.any():
         average_selected_normals(arguments[0])
     return
 
 
-def smooth_selection(self, arguments):
+def smooth_selection(modal, arguments):
     if arguments[0]._container.sel_status.any():
         smooth_normals(arguments[0], 0.5)
     return
 
 
-def sharpen_edges(self, arguments):
+def sharpen_edges(modal, arguments):
     if arguments[0]._container.sel_status.any():
         sharpen_edge_normals(arguments[0])
     return
 
 
-def change_shading(self, arguments):
-    if self.custom_id[0] == 0:
+def change_shading(modal, arguments):
+    if modal.custom_id[0] == 0:
         for p in arguments[0]._object.data.polygons:
             p.use_smooth = True
         arguments[0]._object_smooth = True
         set_new_normals(arguments[0])
 
-    if self.custom_id[0] == 1:
+    if modal.custom_id[0] == 1:
         for p in arguments[0]._object.data.polygons:
             p.use_smooth = False
         arguments[0]._object_smooth = False
@@ -1547,68 +1547,68 @@ def change_shading(self, arguments):
     return
 
 
-def active_to_selection(self, arguments):
+def active_to_selection(modal, arguments):
     if arguments[0]._container.act_status.any():
         copy_active_to_selected(arguments[0])
     return
 
 
-def store_active(self, arguments):
+def store_active(modal, arguments):
     if arguments[0]._container.act_status.any():
         store_active_normal(arguments[0])
     return
 
 
-def paste_stored(self, arguments):
+def paste_stored(modal, arguments):
     if arguments[0]._container.sel_status.any():
         paste_normal(arguments[0])
     return
 
 
-def begin_sphereize_mode(self, arguments):
+def begin_sphereize_mode(modal, arguments):
     if arguments[0]._container.sel_status.any():
         start_sphereize_mode(arguments[0])
     return
 
 
-def finish_sphereize_mode(self, arguments):
-    if self.custom_id[0] == 0:
+def finish_sphereize_mode(modal, arguments):
+    if modal.custom_id[0] == 0:
         end_sphereize_mode(arguments[0], True)
     else:
         end_sphereize_mode(arguments[0], False)
     return
 
 
-def begin_point_mode(self, arguments):
+def begin_point_mode(modal, arguments):
     if arguments[0]._container.sel_status.any():
         start_point_mode(arguments[0])
     return
 
 
-def finish_point_mode(self, arguments):
-    if self.custom_id[0] == 0:
+def finish_point_mode(modal, arguments):
+    if modal.custom_id[0] == 0:
         end_point_mode(arguments[0], True)
     else:
         end_point_mode(arguments[0], False)
     return
 
 
-def end_modal(self, arguments):
-    if self.custom_id[0] == 0:
+def end_modal(modal, arguments):
+    if modal.custom_id[0] == 0:
         arguments[0]._confirm_modal = True
-    if self.custom_id[0] == 1:
+    if modal.custom_id[0] == 1:
         arguments[0]._cancel_modal = True
 
     return
 
 
-def reset_vectors(self, arguments):
+def reset_vectors(modal, arguments):
     if arguments[0]._container.sel_status.any():
         reset_normals(arguments[0])
     return
 
 
-def save_preferences(self, arguments):
+def save_preferences(modal, arguments):
     arguments[0]._behavior_prefs.rotate_gizmo_use = arguments[0]._use_gizmo
     arguments[0]._display_prefs.gizmo_size = arguments[0]._gizmo_size
     arguments[0]._display_prefs.normal_size = arguments[0]._normal_size
@@ -1624,14 +1624,14 @@ def save_preferences(self, arguments):
     return
 
 
-def rotate_normals_incremental(self, arguments):
+def rotate_normals_incremental(modal, arguments):
     if arguments[0]._container.sel_status.any():
         incremental_rotate_vectors(
-            arguments[0], self.custom_id[0], self.custom_id[1])
+            arguments[0], modal.custom_id[0], modal.custom_id[1])
     return
 
 
-def reset_ui(self, arguments):
+def reset_ui(modal, arguments):
     rw = arguments[0].act_reg.width
     rh = arguments[0].act_reg.height
     arguments[0]._export_panel.set_new_position([rw-25, rh-75])

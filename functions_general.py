@@ -74,11 +74,11 @@ def ob_to_bm_world(ob):
     return bm
 
 
-def create_simple_bm(self, ob):
+def create_simple_bm(modal, ob):
 
     # turn off generative modifiers
     for mod in ob.modifiers:
-        self._objects_mod_status.append(
+        modal._objects_mod_status.append(
             [mod.show_viewport, mod.show_render, mod.name])
 
         if mod.type != 'MIRROR':
@@ -448,14 +448,14 @@ def ray_cast_view_occlude_test(co, mouse_co, bvh, region, rv3d):
     return occluded
 
 
-def ray_cast_to_mouse(self):
+def ray_cast_to_mouse(modal):
     # get the ray from the viewport and mouse
     view_vector = view3d_utils.region_2d_to_vector_3d(
-        self.act_reg, self.act_rv3d, self._mouse_reg_loc)
+        modal.act_reg, modal.act_rv3d, modal._mouse_reg_loc)
     ray_origin = view3d_utils.region_2d_to_origin_3d(
-        self.act_reg, self.act_rv3d, self._mouse_reg_loc)
+        modal.act_reg, modal.act_rv3d, modal._mouse_reg_loc)
 
-    hit, norm, ind, dist = self._object_bvh.ray_cast(
+    hit, norm, ind, dist = modal._object_bvh.ray_cast(
         ray_origin, view_vector, 10000)
 
     if hit != None and ind != None:

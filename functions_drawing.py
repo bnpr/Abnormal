@@ -7,55 +7,55 @@ from bpy_extras import view3d_utils
 from .functions_general import *
 
 
-def refresh_batches(self, context):
+def refresh_batches(modal, context):
     # ACTIVELY DRAWING DATA LISTS
-    if self.selection_drawing:
-        create_selection_drawing_lists(self)
+    if modal.selection_drawing:
+        create_selection_drawing_lists(modal)
 
-    if self.redraw:
-        self._container.update_static()
+    if modal.redraw:
+        modal._container.update_static()
 
-    if self.redraw_active:
-        self._container.update_active()
+    if modal.redraw_active:
+        modal._container.update_active()
 
-    self.redraw = False
-    self.redraw_active = False
+    modal.redraw = False
+    modal.redraw_active = False
     force_scene_update()
     return
 
 
-def draw_callback_3d(self, context):
+def draw_callback_3d(modal, context):
     clear_draw = False
 
     try:
-        if self._modal_running == False:
+        if modal._modal_running == False:
             clear_draw = True
 
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_VERTEX_PROGRAM_POINT_SIZE)
-        if self._x_ray_mode == False:
+        if modal._x_ray_mode == False:
             bgl.glEnable(bgl.GL_DEPTH_TEST)
 
-        self._container.draw()
+        modal._container.draw()
 
-        if len(self.translate_draw_line) > 0:
+        if len(modal.translate_draw_line) > 0:
             bgl.glEnable(bgl.GL_DEPTH_TEST)
             bgl.glLineWidth(2)
-            self.shader_3d.bind()
-            if self.translate_axis == 0:
-                self.shader_3d.uniform_float("color", (1.0, 0.0, 0.0, 1.0))
-            if self.translate_axis == 1:
-                self.shader_3d.uniform_float("color", (0.0, 1.0, 0.0, 1.0))
-            if self.translate_axis == 2:
-                self.shader_3d.uniform_float("color", (0.0, 0.0, 1.0, 1.0))
-            self.batch_translate_line.draw(self.shader_3d)
+            modal.shader_3d.bind()
+            if modal.translate_axis == 0:
+                modal.shader_3d.uniform_float("color", (1.0, 0.0, 0.0, 1.0))
+            if modal.translate_axis == 1:
+                modal.shader_3d.uniform_float("color", (0.0, 1.0, 0.0, 1.0))
+            if modal.translate_axis == 2:
+                modal.shader_3d.uniform_float("color", (0.0, 0.0, 1.0, 1.0))
+            modal.batch_translate_line.draw(modal.shader_3d)
             bgl.glDisable(bgl.GL_DEPTH_TEST)
 
-        if self._x_ray_mode == False:
+        if modal._x_ray_mode == False:
             bgl.glDisable(bgl.GL_DEPTH_TEST)
 
-        if self._use_gizmo:
-            self._window.gizmo_draw()
+        if modal._use_gizmo:
+            modal._window.gizmo_draw()
 
         bgl.glDisable(bgl.GL_BLEND)
         bgl.glDisable(bgl.GL_VERTEX_PROGRAM_POINT_SIZE)
@@ -86,35 +86,35 @@ def draw_callback_3d(self, context):
     return
 
 
-def draw_callback_2d(self, context):
+def draw_callback_2d(modal, context):
     clear_draw = False
 
     try:
-        if self._modal_running == False:
+        if modal._modal_running == False:
             clear_draw = True
 
-        if context.area == self._draw_area:
+        if context.area == modal._draw_area:
             bgl.glLineWidth(2)
-            self.shader_2d.bind()
-            self.shader_2d.uniform_float("color", (0.05, 0.05, 0.05, 1))
-            self.batch_rotate_screen_lines.draw(self.shader_2d)
+            modal.shader_2d.bind()
+            modal.shader_2d.uniform_float("color", (0.05, 0.05, 0.05, 1))
+            modal.batch_rotate_screen_lines.draw(modal.shader_2d)
 
             bgl.glLineWidth(1)
-            self.shader_2d.bind()
-            self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
-            self.batch_boxsel_screen_lines.draw(self.shader_2d)
+            modal.shader_2d.bind()
+            modal.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
+            modal.batch_boxsel_screen_lines.draw(modal.shader_2d)
 
             bgl.glLineWidth(1)
-            self.shader_2d.bind()
-            self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
-            self.batch_circlesel_screen_lines.draw(self.shader_2d)
+            modal.shader_2d.bind()
+            modal.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
+            modal.batch_circlesel_screen_lines.draw(modal.shader_2d)
 
             bgl.glLineWidth(1)
-            self.shader_2d.bind()
-            self.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
-            self.batch_lassosel_screen_lines.draw(self.shader_2d)
+            modal.shader_2d.bind()
+            modal.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
+            modal.batch_lassosel_screen_lines.draw(modal.shader_2d)
 
-            self._window.draw()
+            modal._window.draw()
 
     except Exception:
         print()
@@ -142,33 +142,33 @@ def draw_callback_2d(self, context):
     return
 
 
-def clear_drawing(self):
+def clear_drawing(modal):
     try:
         bpy.types.SpaceView3D.draw_handler_remove(
-            self._draw_handle_2d, "WINDOW")
+            modal._draw_handle_2d, "WINDOW")
         bpy.types.SpaceView3D.draw_handler_remove(
-            self._draw_handle_3d, "WINDOW")
+            modal._draw_handle_3d, "WINDOW")
     except:
         pass
 
-    self._draw_handle_2d = None
-    self._draw_handle_3d = None
+    modal._draw_handle_2d = None
+    modal._draw_handle_3d = None
     return
 
 
-def viewport_change_cache(self, context):
+def viewport_change_cache(modal, context):
     if context.area.type == 'VIEW_3D':
         for space in context.area.spaces:
             if space.type == 'VIEW_3D':
-                self._reg_header = space.show_region_toolbar
-                self._reg_ui = space.show_region_ui
-                self._cursor = space.overlay.show_cursor
-                self._wireframe = space.overlay.show_wireframes
-                self._thresh = space.overlay.wireframe_threshold
-                self._text = space.overlay.show_text
+                modal._reg_header = space.show_region_toolbar
+                modal._reg_ui = space.show_region_ui
+                modal._cursor = space.overlay.show_cursor
+                modal._wireframe = space.overlay.show_wireframes
+                modal._thresh = space.overlay.wireframe_threshold
+                modal._text = space.overlay.show_text
 
-                self._use_wireframe_overlay = self._display_prefs.display_wireframe
-                space.overlay.show_wireframes = self._use_wireframe_overlay
+                modal._use_wireframe_overlay = modal._display_prefs.display_wireframe
+                space.overlay.show_wireframes = modal._use_wireframe_overlay
                 space.overlay.wireframe_threshold = 1.0
 
                 space.show_region_toolbar = False
@@ -182,41 +182,41 @@ def viewport_change_cache(self, context):
 #
 
 
-def start_active_drawing(self):
-    self._container.update_active()
-    self._container.update_static(exclude_active=True)
+def start_active_drawing(modal):
+    modal._container.update_active()
+    modal._container.update_static(exclude_active=True)
     return
 
 
-def end_active_drawing(self):
-    self._container.clear_active_batches()
-    self._container.update_static()
+def end_active_drawing(modal):
+    modal._container.clear_active_batches()
+    modal._container.update_static()
     return
 
 
-def end_selection_drawing(self):
-    self.selection_drawing = False
-    empty_selection_drawing_lists(self)
+def end_selection_drawing(modal):
+    modal.selection_drawing = False
+    empty_selection_drawing_lists(modal)
     return
 
 
-def create_selection_drawing_lists(self):
+def create_selection_drawing_lists(modal):
     # region outline calculation
-    rh = self.act_reg.height
-    rw = self.act_reg.width
+    rh = modal.act_reg.height
+    rw = modal.act_reg.width
 
     center = rw/2
 
     # CIRCLE SELECTION LINES
     circlesel_screen_lines = []
-    if self.circle_selecting or self.circle_resizing:
-        if self.circle_resizing:
-            cur_loc = Vector(self._mouse_init)
+    if modal.circle_selecting or modal.circle_resizing:
+        if modal.circle_resizing:
+            cur_loc = Vector(modal._mouse_init)
         else:
-            cur_loc = Vector(self._mouse_reg_loc)
+            cur_loc = Vector(modal._mouse_reg_loc)
 
         co = cur_loc.copy()
-        co[1] += self.circle_radius
+        co[1] += modal.circle_radius
         angle = math.radians(360/32)
 
         for i in range(32):
@@ -226,24 +226,24 @@ def create_selection_drawing_lists(self):
 
     # LASSO SELECTION LINES
     lassosel_screen_lines = []
-    if self.lasso_selecting:
-        for i in range(len(self._mode_cache[0])):
+    if modal.lasso_selecting:
+        for i in range(len(modal._mode_cache[0])):
             lassosel_screen_lines.append(
-                [self._mode_cache[0][i-1][0], self._mode_cache[0][i-1][1]])
+                [modal._mode_cache[0][i-1][0], modal._mode_cache[0][i-1][1]])
             lassosel_screen_lines.append(
-                [self._mode_cache[0][i][0], self._mode_cache[0][i][1]])
+                [modal._mode_cache[0][i][0], modal._mode_cache[0][i][1]])
 
     # BOX SELECTION LINES
     boxsel_screen_lines = []
-    if self.box_selecting:
+    if modal.box_selecting:
 
-        init_loc = Vector(self._mode_cache[0][0]).xy
-        cur_loc = Vector(self._mode_cache[0][1]).xy
+        init_loc = Vector(modal._mode_cache[0][0]).xy
+        cur_loc = Vector(modal._mode_cache[0][1]).xy
 
         top_right = Vector(
-            (self._mode_cache[0][1][0], self._mode_cache[0][0][1]))
+            (modal._mode_cache[0][1][0], modal._mode_cache[0][0][1]))
         bot_left = Vector(
-            (self._mode_cache[0][0][0], self._mode_cache[0][1][1]))
+            (modal._mode_cache[0][0][0], modal._mode_cache[0][1][1]))
 
         vec = init_loc-top_right
         start_co = top_right
@@ -267,10 +267,10 @@ def create_selection_drawing_lists(self):
 
     # ROTATION CENTER LINE
     rot_screen_lines = []
-    if self.rotating:
+    if modal.rotating:
         cent_loc = view3d_utils.location_3d_to_region_2d(
-            self.act_reg, self.act_rv3d, self._mode_cache[0])
-        cur_loc = Vector(self._mouse_reg_loc[:2])
+            modal.act_reg, modal.act_rv3d, modal._mode_cache[0])
+        cur_loc = Vector(modal._mouse_reg_loc[:2])
 
         vec = cur_loc-cent_loc
         start_co = cent_loc
@@ -278,27 +278,27 @@ def create_selection_drawing_lists(self):
         rot_screen_lines += dashed_lines
 
     # STORE 2D BATCHES
-    self.batch_boxsel_screen_lines = batch_for_shader(
-        self.shader_2d, 'LINES', {"pos": boxsel_screen_lines})
-    self.batch_lassosel_screen_lines = batch_for_shader(
-        self.shader_2d, 'LINES', {"pos": lassosel_screen_lines})
-    self.batch_circlesel_screen_lines = batch_for_shader(
-        self.shader_2d, 'LINES', {"pos": circlesel_screen_lines})
-    self.batch_rotate_screen_lines = batch_for_shader(
-        self.shader_2d, 'LINES', {"pos": rot_screen_lines})
+    modal.batch_boxsel_screen_lines = batch_for_shader(
+        modal.shader_2d, 'LINES', {"pos": boxsel_screen_lines})
+    modal.batch_lassosel_screen_lines = batch_for_shader(
+        modal.shader_2d, 'LINES', {"pos": lassosel_screen_lines})
+    modal.batch_circlesel_screen_lines = batch_for_shader(
+        modal.shader_2d, 'LINES', {"pos": circlesel_screen_lines})
+    modal.batch_rotate_screen_lines = batch_for_shader(
+        modal.shader_2d, 'LINES', {"pos": rot_screen_lines})
 
     return
 
 
-def empty_selection_drawing_lists(self):
+def empty_selection_drawing_lists(modal):
     # STORE 2D BATCHES
-    self.batch_boxsel_screen_lines = batch_for_shader(
-        self.shader_2d, 'LINES', {"pos": []})
-    self.batch_lassosel_screen_lines = batch_for_shader(
-        self.shader_2d, 'LINES', {"pos": []})
-    self.batch_circlesel_screen_lines = batch_for_shader(
-        self.shader_2d, 'LINES', {"pos": []})
-    self.batch_rotate_screen_lines = batch_for_shader(
-        self.shader_2d, 'LINES', {"pos": []})
+    modal.batch_boxsel_screen_lines = batch_for_shader(
+        modal.shader_2d, 'LINES', {"pos": []})
+    modal.batch_lassosel_screen_lines = batch_for_shader(
+        modal.shader_2d, 'LINES', {"pos": []})
+    modal.batch_circlesel_screen_lines = batch_for_shader(
+        modal.shader_2d, 'LINES', {"pos": []})
+    modal.batch_rotate_screen_lines = batch_for_shader(
+        modal.shader_2d, 'LINES', {"pos": []})
 
     return
