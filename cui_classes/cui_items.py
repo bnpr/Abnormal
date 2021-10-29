@@ -1850,6 +1850,8 @@ class CUIGizmo:
         self.hover = False
         self.in_use = False
 
+        self.prev_scale = 1.0
+
         self.bvh = None
 
         self.init_shape_data()
@@ -1897,9 +1899,15 @@ class CUIGizmo:
             cross_rco = view3d_utils.location_3d_to_region_2d(
                 region, rv3d, cross_co)
 
-            screen_dist = (cross_rco - cent_rco).length
+            if cent_rco is not None and cross_rco is not None:
+                screen_dist = (cross_rco - cent_rco).length
 
-            scale_fac = self.size/screen_dist * 0.5
+                scale_fac = self.size/screen_dist * 0.5
+
+                self.prev_scale = scale_fac
+
+            else:
+                scale_fac = self.prev_scale
 
         #
 
@@ -1992,9 +2000,8 @@ class CUIRotateGizmo(CUIGizmo):
         return scale_fac
 
     def update_rotation_fan(self, matrix, scale_fac, angle, start_ang=0):
-
-        angs = -angle * (np.arange(self.resolution,
-                                   dtype=np.float32) / self.resolution) + np.radians(start_ang)
+        angs = angle * (np.arange(self.resolution,
+                                  dtype=np.float32) / self.resolution) + start_ang + np.radians(90)
 
         self.fan_points[:] = 0.0
         self.fan_points[1:, 1] = 1.0
@@ -2003,9 +2010,10 @@ class CUIRotateGizmo(CUIGizmo):
         self.fan_points[1:, 1] = np.sin(angs) * self.fan_points[1:, 1]
 
         if self.axis == 0:
-            self.fan_points = self.fan_points[:, [2, 1, 0]]
+            self.fan_points = self.fan_points[:, [2, 0, 1]]
         if self.axis == 1:
             self.fan_points = self.fan_points[:, [0, 2, 1]]
+            self.fan_points[:, 1] *= -1
 
         self.fan_lines = self.fan_points[[0, 1, 0, -1]]
 
