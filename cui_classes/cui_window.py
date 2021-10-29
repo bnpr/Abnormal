@@ -1644,10 +1644,11 @@ class CUIMinimizablePanel(CUIPanel):
     #
 
     def draw(self):
-        if self.minimized:
-            self.minimized_button.draw()
-        else:
-            super().draw()
+        if self.visible:
+            if self.minimized:
+                self.minimized_button.draw()
+            else:
+                super().draw()
         return
 
     #
