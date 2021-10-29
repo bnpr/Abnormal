@@ -603,7 +603,6 @@ def init_ui_panels(modal, rw, rh, scale):
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Viewport Settings')
-        hbut.set_bev(3, 3)
         hbut.set_click_up_func(toggle_display_button)
         hbut.set_hover_down_func(display_panel_show)
         hbut.set_font_size(16)
@@ -719,7 +718,6 @@ def init_ui_panels(modal, rw, rh, scale):
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Symmetry')
-        hbut.set_bev(3, 3)
         hbut.set_click_up_func(toggle_symmetry_button)
         hbut.set_hover_down_func(symmetry_panel_show)
         hbut.set_font_size(16)
@@ -795,7 +793,6 @@ def init_ui_panels(modal, rw, rh, scale):
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Axis Alignment')
-        hbut.set_bev(3, 3)
         hbut.set_click_up_func(toggle_alignment_button)
         hbut.set_hover_down_func(alignment_panel_show)
         hbut.set_font_size(16)
@@ -886,7 +883,6 @@ def init_ui_panels(modal, rw, rh, scale):
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Normal Direction')
-        hbut.set_bev(3, 3)
         hbut.set_click_up_func(toggle_direction_button)
         hbut.set_hover_down_func(direction_panel_show)
         hbut.set_font_size(16)
@@ -941,7 +937,6 @@ def init_ui_panels(modal, rw, rh, scale):
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Modify Normals')
-        hbut.set_bev(3, 3)
         hbut.set_click_up_func(toggle_modify_button)
         hbut.set_hover_down_func(modify_panel_show)
         hbut.set_font_size(16)
@@ -1020,7 +1015,6 @@ def init_ui_panels(modal, rw, rh, scale):
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Copy/Paste Normals')
-        hbut.set_bev(3, 3)
         hbut.set_click_up_func(toggle_copy_button)
         hbut.set_hover_down_func(copy_panel_show)
         hbut.set_font_size(16)
@@ -1058,7 +1052,6 @@ def init_ui_panels(modal, rw, rh, scale):
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Normal Target Modes')
-        hbut.set_bev(3, 3)
         hbut.set_click_up_func(toggle_modes_button)
         hbut.set_hover_down_func(modes_panel_show)
         hbut.set_font_size(16)
