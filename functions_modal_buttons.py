@@ -600,6 +600,7 @@ def init_ui_panels(modal, rw, rh, scale):
         but.set_custom_id([1])
         but.set_click_up_func(end_modal)
 
+        box = modal._export_panel.add_box()
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Viewport Settings')
@@ -715,6 +716,7 @@ def init_ui_panels(modal, rw, rh, scale):
 
         #
 
+        box = modal._tools_panel.add_box()
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Symmetry')
@@ -790,6 +792,7 @@ def init_ui_panels(modal, rw, rh, scale):
         #
         #
 
+        box = modal._tools_panel.add_box()
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Axis Alignment')
@@ -880,6 +883,7 @@ def init_ui_panels(modal, rw, rh, scale):
         #
         #
 
+        box = modal._tools_panel.add_box()
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Normal Direction')
@@ -934,6 +938,7 @@ def init_ui_panels(modal, rw, rh, scale):
         #
         #
 
+        box = modal._tools_panel.add_box()
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Modify Normals')
@@ -1012,6 +1017,7 @@ def init_ui_panels(modal, rw, rh, scale):
         #
         #
 
+        box = modal._tools_panel.add_box()
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Copy/Paste Normals')
@@ -1049,6 +1055,7 @@ def init_ui_panels(modal, rw, rh, scale):
         #
         #
 
+        box = modal._tools_panel.add_box()
         row = box.add_row()
         hbut = row.add_hover_button(30,
                                     'Normal Target Modes')
@@ -1609,7 +1616,9 @@ def reset_vectors(modal, arguments):
 
 
 def save_preferences(modal, arguments):
+    arguments[0]._behavior_prefs.individual_loops = arguments[0]._individual_loops
     arguments[0]._behavior_prefs.rotate_gizmo_use = arguments[0]._use_gizmo
+
     arguments[0]._display_prefs.gizmo_size = arguments[0]._gizmo_size
     arguments[0]._display_prefs.normal_size = arguments[0]._normal_size
     arguments[0]._display_prefs.line_brightness = arguments[0]._line_brightness
@@ -1619,6 +1628,14 @@ def save_preferences(modal, arguments):
     arguments[0]._display_prefs.selected_scale = arguments[0]._selected_scale
     arguments[0]._display_prefs.display_wireframe = arguments[0]._use_wireframe_overlay
     arguments[0]._display_prefs.ui_scale = arguments[0]._ui_scale
+
+    arguments[0]._display_prefs.display_collapsed = not arguments[0]._display_box.visible
+    arguments[0]._display_prefs.symmetry_collapsed = not arguments[0]._symmetry_box.visible
+    arguments[0]._display_prefs.alignment_collapsed = not arguments[0]._alignment_box.visible
+    arguments[0]._display_prefs.direction_collapsed = not arguments[0]._direction_box.visible
+    arguments[0]._display_prefs.modify_collapsed = not arguments[0]._modify_box.visible
+    arguments[0]._display_prefs.copy_collapsed = not arguments[0]._copy_box.visible
+    arguments[0]._display_prefs.modes_collapsed = not arguments[0]._modes_box.visible
 
     bpy.ops.wm.save_userpref()
     return
