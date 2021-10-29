@@ -1390,6 +1390,12 @@ class CUIPanel(CUIBoxContainer):
         self.resizable = status
         return
 
+    def set_visibility(self, status):
+        super().set_visibility(status)
+        if status == False:
+            self.clear_hover()
+        return
+
     #
 
     def __str__(self):

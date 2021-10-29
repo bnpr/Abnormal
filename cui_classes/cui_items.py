@@ -1826,7 +1826,9 @@ class CUIGizmo3DContainer:
         return
 
     def set_visibility(self, status):
-        self.visible = status
+        super().set_visibility(status)
+        if status == False:
+            self.clear_hover()
         return
 
     #
