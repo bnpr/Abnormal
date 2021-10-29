@@ -1993,8 +1993,8 @@ class CUIRotateGizmo(CUIGizmo):
 
     def update_rotation_fan(self, matrix, scale_fac, angle, start_ang=0):
 
-        angs = np.radians(angle) * (np.arange(self.resolution,
-                                              dtype=np.float32) / self.resolution) + np.radians(start_ang)
+        angs = -angle * (np.arange(self.resolution,
+                                   dtype=np.float32) / self.resolution) + np.radians(start_ang)
 
         self.fan_points[:] = 0.0
         self.fan_points[1:, 1] = 1.0
