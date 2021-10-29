@@ -1159,8 +1159,8 @@ def gizmo_click_init(self, event, giz_status):
         # Cache current normals before rotation starts and setup gizmo as being used
         if event.alt == False:
 
-            for gizmo in self._window.gizmo_sets[giz_status[1]].gizmos:
-                if gizmo.index != giz_status[2]:
+            for g, gizmo in enumerate(self._window.gizmo_sets[giz_status[1]].gizmos):
+                if g != giz_status[2]:
                     gizmo.active = False
                 else:
                     gizmo.in_use = True
