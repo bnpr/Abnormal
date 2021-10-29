@@ -142,6 +142,8 @@ def keymap_initialize(self):
     kt.add_text_row(sep_height, '')
 
     kt.add_text_row(text_height, keymap_string_find(
+        self.keymap.keymap_items, 'Sharpen Edge'))
+    kt.add_text_row(text_height, keymap_string_find(
         self.keymap.keymap_items, 'Smooth Normals'))
     kt.add_text_row(text_height, keymap_string_find(
         self.keymap.keymap_items, 'Set Normals From Faces'))

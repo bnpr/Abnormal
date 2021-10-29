@@ -170,6 +170,8 @@ def init_ui_panels(self, rw, rh, scale):
         self.sphere_strength.set_slide_factor(2)
         self.sphere_strength.set_value_change_func(change_sphereize_strength)
 
+    #
+
     # DISPLAY SETTINGS PANEL
     if True:
         panel = self._window.add_subpanel_popup(
@@ -245,81 +247,48 @@ def init_ui_panels(self, rw, rh, scale):
         but = row.add_button(20, 'Save Addon Preferences')
         but.set_click_up_func(save_preferences)
 
-    # EXPORT PANEL
+    # SYMMETRY PANEL
     if True:
-        self._export_panel = self._window.add_panel(
-            [rw-25, rh-75], 250)
-        self._export_panel.set_separation(8)
-        self._export_panel.set_horizontal_alignment('RIGHT')
-        self._export_panel.add_header(
-            True, 'Addon Settings', 30, False)
-        self._export_panel.set_header_font_size(20)
-        self._export_panel.set_height_min_max(
-            max=self.act_reg.height*0.95)
-        self._export_panel.header.set_draw_box(False)
+        panel = self._window.add_subpanel_popup(
+            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
+        self._symmetry_panel = panel
+        panel.set_separation(8)
+        panel.set_horizontal_alignment('LEFT')
+        panel.set_visibility(False)
+        panel.set_close_on_click(False)
+        panel.set_close_margin(2)
+        panel.set_height_min_max(
+            max=bpy.context.region.height*0.9)
 
-        box = self._export_panel.add_box()
+        box = self._symmetry_panel.add_box()
+
+        box.add_text_row(20, 'Mirror Selected Normals:', font_size=12)
+
         row = box.add_row()
-        but = row.add_button(20, 'Confirm Changes')
+        but = row.add_button(20, 'X')
         but.set_custom_id([0])
-        but.set_click_up_func(end_modal)
+        but.set_width_min_max(max=35)
+        but.set_click_up_func(mirror_selection)
+        but.add_tooltip_text_line(
+            'Mirror selected normals on the X axis')
 
-        but = row.add_button(20, 'Cancel Changes')
+        but = row.add_button(20, 'Y')
         but.set_custom_id([1])
-        but.set_click_up_func(end_modal)
+        but.set_width_min_max(max=35)
+        but.set_click_up_func(mirror_selection)
+        but.add_tooltip_text_line(
+            'Mirror selected normals on the Y axis')
+
+        but = row.add_button(20, 'Z')
+        but.set_custom_id([2])
+        but.set_width_min_max(max=35)
+        but.set_click_up_func(mirror_selection)
+        but.add_tooltip_text_line(
+            'Mirror selected normals on the Z axis')
+
+        box.add_text_row(20, 'Auto Mirror Axis:', font_size=12)
 
         row = box.add_row()
-        hbut = row.add_hover_button(30,
-                                    'VIEWPORT SETTINGS')
-        hbut.set_bev(3, 3)
-        hbut.set_hover_down_func(display_panel_show)
-        # hbut.set_hover_up_func(display_panel_hide)
-        hbut.set_font_size(16)
-
-        self._display_panel.set_hover_ref(row)
-
-        box = self._export_panel.add_box()
-        box.add_header(True, 'Keymap', 20, False)
-        box.set_header_font_size(14)
-        box.set_collapsed(True)
-        self._keymap_box = box.add_box()
-        keymap_initialize(self)
-
-    # TOOLS PANEL
-    if True:
-        self._tools_panel = self._window.add_panel([25, rh-75], 275)
-        self._tools_panel.set_separation(8)
-        self._tools_panel.set_horizontal_alignment('LEFT')
-        self._tools_panel.add_header(True, 'Abnormal', 30, False)
-        self._tools_panel.set_header_font_size(20)
-        self._tools_panel.set_height_min_max(
-            max=self.act_reg.height*0.95)
-        self._tools_panel.set_header_icon_image(
-            'AbLogo.png', __file__)
-        self._tools_panel.set_header_icon_data(
-            width=35, height=35)
-        self._tools_panel.header.set_draw_box(False)
-
-        box = self._tools_panel.add_box()
-        box.add_header(True, 'Settings', 20, False)
-        box.header.set_draw_box(False)
-        box.set_header_font_size(14)
-
-        row = box.add_row()
-        bool = row.add_bool(20, 'Edit Individual Loop Normals',
-                            default=self._individual_loops)
-        bool.set_click_up_func(toggle_individual_loops)
-        bool.add_tooltip_text_line(
-            'Allows enabling each separate face corner normal')
-        bool.add_tooltip_text_line(
-            'instead of every face normal connected to a vertex')
-
-        row = box.add_row()
-
-        row = box.add_row()
-        label = row.add_label(20, 'Mirror Axis: ')
-        label.set_width_min_max(max=100)
-
         bool = row.add_bool(20, 'X', default=self._mirror_x)
         bool.set_custom_id([0])
         bool.set_width_min_max(max=50)
@@ -347,35 +316,20 @@ def init_ui_panels(self, rw, rh, scale):
         # num.set_slide_factor(2)
         # num.set_value_change_func(change_mirror_range)
 
-        box = self._tools_panel.add_box()
-        box.add_header(True, 'Axis Alignment', 20, False)
-        box.header.set_draw_box(False)
-        box.set_header_font_size(14)
+    # ALIGNMENT PANEL
+    if True:
+        panel = self._window.add_subpanel_popup(
+            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
+        self._alignment_panel = panel
+        panel.set_separation(8)
+        panel.set_horizontal_alignment('LEFT')
+        panel.set_visibility(False)
+        panel.set_close_on_click(False)
+        panel.set_close_margin(2)
+        panel.set_height_min_max(
+            max=bpy.context.region.height*0.9)
 
-        row = box.add_row()
-        label = row.add_label(20, 'Mirror Normals: ')
-        label.set_width_min_max(max=100)
-
-        but = row.add_button(20, 'X')
-        but.set_custom_id([0])
-        but.set_width_min_max(max=35)
-        but.set_click_up_func(mirror_selection)
-        but.add_tooltip_text_line(
-            'Mirror selected normals on the X axis')
-
-        but = row.add_button(20, 'Y')
-        but.set_custom_id([1])
-        but.set_width_min_max(max=35)
-        but.set_click_up_func(mirror_selection)
-        but.add_tooltip_text_line(
-            'Mirror selected normals on the Y axis')
-
-        but = row.add_button(20, 'Z')
-        but.set_custom_id([2])
-        but.set_width_min_max(max=35)
-        but.set_click_up_func(mirror_selection)
-        but.add_tooltip_text_line(
-            'Mirror selected normals on the Z axis')
+        box = self._alignment_panel.add_box()
 
         box.add_text_row(20, 'Flatten Normals on Axis', font_size=12)
 
@@ -446,10 +400,20 @@ def init_ui_panels(self, rw, rh, scale):
         but.add_tooltip_text_line(
             'Set selected normals to the local negative Z axis')
 
-        box = self._tools_panel.add_box()
-        box.add_header(True, 'Normal Direction', 20, False)
-        box.header.set_draw_box(False)
-        box.set_header_font_size(14)
+    # NORMAL DIRECTION PANEL
+    if True:
+        panel = self._window.add_subpanel_popup(
+            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
+        self._direction_panel = panel
+        panel.set_separation(8)
+        panel.set_horizontal_alignment('LEFT')
+        panel.set_visibility(False)
+        panel.set_close_on_click(False)
+        panel.set_close_margin(2)
+        panel.set_height_min_max(
+            max=bpy.context.region.height*0.9)
+
+        box = self._direction_panel.add_box()
 
         row = box.add_row()
         but = row.add_button(20, 'Flip Normals')
@@ -484,10 +448,20 @@ def init_ui_panels(self, rw, rh, scale):
         but.add_tooltip_text_line(
             'Useful for creating hard edges based on which faces are selected')
 
-        box = self._tools_panel.add_box()
-        box.add_header(True, 'Manipulate Normals', 20, False)
-        box.header.set_draw_box(False)
-        box.set_header_font_size(14)
+    # MODIFY NORMALS PANEL
+    if True:
+        panel = self._window.add_subpanel_popup(
+            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
+        self._modify_panel = panel
+        panel.set_separation(8)
+        panel.set_horizontal_alignment('LEFT')
+        panel.set_visibility(False)
+        panel.set_close_on_click(False)
+        panel.set_close_margin(2)
+        panel.set_height_min_max(
+            max=bpy.context.region.height*0.9)
+
+        box = self._modify_panel.add_box()
 
         row = box.add_row()
         self._gizmo_bool = row.add_bool(20, 'Use Rotation Gizmo',
@@ -512,11 +486,11 @@ def init_ui_panels(self, rw, rh, scale):
         but.add_tooltip_text_line(
             'Smooth selected normals with their connected points')
 
-        row = box.add_row()
-        but = row.add_button(20, 'Sharpen Selected Edges')
-        but.set_click_up_func(sharpen_edges)
-        but.add_tooltip_text_line(
-            'Create shape normal transitions based on fully selected points')
+        # row = box.add_row()
+        # but = row.add_button(20, 'Sharpen Selected Edges')
+        # but.set_click_up_func(sharpen_edges)
+        # but.add_tooltip_text_line(
+        #     'Create shape normal transitions based on fully selected points')
 
         row = box.add_row()
         num = row.add_number(
@@ -546,10 +520,20 @@ def init_ui_panels(self, rw, rh, scale):
         but.add_tooltip_text_line(
             'Set the object to Flat Shading while preserving the current normals')
 
-        box = self._tools_panel.add_box()
-        box.add_header(True, 'Copy/Paste Normals', 20, False)
-        box.header.set_draw_box(False)
-        box.set_header_font_size(14)
+    # COPY/PASTE PANEL
+    if True:
+        panel = self._window.add_subpanel_popup(
+            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
+        self._copy_panel = panel
+        panel.set_separation(8)
+        panel.set_horizontal_alignment('LEFT')
+        panel.set_visibility(False)
+        panel.set_close_on_click(False)
+        panel.set_close_margin(2)
+        panel.set_height_min_max(
+            max=bpy.context.region.height*0.9)
+
+        box = self._copy_panel.add_box()
 
         row = box.add_row()
         but = row.add_button(20, 'Copy Active Normal to Selected')
@@ -567,10 +551,20 @@ def init_ui_panels(self, rw, rh, scale):
         but.add_tooltip_text_line(
             'Paste the stored loop/vertex normal onto selected points')
 
-        box = self._tools_panel.add_box()
-        box.add_header(True, 'Target Normals', 20, False)
-        box.header.set_draw_box(False)
-        box.set_header_font_size(14)
+    # TARGET MODES PANEL
+    if True:
+        panel = self._window.add_subpanel_popup(
+            [self._mouse_reg_loc[0], self._mouse_reg_loc[1]], 250)
+        self._modes_panel = panel
+        panel.set_separation(8)
+        panel.set_horizontal_alignment('LEFT')
+        panel.set_visibility(False)
+        panel.set_close_on_click(False)
+        panel.set_close_margin(2)
+        panel.set_height_min_max(
+            max=bpy.context.region.height*0.9)
+
+        box = self._modes_panel.add_box()
 
         row = box.add_row()
         but = row.add_button(20, 'Sphereize Normals')
@@ -582,6 +576,506 @@ def init_ui_panels(self, rw, rh, scale):
         but.set_click_up_func(begin_point_mode)
         but.add_tooltip_text_line(
             'Start the Point Normals at Target mode')
+
+    # EXPORT PANEL
+    if True:
+        self._export_panel = self._window.add_panel(
+            [rw-25, rh-75], 250)
+        self._export_panel.set_separation(8)
+        self._export_panel.set_horizontal_alignment('RIGHT')
+        self._export_panel.add_header(
+            True, 'Addon Settings', 30, False)
+        self._export_panel.set_header_font_size(20)
+        self._export_panel.set_height_min_max(
+            max=self.act_reg.height*0.95)
+        self._export_panel.header.set_draw_box(False)
+
+        box = self._export_panel.add_box()
+        row = box.add_row()
+        but = row.add_button(20, 'Confirm Changes')
+        but.set_custom_id([0])
+        but.set_click_up_func(end_modal)
+
+        but = row.add_button(20, 'Cancel Changes')
+        but.set_custom_id([1])
+        but.set_click_up_func(end_modal)
+
+        row = box.add_row()
+        hbut = row.add_hover_button(30,
+                                    'Viewport Settings')
+        hbut.set_bev(3, 3)
+        hbut.set_click_up_func(toggle_display_button)
+        hbut.set_hover_down_func(display_panel_show)
+        hbut.set_font_size(16)
+
+        self._display_panel.set_hover_ref(row)
+
+        if True:
+            boxx = box.add_box()
+
+            boxx.set_visibility(False)
+            row = boxx.add_row()
+            bool = row.add_bool(20, 'Show Only Selected Normals',
+                                default=self._selected_only)
+            bool.set_click_up_func(toggle_show_only_selected)
+
+            row = boxx.add_row()
+            bool = row.add_bool(20, 'Scale Up Selected Normals',
+                                default=self._selected_scale)
+            bool.set_click_up_func(toggle_selected_scale)
+
+            row = boxx.add_row()
+            self._xray_bool = row.add_bool(
+                20, 'X-Ray', default=self._x_ray_mode)
+            self._xray_bool.set_click_up_func(toggle_x_ray)
+
+            row = boxx.add_row()
+            num = row.add_number(
+                20, 'Normals Length', self._normal_size, 2, .01, .01, 10.0)
+            num.set_slide_factor(2)
+            num.set_value_change_func(change_normal_size)
+
+            row = boxx.add_row()
+            num = row.add_number(
+                20, 'Normals Brightness', self._line_brightness, 2, .01, .01, 2.0)
+            num.set_slide_factor(2)
+            num.set_value_change_func(change_line_brightness)
+
+            row = boxx.add_row()
+            num = row.add_number(
+                20, 'Vertex Point Size', self._point_size, 1, .1, .1, 10.0)
+            num.set_slide_factor(2)
+            num.set_value_change_func(change_point_size)
+
+            row = boxx.add_row()
+            num = row.add_number(
+                20, 'Loop Size', self._loop_tri_size, 2, .1, 0.0, 1.0)
+            num.set_slide_factor(2)
+            num.set_value_change_func(change_loop_tri_size)
+
+            row = boxx.add_row()
+            bool = row.add_bool(20, 'Display Wireframe',
+                                default=self._use_wireframe_overlay)
+            bool.set_click_up_func(toggle_wireframe)
+
+            row = boxx.add_row()
+            num = row.add_number(
+                20, 'Gizmo Size', self._gizmo_size, 0, 10, 100, 1000)
+            num.set_slide_factor(2)
+            num.set_value_change_func(change_gizmo_size)
+
+            row = boxx.add_row()
+            num = row.add_number(
+                20, 'UI Scale', self._ui_scale, 2, .1, 0.5, 3.0)
+            num.set_slide_factor(2)
+            num.set_value_change_func(change_ui_scale)
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Save Addon Preferences')
+            but.set_click_up_func(save_preferences)
+
+            self._display_box = boxx
+
+        box = self._export_panel.add_box()
+        box.add_header(True, 'Keymap', 20, False)
+        box.set_header_font_size(14)
+        box.set_collapsed(True)
+        self._keymap_box = box.add_box()
+        keymap_initialize(self)
+
+    # TOOLS PANEL
+    if True:
+        self._tools_panel = self._window.add_panel([25, rh-75], 275)
+        self._tools_panel.set_separation(8)
+        self._tools_panel.set_horizontal_alignment('LEFT')
+        self._tools_panel.add_header(True, 'Abnormal', 30, False)
+        self._tools_panel.set_header_font_size(20)
+        self._tools_panel.set_height_min_max(
+            max=self.act_reg.height*0.95)
+        self._tools_panel.set_header_icon_image(
+            'AbLogo.png', __file__)
+        self._tools_panel.set_header_icon_data(
+            width=35, height=35)
+        self._tools_panel.header.set_draw_box(False)
+
+        #
+        #
+        #
+
+        box = self._tools_panel.add_box()
+
+        row = box.add_row()
+        bool = row.add_bool(20, 'Edit Individual Loop Normals',
+                            default=self._individual_loops)
+        bool.set_click_up_func(toggle_individual_loops)
+        bool.add_tooltip_text_line(
+            'Allows enabling each separate face corner normal')
+        bool.add_tooltip_text_line(
+            'instead of every face normal connected to a vertex')
+
+        #
+
+        row = box.add_row()
+        hbut = row.add_hover_button(30,
+                                    'Symmetry')
+        hbut.set_bev(3, 3)
+        hbut.set_click_up_func(toggle_symmetry_button)
+        hbut.set_hover_down_func(symmetry_panel_show)
+        hbut.set_font_size(16)
+
+        self._symmetry_panel.set_hover_ref(row)
+
+        if True:
+            boxx = box.add_box()
+
+            boxx.set_visibility(False)
+
+            boxx.add_text_row(20, 'Mirror Selected Normals:', font_size=12)
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'X')
+            but.set_custom_id([0])
+            but.set_width_min_max(max=35)
+            but.set_click_up_func(mirror_selection)
+            but.add_tooltip_text_line(
+                'Mirror selected normals on the X axis')
+
+            but = row.add_button(20, 'Y')
+            but.set_custom_id([1])
+            but.set_width_min_max(max=35)
+            but.set_click_up_func(mirror_selection)
+            but.add_tooltip_text_line(
+                'Mirror selected normals on the Y axis')
+
+            but = row.add_button(20, 'Z')
+            but.set_custom_id([2])
+            but.set_width_min_max(max=35)
+            but.set_click_up_func(mirror_selection)
+            but.add_tooltip_text_line(
+                'Mirror selected normals on the Z axis')
+
+            boxx.add_text_row(20, 'Auto Mirror Axis:', font_size=12)
+
+            row = boxx.add_row()
+            bool = row.add_bool(20, 'X', default=self._mirror_x)
+            bool.set_custom_id([0])
+            bool.set_width_min_max(max=50)
+            bool.set_click_up_func(toggle_mirror_axis)
+            bool.add_tooltip_text_line(
+                'Auto mirror normals as you edit on the X axis')
+
+            bool = row.add_bool(20, 'Y', default=self._mirror_y)
+            bool.set_custom_id([1])
+            bool.set_width_min_max(max=50)
+            bool.set_click_up_func(toggle_mirror_axis)
+            bool.add_tooltip_text_line(
+                'Auto mirror normals as you edit on the Y axis')
+
+            bool = row.add_bool(20, 'Z', default=self._mirror_z)
+            bool.set_custom_id([2])
+            bool.set_width_min_max(max=50)
+            bool.set_click_up_func(toggle_mirror_axis)
+            bool.add_tooltip_text_line(
+                'Auto mirror normals as you edit on the Z axis')
+
+            # row = boxx.add_row()
+            # num = row.add_number(
+            #     20, 'Mirror Search Range', self._mirror_range, 2, .1, .01, 5.0)
+            # num.set_slide_factor(2)
+            # num.set_value_change_func(change_mirror_range)
+
+            self._symmetry_box = boxx
+
+        #
+        #
+        #
+
+        row = box.add_row()
+        hbut = row.add_hover_button(30,
+                                    'Axis Alignment')
+        hbut.set_bev(3, 3)
+        hbut.set_click_up_func(toggle_alignment_button)
+        hbut.set_hover_down_func(alignment_panel_show)
+        hbut.set_font_size(16)
+
+        self._alignment_panel.set_hover_ref(row)
+
+        if True:
+            boxx = box.add_box()
+
+            boxx.set_visibility(False)
+
+            boxx.add_text_row(20, 'Flatten Normals on Axis', font_size=12)
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'X')
+            but.set_custom_id([0])
+            but.set_width_min_max(max=35)
+            but.set_click_up_func(flatten_axis)
+            but.add_tooltip_text_line(
+                'Set selected normals to 0 on the X axis')
+
+            but = row.add_button(20, 'Y')
+            but.set_custom_id([1])
+            but.set_width_min_max(max=35)
+            but.set_click_up_func(flatten_axis)
+            but.add_tooltip_text_line(
+                'Set selected normals to 0 on the Y axis')
+
+            but = row.add_button(20, 'Z')
+            but.set_custom_id([2])
+            but.set_width_min_max(max=35)
+            but.set_click_up_func(flatten_axis)
+            but.add_tooltip_text_line(
+                'Set selected normals to 0 on the Z axis')
+
+            boxx.add_text_row(20, 'Align to Axis', font_size=12)
+
+            row = boxx.add_row()
+            but = row.add_button(20, '+X')
+            but.set_custom_id([0])
+            but.set_width_min_max(max=35)
+            but.set_click_up_func(algin_to_axis)
+            but.add_tooltip_text_line(
+                'Set selected normals to the local positive X axis')
+
+            but = row.add_button(20, '-X')
+            but.set_custom_id([1])
+            but.set_width_min_max(max=35)
+            but.set_click_up_func(algin_to_axis)
+            but.add_tooltip_text_line(
+                'Set selected normals to the local negative X axis')
+
+            but = row.add_button(20, '+Y')
+            but.set_custom_id([2])
+            but.set_width_min_max(max=35)
+            but.set_click_up_func(algin_to_axis)
+            but.add_tooltip_text_line(
+                'Set selected normals to the local positive Y axis')
+
+            but = row.add_button(20, '-Y')
+            but.set_custom_id([3])
+            but.set_width_min_max(max=35)
+            but.set_click_up_func(algin_to_axis)
+            but.add_tooltip_text_line(
+                'Set selected normals to the local negative Y axis')
+
+            but = row.add_button(20, '+Z')
+            but.set_custom_id([4])
+            but.set_width_min_max(max=35)
+            but.set_click_up_func(algin_to_axis)
+            but.add_tooltip_text_line(
+                'Set selected normals to the local positive Z axis')
+
+            but = row.add_button(20, '-Z')
+            but.set_custom_id([5])
+            but.set_width_min_max(max=35)
+            but.set_click_up_func(algin_to_axis)
+            but.add_tooltip_text_line(
+                'Set selected normals to the local negative Z axis')
+
+            self._alignment_box = boxx
+
+        #
+        #
+        #
+
+        row = box.add_row()
+        hbut = row.add_hover_button(30,
+                                    'Normal Direction')
+        hbut.set_bev(3, 3)
+        hbut.set_click_up_func(toggle_direction_button)
+        hbut.set_hover_down_func(direction_panel_show)
+        hbut.set_font_size(16)
+
+        self._direction_panel.set_hover_ref(row)
+
+        if True:
+            boxx = box.add_box()
+
+            boxx.set_visibility(False)
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Flip Normals')
+            but.set_click_up_func(flip_selection)
+            but.add_tooltip_text_line(
+                'Set selected normals to the opposite direction')
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Set Outside')
+            but.set_custom_id([0])
+            but.set_click_up_func(set_direction)
+            but.add_tooltip_text_line(
+                'Set selected normals to pointing towards the outside face direction')
+
+            but = row.add_button(20, 'Set Inside')
+            but.set_custom_id([1])
+            but.set_click_up_func(set_direction)
+            but.add_tooltip_text_line(
+                'Set selected normals to pointing towards the inside face direction')
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Reset Vectors')
+            but.set_click_up_func(reset_vectors)
+            but.add_tooltip_text_line(
+                'Reset selected normals to their original direction when you started Abnormal')
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Set Normals From Faces')
+            but.set_click_up_func(set_from_faces)
+            but.add_tooltip_text_line(
+                'Set normals for all selected normals based on what faces are selected')
+            but.add_tooltip_text_line(
+                'Useful for creating hard edges based on which faces are selected')
+
+            self._direction_box = boxx
+
+        #
+        #
+        #
+
+        row = box.add_row()
+        hbut = row.add_hover_button(30,
+                                    'Modify Normals')
+        hbut.set_bev(3, 3)
+        hbut.set_click_up_func(toggle_modify_button)
+        hbut.set_hover_down_func(modify_panel_show)
+        hbut.set_font_size(16)
+
+        self._modify_panel.set_hover_ref(row)
+
+        if True:
+            boxx = box.add_box()
+
+            boxx.set_visibility(False)
+
+            row = boxx.add_row()
+            self._gizmo_bool = row.add_bool(20, 'Use Rotation Gizmo',
+                                            default=self._use_gizmo)
+            self._gizmo_bool.set_click_up_func(toggle_use_gizmo)
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Average Individual Vertex Normals')
+            but.set_click_up_func(average_individual)
+            but.add_tooltip_text_line(
+                'Average the individual face corner normals of each selected vertex')
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Average All Selected Normals')
+            but.set_click_up_func(average_selection)
+            but.add_tooltip_text_line(
+                'Average the normals of all selected normals into 1 direction')
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Smooth Selected Normals')
+            but.set_click_up_func(smooth_selection)
+            but.add_tooltip_text_line(
+                'Smooth selected normals with their connected points')
+
+            # row = boxx.add_row()
+            # but = row.add_button(20, 'Sharpen Selected Edges')
+            # but.set_click_up_func(sharpen_edges)
+            # but.add_tooltip_text_line(
+            #     'Create shape normal transitions based on fully selected points')
+
+            row = boxx.add_row()
+            num = row.add_number(
+                20, 'Smooth Strength', self._smooth_strength, 2, .1, .01, 5.0)
+            num.set_slide_factor(15)
+            num.set_value_change_func(change_smooth_strength)
+            num.add_tooltip_text_line(
+                'Strength of each smooth iteration')
+
+            num = row.add_number(
+                20, 'Smooth Iterations', self._smooth_iterations, 0, 1, 1, 25)
+            num.set_slide_factor(15)
+            num.set_value_change_func(change_smooth_iterations)
+            num.add_tooltip_text_line(
+                'Number of times to smooth the selected normals')
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Set Smooth Shading')
+            but.set_custom_id([0])
+            but.set_click_up_func(change_shading)
+            but.add_tooltip_text_line(
+                'Set the object to Smooth Shading while preserving the current normals')
+
+            but = row.add_button(20, 'Set Flat Shading')
+            but.set_custom_id([1])
+            but.set_click_up_func(change_shading)
+            but.add_tooltip_text_line(
+                'Set the object to Flat Shading while preserving the current normals')
+
+            self._modify_box = boxx
+
+        #
+        #
+        #
+
+        row = box.add_row()
+        hbut = row.add_hover_button(30,
+                                    'Copy/Paste Normals')
+        hbut.set_bev(3, 3)
+        hbut.set_click_up_func(toggle_copy_button)
+        hbut.set_hover_down_func(copy_panel_show)
+        hbut.set_font_size(16)
+
+        self._copy_panel.set_hover_ref(row)
+
+        if True:
+            boxx = box.add_box()
+
+            boxx.set_visibility(False)
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Copy Active Normal to Selected')
+            but.set_click_up_func(active_to_selection)
+            but.add_tooltip_text_line(
+                'Copy the active loop/vertex normal onto selected points')
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Store Active Normal')
+            but.set_click_up_func(store_active)
+            but.add_tooltip_text_line(
+                'Stores the active loop/vertex normal for pasting')
+            but = row.add_button(20, 'Paste Stored Normal')
+            but.set_click_up_func(paste_stored)
+            but.add_tooltip_text_line(
+                'Paste the stored loop/vertex normal onto selected points')
+
+            self._copy_box = boxx
+
+        #
+        #
+        #
+
+        row = box.add_row()
+        hbut = row.add_hover_button(30,
+                                    'Normal Target Modes')
+        hbut.set_bev(3, 3)
+        hbut.set_click_up_func(toggle_modes_button)
+        hbut.set_hover_down_func(modes_panel_show)
+        hbut.set_font_size(16)
+
+        self._modes_panel.set_hover_ref(row)
+
+        if True:
+            boxx = box.add_box()
+
+            boxx.set_visibility(False)
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Sphereize Normals')
+            but.set_click_up_func(begin_sphereize_mode)
+            but.add_tooltip_text_line(
+                'Start the Sphereize Normals mode')
+            row = boxx.add_row()
+            but = row.add_button(20, 'Point Normals at Target')
+            but.set_click_up_func(begin_point_mode)
+            but.add_tooltip_text_line(
+                'Start the Point Normals at Target mode')
+
+            self._modes_box = boxx
 
     self._window.set_scale(self._ui_scale)
     self._window.create_shape_data()
@@ -634,6 +1128,9 @@ def change_line_brightness(self, arguments):
     arguments[0]._line_brightness = self.value
     arguments[0]._container.set_brightess(
         arguments[0]._line_brightness)
+
+    if arguments[0]._container.mac_shader:
+        arguments[0].redraw = True
     return
 
 
@@ -771,32 +1268,186 @@ def toggle_individual_loops(self, arguments):
 #
 
 
-def display_panel_show(ui_item, arguments):
-    ref_item = arguments[0]._display_panel.hover_ref
+def repos_subpanel(panel, button, modal):
+    ref_item = panel.hover_ref
 
-    pos = [ref_item.final_pos[0]+ui_item.scale_width, ref_item.final_pos[1]]
+    pos = [ref_item.final_pos[0]+button.scale_width, ref_item.final_pos[1]]
 
-    if pos[0] + arguments[0]._display_panel.scale_width > arguments[0]._window.dimensions[0]:
+    if pos[0] + panel.scale_width > modal._window.dimensions[0]:
         pos = [ref_item.final_pos[0] -
-               arguments[0]._display_panel.scale_width, ref_item.final_pos[1]]
+               panel.scale_width, ref_item.final_pos[1]]
 
-    arguments[0]._display_panel.set_new_position(
-        pos, arguments[0]._window.dimensions)
+    panel.set_new_position(
+        pos, modal._window.dimensions)
 
-    arguments[0]._display_panel.set_visibility(True)
+    panel.set_visibility(True)
+    return
 
-    arguments[0]._current_tool = arguments[0]._popup_tool
-    arguments[0]._popup_panel = arguments[0]._display_panel
+
+def toggle_display_button(ui_item, arguments):
+    arguments[0]._display_box.set_visibility(
+        not arguments[0]._display_box.visible)
+
+    ui_item.set_bool(not ui_item.bool)
+    if arguments[0]._display_box.visible == False:
+        repos_subpanel(arguments[0]._display_panel, ui_item, arguments[0])
+    else:
+        arguments[0]._display_panel.set_visibility(False)
+
+    arguments[0]._export_panel.create_shape_data()
+    return
+
+
+def display_panel_show(ui_item, arguments):
+    if ui_item.bool == False:
+        repos_subpanel(arguments[0]._display_panel, ui_item, arguments[0])
+
+    else:
+        arguments[0]._display_panel.set_visibility(False)
 
     return
 
 
-def display_panel_hide(ui_item, arguments):
-    if arguments[0]._display_panel.hover == False:
-        arguments[0]._display_panel.set_visibility(False)
+def toggle_symmetry_button(ui_item, arguments):
+    arguments[0]._symmetry_box.set_visibility(
+        not arguments[0]._symmetry_box.visible)
 
-        arguments[0]._current_tool = arguments[0]._ui_tool
-        arguments[0]._popup_panel = None
+    ui_item.set_bool(not ui_item.bool)
+    if arguments[0]._symmetry_box.visible == False:
+        repos_subpanel(arguments[0]._symmetry_panel, ui_item, arguments[0])
+    else:
+        arguments[0]._symmetry_panel.set_visibility(False)
+
+    arguments[0]._tools_panel.create_shape_data()
+    return
+
+
+def symmetry_panel_show(ui_item, arguments):
+    if ui_item.bool == False:
+        repos_subpanel(arguments[0]._symmetry_panel, ui_item, arguments[0])
+
+    else:
+        arguments[0]._symmetry_panel.set_visibility(False)
+
+    return
+
+
+def toggle_alignment_button(ui_item, arguments):
+    arguments[0]._alignment_box.set_visibility(
+        not arguments[0]._alignment_box.visible)
+
+    ui_item.set_bool(not ui_item.bool)
+    if arguments[0]._alignment_box.visible == False:
+        repos_subpanel(arguments[0]._alignment_panel, ui_item, arguments[0])
+    else:
+        arguments[0]._alignment_panel.set_visibility(False)
+
+    arguments[0]._tools_panel.create_shape_data()
+    return
+
+
+def alignment_panel_show(ui_item, arguments):
+    if ui_item.bool == False:
+        repos_subpanel(arguments[0]._alignment_panel, ui_item, arguments[0])
+
+    else:
+        arguments[0]._alignment_panel.set_visibility(False)
+
+    return
+
+
+def toggle_direction_button(ui_item, arguments):
+    arguments[0]._direction_box.set_visibility(
+        not arguments[0]._direction_box.visible)
+
+    ui_item.set_bool(not ui_item.bool)
+    if arguments[0]._direction_box.visible == False:
+        repos_subpanel(arguments[0]._direction_panel, ui_item, arguments[0])
+    else:
+        arguments[0]._direction_panel.set_visibility(False)
+
+    arguments[0]._tools_panel.create_shape_data()
+    return
+
+
+def direction_panel_show(ui_item, arguments):
+    if ui_item.bool == False:
+        repos_subpanel(arguments[0]._direction_panel, ui_item, arguments[0])
+
+    else:
+        arguments[0]._direction_panel.set_visibility(False)
+
+    return
+
+
+def toggle_modify_button(ui_item, arguments):
+    arguments[0]._modify_box.set_visibility(
+        not arguments[0]._modify_box.visible)
+
+    ui_item.set_bool(not ui_item.bool)
+    if arguments[0]._modify_box.visible == False:
+        repos_subpanel(arguments[0]._modify_panel, ui_item, arguments[0])
+    else:
+        arguments[0]._modify_panel.set_visibility(False)
+
+    arguments[0]._tools_panel.create_shape_data()
+    return
+
+
+def modify_panel_show(ui_item, arguments):
+    if ui_item.bool == False:
+        repos_subpanel(arguments[0]._modify_panel, ui_item, arguments[0])
+
+    else:
+        arguments[0]._modify_panel.set_visibility(False)
+
+    return
+
+
+def toggle_copy_button(ui_item, arguments):
+    arguments[0]._copy_box.set_visibility(
+        not arguments[0]._copy_box.visible)
+
+    ui_item.set_bool(not ui_item.bool)
+    if arguments[0]._copy_box.visible == False:
+        repos_subpanel(arguments[0]._copy_panel, ui_item, arguments[0])
+    else:
+        arguments[0]._copy_panel.set_visibility(False)
+
+    arguments[0]._tools_panel.create_shape_data()
+    return
+
+
+def copy_panel_show(ui_item, arguments):
+    if ui_item.bool == False:
+        repos_subpanel(arguments[0]._copy_panel, ui_item, arguments[0])
+
+    else:
+        arguments[0]._copy_panel.set_visibility(False)
+
+    return
+
+
+def toggle_modes_button(ui_item, arguments):
+    arguments[0]._modes_box.set_visibility(
+        not arguments[0]._modes_box.visible)
+
+    ui_item.set_bool(not ui_item.bool)
+    if arguments[0]._modes_box.visible == False:
+        repos_subpanel(arguments[0]._modes_panel, ui_item, arguments[0])
+    else:
+        arguments[0]._modes_panel.set_visibility(False)
+
+    arguments[0]._tools_panel.create_shape_data()
+    return
+
+
+def modes_panel_show(ui_item, arguments):
+    if ui_item.bool == False:
+        repos_subpanel(arguments[0]._modes_panel, ui_item, arguments[0])
+
+    else:
+        arguments[0]._modes_panel.set_visibility(False)
 
     return
 
@@ -872,6 +1523,12 @@ def average_selection(self, arguments):
 def smooth_selection(self, arguments):
     if arguments[0]._container.sel_status.any():
         smooth_normals(arguments[0], 0.5)
+    return
+
+
+def sharpen_edges(self, arguments):
+    if arguments[0]._container.sel_status.any():
+        sharpen_edge_normals(arguments[0])
     return
 
 

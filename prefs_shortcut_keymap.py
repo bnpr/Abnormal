@@ -93,6 +93,8 @@ def draw(preference, context, layout):
     layout.separator()
     #
 
+    keymap_row(keymap_items, 'Sharpen Edge',
+               layout.row(), 'Sharpen Edge Key')
     keymap_row(keymap_items, 'Smooth Normals',
                layout.row(), 'Smooth Normals Key')
 

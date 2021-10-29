@@ -224,7 +224,7 @@ class ABN_OT_normal_editor_modal(Operator):
         self.shader_3d = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
         self._container = ABNContainer(
-            self._object.matrix_world.normalized())
+            self._object.matrix_world.normalized(), mac_shader=self._behavior_prefs.mac_drawing)
         self._container.set_scale_selection(self._selected_scale)
         self._container.set_brightess(self._line_brightness)
         self._container.set_normal_scale(self._normal_size)

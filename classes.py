@@ -52,8 +52,10 @@ class ABNContainer:
         self.face_link_ls = None
         self.face_link_eds = None
         self.edge_link_vs = None
+        self.edge_link_fs = None
         self.loop_faces = None
         self.loop_verts = None
+        self.loop_edges = None
 
         self.color_tri = (0.16, 0.55, 0.7, 0.2)
         self.color_tri_sel = (0.16, 0.7, 0.9, 0.5)
@@ -189,6 +191,9 @@ class ABNContainer:
         norm_colors = np.array(list(zip(cols, cols)))
         norm_colors.shape = [po_cos.shape[0] * 2, 4]
 
+        if self.mac_shader:
+            norm_colors[:, [0, 1, 2]] *= self.brightness
+
         #
 
         self.batch_active_normal = batch_for_shader(
@@ -213,6 +218,8 @@ class ABNContainer:
         po_colors[act_mask] = self.rcol_po_act
 
         if self.mac_shader:
+            po_colors[:, [0, 1, 2]] *= self.brightness
+
             self.batch_po = batch_for_shader(
                 self.shader, 'POINTS', {"pos": list(points[~sel_mask]), "color": list(po_colors[~sel_mask])})
             self.batch_po_sel = batch_for_shader(
@@ -243,6 +250,9 @@ class ABNContainer:
             tri_colors.shape = [tris.shape[0]*3, 4]
 
             tris.shape = [tris.shape[0]*3, 3]
+
+            if self.mac_shader:
+                tri_colors[:, [0, 1, 2]] *= self.brightness
 
         self.batch_tri = batch_for_shader(
             self.shader, 'TRIS', {"pos": list(tris), "color": list(tri_colors)})
@@ -297,6 +307,9 @@ class ABNContainer:
         norm_colors = np.array(list(zip(n_colors, n_colors)))
         norm_colors.shape = [n_colors.shape[0] * 2, 4]
 
+        if self.mac_shader:
+            norm_colors[:, [0, 1, 2]] *= self.brightness
+
         self.batch_normal = batch_for_shader(
             self.shader, 'LINES', {"pos": list(norms), "color": list(norm_colors)})
 
@@ -319,16 +332,12 @@ class ABNContainer:
     def draw(self):
         matrix = bpy.context.region_data.perspective_matrix
 
-        if self.draw_tris:
-            # Static Tris
-            self.shader.bind()
-            self.shader.uniform_float("viewProjectionMatrix", matrix)
-            self.shader.uniform_float("brightness", self.brightness)
-            # self.shader.uniform_float("opacity", self.opacity)
-            # self.shader.uniform_float("color", tri_color)
-            self.batch_tri.draw(self.shader)
-
         if self.mac_shader:
+            if self.draw_tris:
+                # Static Tris
+                self.shader.bind()
+                self.batch_tri.draw(self.shader)
+
             bgl.glPointSize(5*self.size)
             # Static Non Sel Points
             self.shader.bind()
@@ -344,7 +353,24 @@ class ABNContainer:
             self.shader.bind()
             self.batch_po_act.draw(self.shader)
 
+            # Static Normals
+            self.shader.bind()
+            self.batch_normal.draw(self.shader)
+
+            # Active Normals
+            self.shader.bind()
+            self.batch_active_normal.draw(self.shader)
+
         else:
+            if self.draw_tris:
+                # Static Tris
+                self.shader.bind()
+                self.shader.uniform_float("viewProjectionMatrix", matrix)
+                self.shader.uniform_float("brightness", self.brightness)
+                # self.shader.uniform_float("opacity", self.opacity)
+                # self.shader.uniform_float("color", tri_color)
+                self.batch_tri.draw(self.shader)
+
             # Static Points
             self.point_shader.bind()
             self.point_shader.uniform_float("viewProjectionMatrix", matrix)
@@ -353,21 +379,21 @@ class ABNContainer:
             # self.point_shader.uniform_float("color", po_color)
             self.batch_po.draw(self.point_shader)
 
-        # Static Normals
-        self.shader.bind()
-        self.shader.uniform_float("viewProjectionMatrix", matrix)
-        self.shader.uniform_float("brightness", self.brightness)
-        # self.shader.uniform_float("opacity", self.opacity)
-        # self.shader.uniform_float("color", line_color)
-        self.batch_normal.draw(self.shader)
+            # Static Normals
+            self.shader.bind()
+            self.shader.uniform_float("viewProjectionMatrix", matrix)
+            self.shader.uniform_float("brightness", self.brightness)
+            # self.shader.uniform_float("opacity", self.opacity)
+            # self.shader.uniform_float("color", line_color)
+            self.batch_normal.draw(self.shader)
 
-        # Active Normals
-        self.shader.bind()
-        self.shader.uniform_float("viewProjectionMatrix", matrix)
-        self.shader.uniform_float("brightness", self.brightness)
-        # self.shader.uniform_float("opacity", self.opacity)
-        # self.shader.uniform_float("color", line_color)
-        self.batch_active_normal.draw(self.shader)
+            # Active Normals
+            self.shader.bind()
+            self.shader.uniform_float("viewProjectionMatrix", matrix)
+            self.shader.uniform_float("brightness", self.brightness)
+            # self.shader.uniform_float("opacity", self.opacity)
+            # self.shader.uniform_float("color", line_color)
+            self.batch_active_normal.draw(self.shader)
 
         return
 
