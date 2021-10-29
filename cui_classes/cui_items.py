@@ -2102,11 +2102,10 @@ class CUIRotateGizmo(CUIGizmo):
             (np.array([0.0, 0.0, 0.0], dtype=np.float32), cos))
 
         self.fan_tris = np.tile(
-            np.arange(self.resolution).reshape(-1, 1), 3)
+            np.arange(self.resolution-1).reshape(-1, 1), 3)
         self.fan_tris[:, 0] = 0
         self.fan_tris[:, 1] += 1
         self.fan_tris[:, 2] += 2
-        self.fan_tris[-1, 2] = 1
 
         if self.axis == 0:
             self.fan_points = self.fan_points[:, [2, 1, 0]]
