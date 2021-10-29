@@ -103,13 +103,8 @@ class CUIWindowContainer:
         return
 
     def gizmo_draw(self):
-        print('DRAW')
-        # for i in range(len(self.gizmo_sets)):
-        #     self.gizmo_sets[i*-1-1].draw()
-        ind = 0
-        self.gizmo_sets[0].draw()
-        print(self.gizmo_sets[0].gizmos[ind].axis)
-        print(self.gizmo_sets[0].gizmos[ind].type)
+        for i in range(len(self.gizmo_sets)):
+            self.gizmo_sets[i*-1-1].draw()
         return
 
     def status_draw(self):
@@ -1499,6 +1494,8 @@ class CUISubPanelPopup(CUIPopup):
         self.hover_ref = None
 
         return
+
+    #
 
     def test_popup_close(self, mouse_co):
         #

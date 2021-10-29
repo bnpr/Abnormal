@@ -795,7 +795,13 @@ class CUIHoverButton(CUIItem):
     # Hoverable Button class that opens a subpanel when hovered and closes when itself and the subpanel are no longer hovered
     #
     def __init__(self, cont, height, text):
+        self.color_bool = (0.62, 0.5, 0.75, 0.75)
+
+        self.color_bool_render = None
+
         super().__init__(cont, height)
+
+        self.bool = False
 
         self.item_type = 'HOVER_BUTTON'
 
@@ -819,6 +825,14 @@ class CUIHoverButton(CUIItem):
         return
 
     #
+
+    def update_color_render(self):
+        super().update_color_render()
+
+        self.color_bool_render = get_enabled_color(
+            self.color_bool, self.enabled)
+
+        return
 
     def draw(self):
         for part in self.parts:
@@ -866,6 +880,10 @@ class CUIHoverButton(CUIItem):
 
     #
 
+    def set_bool(self, status):
+        self.bool = status
+        return
+
     def set_hover_down_func(self, func):
         self.hover_down_func = func
         return
@@ -881,6 +899,12 @@ class CUIHoverButton(CUIItem):
 
     def set_draw_box(self, status):
         self.parts[0].draw_box = status
+        return
+
+    def set_bool_color(self, color):
+        self.color_bool = color
+
+        self.update_color_render()
         return
 
     def set_icon_image(self, image_name, image_path):
@@ -1709,12 +1733,12 @@ class CUIGizmo3DContainer:
     #
 
     def draw(self):
-        if self.visible == False:
-            bgl.glDepthRange(0, 0.01)
+        if self.visible:
+            # bgl.glDepthRange(0, 0.01)
             for i in range(len(self.gizmos)):
                 if self.gizmos[i*-1-1].active:
                     self.gizmos[i*-1-1].draw()
-            bgl.glDepthRange(0, 1.0)
+            # bgl.glDepthRange(0, 1.0)
         return
 
     def create_shape_data(self, matrix):
@@ -1762,7 +1786,7 @@ class CUIGizmo3DContainer:
         return
 
     def test_hover(self, mouse_co):
-        if self.visible == False:
+        if self.visible:
             act_gizs = [i for i in range(
                 len(self.gizmos)) if self.gizmos[i].active]
 
@@ -1959,7 +1983,6 @@ class CUIRotateGizmo(CUIGizmo):
             self.fan_points * scale_fac, np.array(matrix))
         self.mat_fan_lines = get_np_matrix_transformed_vecs(
             self.fan_lines * scale_fac, np.array(matrix))
-
 
         self.batch_fan = batch_for_shader(
             self.shader, 'TRIS', {"pos": self.mat_fan_points.tolist()}, indices=self.fan_tris.tolist())

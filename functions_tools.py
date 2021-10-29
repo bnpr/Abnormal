@@ -45,9 +45,9 @@ def setup_tools(modal):
     tool.add_keymap_argument('Toggle X-Ray', toggle_xray)
     tool.add_keymap_argument('Mirror Normals Start', mirror_start)
     # tool.add_keymap_argument('Sharpen Edge', sharpen_edges)
-    tool.add_keymap_argument('Smooth Normals', smooth_normals)
-    tool.add_keymap_argument('Flatten Normals Start', flatten_normals)
-    tool.add_keymap_argument('Align Normals Start', align_normals)
+    tool.add_keymap_argument('Smooth Normals', smooth_norms)
+    tool.add_keymap_argument('Flatten Normals Start', flatten_norms)
+    tool.add_keymap_argument('Align Normals Start', align_norms)
     tool.add_keymap_argument('Copy Active Normal', copy_active)
 
     tool.add_keymap_argument('Paste Stored Normal', paste_stored)
@@ -55,7 +55,7 @@ def setup_tools(modal):
         'Paste Active Normal to Selected', paste_active_to_selected)
     tool.add_keymap_argument('Set Normals Outside', set_outside)
     tool.add_keymap_argument('Set Normals Inside', set_inside)
-    tool.add_keymap_argument('Flip Normals', flip_normals)
+    tool.add_keymap_argument('Flip Normals', flip_norms)
     tool.add_keymap_argument('Reset Vectors', reset_vectors)
     tool.add_keymap_argument('Average Individual Normals', average_individual)
     tool.add_keymap_argument('Average Selected Normals', average_selected)
@@ -796,7 +796,7 @@ def sharpen_edges(modal, context, event, keys, func_data):
     return
 
 
-def smooth_normals(modal, context, event, keys, func_data):
+def smooth_norms(modal, context, event, keys, func_data):
     if modal._container.sel_status.any():
         smooth_normals(modal, 0.5)
 
@@ -805,7 +805,7 @@ def smooth_normals(modal, context, event, keys, func_data):
     return
 
 
-def flatten_normals(modal, context, event, keys, func_data):
+def flatten_norms(modal, context, event, keys, func_data):
     if modal._container.sel_status.any():
         modal._current_tool = modal._flatten_tool
         keymap_flatten(modal)
@@ -814,7 +814,7 @@ def flatten_normals(modal, context, event, keys, func_data):
     return
 
 
-def align_normals(modal, context, event, keys, func_data):
+def align_norms(modal, context, event, keys, func_data):
     if modal._container.sel_status.any():
         modal._current_tool = modal._align_tool
         keymap_align(modal)
@@ -867,7 +867,7 @@ def set_inside(modal, context, event, keys, func_data):
     return
 
 
-def flip_normals(modal, context, event, keys, func_data):
+def flip_norms(modal, context, event, keys, func_data):
     if modal._container.sel_status.any():
         flip_normals(modal)
 

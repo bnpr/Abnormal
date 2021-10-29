@@ -353,7 +353,7 @@ class CUIBoxContainer(CUIContainer):
         self.containers.append(box)
         return box
 
-    def add_header(self, collapsable, header_text, height, use_backdrop, hor_marg=4, vert_marg=4, backdrop_color=None, button_color=None):
+    def add_header(self, collapsable, header_text, height, use_backdrop, hoverable=False, hor_marg=4, vert_marg=4, backdrop_color=None, button_color=None):
         #
         # Add a header to the box
         # The header has a function to collapse the box if enabled
@@ -409,7 +409,10 @@ class CUIBoxContainer(CUIContainer):
 
         # Add the header button
 
-        header = CUIButton(row, height, header_text)
+        if hoverable:
+            header = CUIHoverButton(row, height, header_text)
+        else:
+            header = CUIButton(row, height, header_text)
 
         # Add the arrow and collapsable function if header is collapsable
         if collapsable:
