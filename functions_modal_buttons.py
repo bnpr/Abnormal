@@ -608,6 +608,7 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_hover_down_func(display_panel_show)
         hbut.set_font_size(16)
         hbut.set_bool(not modal._display_prefs.display_collapsed)
+        hbut.set_draw_box(not hbut.bool)
 
         modal._display_panel.set_hover_ref(row)
 
@@ -724,6 +725,7 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_hover_down_func(symmetry_panel_show)
         hbut.set_font_size(16)
         hbut.set_bool(not modal._display_prefs.symmetry_collapsed)
+        hbut.set_draw_box(not hbut.bool)
 
         modal._symmetry_panel.set_hover_ref(row)
 
@@ -800,6 +802,7 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_hover_down_func(alignment_panel_show)
         hbut.set_font_size(16)
         hbut.set_bool(not modal._display_prefs.alignment_collapsed)
+        hbut.set_draw_box(not hbut.bool)
 
         modal._alignment_panel.set_hover_ref(row)
 
@@ -891,6 +894,7 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_hover_down_func(direction_panel_show)
         hbut.set_font_size(16)
         hbut.set_bool(not modal._display_prefs.direction_collapsed)
+        hbut.set_draw_box(not hbut.bool)
 
         modal._direction_panel.set_hover_ref(row)
 
@@ -946,6 +950,7 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_hover_down_func(modify_panel_show)
         hbut.set_font_size(16)
         hbut.set_bool(not modal._display_prefs.modify_collapsed)
+        hbut.set_draw_box(not hbut.bool)
 
         modal._modify_panel.set_hover_ref(row)
 
@@ -1025,6 +1030,7 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_hover_down_func(copy_panel_show)
         hbut.set_font_size(16)
         hbut.set_bool(not modal._display_prefs.copy_collapsed)
+        hbut.set_draw_box(not hbut.bool)
 
         modal._copy_panel.set_hover_ref(row)
 
@@ -1063,6 +1069,7 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_hover_down_func(modes_panel_show)
         hbut.set_font_size(16)
         hbut.set_bool(not modal._display_prefs.modes_collapsed)
+        hbut.set_draw_box(not hbut.bool)
 
         modal._modes_panel.set_hover_ref(row)
 
@@ -1296,6 +1303,7 @@ def toggle_display_button(ui_item, arguments):
         not arguments[0]._display_box.visible)
 
     ui_item.set_bool(not ui_item.bool)
+    ui_item.set_draw_box(not ui_item.bool)
     if arguments[0]._display_box.visible == False:
         repos_subpanel(arguments[0]._display_panel, ui_item, arguments[0])
     else:
@@ -1320,6 +1328,7 @@ def toggle_symmetry_button(ui_item, arguments):
         not arguments[0]._symmetry_box.visible)
 
     ui_item.set_bool(not ui_item.bool)
+    ui_item.set_draw_box(not ui_item.bool)
     if arguments[0]._symmetry_box.visible == False:
         repos_subpanel(arguments[0]._symmetry_panel, ui_item, arguments[0])
     else:
@@ -1344,6 +1353,7 @@ def toggle_alignment_button(ui_item, arguments):
         not arguments[0]._alignment_box.visible)
 
     ui_item.set_bool(not ui_item.bool)
+    ui_item.set_draw_box(not ui_item.bool)
     if arguments[0]._alignment_box.visible == False:
         repos_subpanel(arguments[0]._alignment_panel, ui_item, arguments[0])
     else:
@@ -1368,6 +1378,7 @@ def toggle_direction_button(ui_item, arguments):
         not arguments[0]._direction_box.visible)
 
     ui_item.set_bool(not ui_item.bool)
+    ui_item.set_draw_box(not ui_item.bool)
     if arguments[0]._direction_box.visible == False:
         repos_subpanel(arguments[0]._direction_panel, ui_item, arguments[0])
     else:
@@ -1392,6 +1403,7 @@ def toggle_modify_button(ui_item, arguments):
         not arguments[0]._modify_box.visible)
 
     ui_item.set_bool(not ui_item.bool)
+    ui_item.set_draw_box(not ui_item.bool)
     if arguments[0]._modify_box.visible == False:
         repos_subpanel(arguments[0]._modify_panel, ui_item, arguments[0])
     else:
@@ -1416,6 +1428,7 @@ def toggle_copy_button(ui_item, arguments):
         not arguments[0]._copy_box.visible)
 
     ui_item.set_bool(not ui_item.bool)
+    ui_item.set_draw_box(not ui_item.bool)
     if arguments[0]._copy_box.visible == False:
         repos_subpanel(arguments[0]._copy_panel, ui_item, arguments[0])
     else:
@@ -1440,6 +1453,7 @@ def toggle_modes_button(ui_item, arguments):
         not arguments[0]._modes_box.visible)
 
     ui_item.set_bool(not ui_item.bool)
+    ui_item.set_draw_box(hbut.bool)
     if arguments[0]._modes_box.visible == False:
         repos_subpanel(arguments[0]._modes_panel, ui_item, arguments[0])
     else:
