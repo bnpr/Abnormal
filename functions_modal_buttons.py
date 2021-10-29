@@ -607,13 +607,14 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_click_up_func(toggle_display_button)
         hbut.set_hover_down_func(display_panel_show)
         hbut.set_font_size(16)
+        hbut.set_bool(not modal._display_prefs.display_collapsed)
 
         modal._display_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
 
-            boxx.set_visibility(False)
+            boxx.set_visibility(not modal._display_prefs.display_collapsed)
             row = boxx.add_row()
             bool = row.add_bool(20, 'Show Only Selected Normals',
                                 default=modal._selected_only)
@@ -722,13 +723,14 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_click_up_func(toggle_symmetry_button)
         hbut.set_hover_down_func(symmetry_panel_show)
         hbut.set_font_size(16)
+        hbut.set_bool(not modal._display_prefs.symmetry_collapsed)
 
         modal._symmetry_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
 
-            boxx.set_visibility(False)
+            boxx.set_visibility(not modal._display_prefs.symmetry_collapsed)
 
             boxx.add_text_row(20, 'Mirror Selected Normals:', font_size=12)
 
@@ -797,13 +799,14 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_click_up_func(toggle_alignment_button)
         hbut.set_hover_down_func(alignment_panel_show)
         hbut.set_font_size(16)
+        hbut.set_bool(not modal._display_prefs.alignment_collapsed)
 
         modal._alignment_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
 
-            boxx.set_visibility(False)
+            boxx.set_visibility(not modal._display_prefs.alignment_collapsed)
 
             boxx.add_text_row(20, 'Flatten Normals on Axis', font_size=12)
 
@@ -887,13 +890,14 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_click_up_func(toggle_direction_button)
         hbut.set_hover_down_func(direction_panel_show)
         hbut.set_font_size(16)
+        hbut.set_bool(not modal._display_prefs.direction_collapsed)
 
         modal._direction_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
 
-            boxx.set_visibility(False)
+            boxx.set_visibility(not modal._display_prefs.direction_collapsed)
 
             row = boxx.add_row()
             but = row.add_button(20, 'Flip Normals')
@@ -941,13 +945,14 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_click_up_func(toggle_modify_button)
         hbut.set_hover_down_func(modify_panel_show)
         hbut.set_font_size(16)
+        hbut.set_bool(not modal._display_prefs.modify_collapsed)
 
         modal._modify_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
 
-            boxx.set_visibility(False)
+            boxx.set_visibility(not modal._display_prefs.modify_collapsed)
 
             row = boxx.add_row()
             modal._gizmo_bool = row.add_bool(20, 'Use Rotation Gizmo',
@@ -1019,13 +1024,14 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_click_up_func(toggle_copy_button)
         hbut.set_hover_down_func(copy_panel_show)
         hbut.set_font_size(16)
+        hbut.set_bool(not modal._display_prefs.copy_collapsed)
 
         modal._copy_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
 
-            boxx.set_visibility(False)
+            boxx.set_visibility(not modal._display_prefs.copy_collapsed)
 
             row = boxx.add_row()
             but = row.add_button(20, 'Copy Active Normal to Selected')
@@ -1056,13 +1062,14 @@ def init_ui_panels(modal, rw, rh, scale):
         hbut.set_click_up_func(toggle_modes_button)
         hbut.set_hover_down_func(modes_panel_show)
         hbut.set_font_size(16)
+        hbut.set_bool(not modal._display_prefs.modes_collapsed)
 
         modal._modes_panel.set_hover_ref(row)
 
         if True:
             boxx = box.add_box()
 
-            boxx.set_visibility(False)
+            boxx.set_visibility(not modal._display_prefs.modes_collapsed)
 
             row = boxx.add_row()
             but = row.add_button(20, 'Sphereize Normals')

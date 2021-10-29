@@ -15,6 +15,14 @@ class prefs(PropertyGroup):
     gizmo_size: IntProperty(default=200, min=10, max=1000)
     ui_scale: FloatProperty(default=0.0, min=0.25, max=3.0)
 
+    display_collapsed: BoolProperty(default=True)
+    symmetry_collapsed: BoolProperty(default=True)
+    alignment_collapsed: BoolProperty(default=True)
+    direction_collapsed: BoolProperty(default=True)
+    modify_collapsed: BoolProperty(default=True)
+    copy_collapsed: BoolProperty(default=True)
+    modes_collapsed: BoolProperty(default=True)
+
 
 def label_row(path, prop, row, label):
     row.label(text=label)
@@ -38,6 +46,21 @@ def draw(preference, context, layout):
               layout.row(), 'Gizmo Pixel Size')
     label_row(preference.display, 'ui_scale',
               layout.row(), 'UI Scale')
+
+    label_row(preference.display, 'display_collapsed',
+              layout.row(), 'Viewport Settings menu collapsed')
+    label_row(preference.display, 'symmetry_collapsed',
+              layout.row(), 'Symmetry menu collapsed')
+    label_row(preference.display, 'alignment_collapsed',
+              layout.row(), 'Axis Alignment menu collapsed')
+    label_row(preference.display, 'direction_collapsed',
+              layout.row(), 'Normal Direction menu collapsed')
+    label_row(preference.display, 'modify_collapsed',
+              layout.row(), 'Modify Normals menu collapsed')
+    label_row(preference.display, 'copy_collapsed',
+              layout.row(), 'Copy/Paster menu collapsed')
+    label_row(preference.display, 'modes_collapsed',
+              layout.row(), 'Normal Target Modes menu collapsed')
 
 
 def register():
