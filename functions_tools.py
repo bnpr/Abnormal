@@ -179,8 +179,6 @@ def setup_tools(modal):
         tool = modal.tools.add_tool(
             inherit_confirm=False, inherit_cancel=False)
         tool.set_mouse_function(sphereize_mouse)
-        tool.set_confirm_function(sphereize_confirm)
-        tool.set_cancel_function(sphereize_cancel)
         tool.set_mouse_pass(True)
         tool.add_keymap_argument('Target Move Start', sphereize_start_move)
         tool.add_keymap_argument('Target Center Reset', sphereize_reset)
@@ -205,8 +203,6 @@ def setup_tools(modal):
         tool = modal.tools.add_tool(
             inherit_confirm=False, inherit_cancel=False)
         tool.set_mouse_function(point_mouse)
-        tool.set_confirm_function(point_confirm)
-        tool.set_cancel_function(point_cancel)
         tool.set_mouse_pass(True)
         tool.add_keymap_argument('Target Move Start', point_start_move)
         tool.add_keymap_argument('Target Center Reset', point_reset)
@@ -423,7 +419,12 @@ def sel_tool_end(modal):
 def ui_tool(modal, context, event, func_data):
     ended = ui_mouse(modal, context, event, func_data)
     if ended:
-        modal._current_tool = modal._basic_tool
+        if modal._point_panel.visible:
+            modal._current_tool = modal._point_tool
+        elif modal._sphere_panel.visible:
+            modal._current_tool = modal._sphereize_tool
+        else:
+            modal._current_tool = modal._basic_tool
 
         return {'RUNNING_MODAL'}
     return
@@ -1496,26 +1497,6 @@ def sphereize_reset(modal, context, event, keys, func_data):
     return
 
 
-def sphereize_confirm(modal, context, event, keys, func_data):
-    if event.value == 'PRESS':
-        # Test 2d ui selection
-        if modal._sphere_panel.visible:
-            modal._sphere_panel.test_click_down(
-                modal._mouse_reg_loc, event.shift, arguments=[event])
-            modal.click_hold = True
-    else:
-        if modal._sphere_panel.visible:
-            modal._sphere_panel.test_click_up(
-                modal._mouse_reg_loc, event.shift, arguments=[event])
-            modal.click_hold = False
-    return
-
-
-def sphereize_cancel(modal, context, event, keys, func_data):
-    end_sphereize_mode(modal, False)
-    return
-
-
 def toggle_x_ray(modal, context, event, keys, func_data):
     modal._x_ray_mode = not modal._x_ray_mode
     modal._xray_bool.toggle_bool()
@@ -1622,26 +1603,6 @@ def point_start_move(modal, context, event, keys, func_data):
 def point_reset(modal, context, event, keys, func_data):
     modal._target_emp.location = modal._mode_cache[0]
     point_normals(modal)
-    return
-
-
-def point_confirm(modal, context, event, keys, func_data):
-    if event.value == 'PRESS':
-        # Test 2d ui selection
-        if modal._point_panel.visible:
-            modal._point_panel.test_click_down(
-                modal._mouse_reg_loc, event.shift, arguments=[event])
-            modal.click_hold = True
-    else:
-        if modal._point_panel.visible:
-            modal._point_panel.test_click_up(
-                modal._mouse_reg_loc, event.shift, arguments=[event])
-            modal.click_hold = False
-    return
-
-
-def point_cancel(modal, context, event, keys, func_data):
-    end_point_mode(modal, False)
     return
 
 

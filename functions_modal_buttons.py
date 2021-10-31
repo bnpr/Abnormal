@@ -8,6 +8,7 @@ def init_ui_panels(modal, rw, rh, scale):
     modal._window.set_style_color(color_panel=(0.0, 0.0, 0.1, 0.2), color_box=(0.0, 0.0, 0.1, 0.8), color_row=(
         0.0, 0.0, 0.2, 1.0), color_item=(0.0, 0.0, 0.2, 1.0), color_hover=(0.0, 0.0, 0.37, 1.0), color_click=(0.0, 0.0, 0.5, 1.0))
 
+    modal._window.set_status_offset([25, 10])
     modal._window.set_key_offset([25, 10])
 
     modal._rot_gizmo = modal._window.add_rot_gizmo(

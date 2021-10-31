@@ -1305,6 +1305,7 @@ def start_sphereize_mode(modal):
     modal.sphere_strength.create_shape_data()
     # modal._export_panel.set_visibility(False)
     modal._tools_panel.set_visibility(False)
+    modal._modes_panel.set_visibility(False)
     modal._sphere_panel.set_visibility(True)
     modal._sphere_panel.set_new_position(
         modal._mouse_reg_loc, window_dims=modal._window.dimensions)
@@ -1331,11 +1332,13 @@ def end_sphereize_mode(modal, keep_normals):
     modal._orbit_ob.select_set(True)
     bpy.context.view_layer.objects.active = modal._orbit_ob
 
+    modal._mouse_init = None
+    modal._mode_cache.clear()
+    keymap_refresh(modal)
+    modal._current_tool = modal._basic_tool
+
     gizmo_update_hide(modal, True)
     end_active_drawing(modal)
-
-    modal._current_tool = modal._basic_tool
-    keymap_refresh(modal)
     return
 
 
@@ -1381,6 +1384,7 @@ def start_point_mode(modal):
     modal.point_strength.create_shape_data()
     # modal._export_panel.set_visibility(False)
     modal._tools_panel.set_visibility(False)
+    modal._modes_panel.set_visibility(False)
     modal._point_panel.set_visibility(True)
     modal._point_panel.set_new_position(
         modal._mouse_reg_loc, window_dims=modal._window.dimensions)
@@ -1407,11 +1411,13 @@ def end_point_mode(modal, keep_normals):
     modal._orbit_ob.select_set(True)
     bpy.context.view_layer.objects.active = modal._orbit_ob
 
+    modal._mouse_init = None
+    modal._mode_cache.clear()
+    keymap_refresh(modal)
+    modal._current_tool = modal._basic_tool
+
     gizmo_update_hide(modal, True)
     end_active_drawing(modal)
-
-    modal._current_tool = modal._basic_tool
-    keymap_refresh(modal)
     return
 
 
