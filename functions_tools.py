@@ -402,7 +402,7 @@ def setup_tools(modal):
 
 
 def tool_end(modal):
-    modal._mouse_init[:] = np.nan
+    modal._mouse_init = None
     modal._mode_cache.clear()
     keymap_refresh(modal)
     modal._current_tool = modal._basic_tool
@@ -811,7 +811,7 @@ def rotate_start(modal, context, event, keys, func_data):
         modal._mode_cache.append(avg_loc)
         modal._mode_cache.append(0)
         modal._mode_cache.append(1)
-        modal._mouse_init[:] = modal._mouse_reg_loc
+        modal._mouse_init = modal._mouse_reg_loc.copy()
 
         modal.rotating = True
         modal._current_tool = modal._rotate_norms_tool
@@ -1147,8 +1147,8 @@ def box_sel_start(modal, context, event, keys, func_data):
 
 def box_sel_mouse(modal, context, event, func_data):
     if event.alt:
-        if np.isnan(modal._mouse_init).all():
-            modal._mouse_init[:] = modal._mouse_reg_loc
+        if modal._mouse_init is None:
+            modal._mouse_init = modal._mouse_reg_loc.copy()
         else:
             offset = modal._mouse_reg_loc-modal._mouse_init
 
@@ -1156,9 +1156,9 @@ def box_sel_mouse(modal, context, event, func_data):
                 modal._mode_cache[0][p][0] += offset[0]
                 modal._mode_cache[0][p][1] += offset[1]
 
-            modal._mouse_init[:] = modal._mouse_reg_loc
+            modal._mouse_init = modal._mouse_reg_loc.copy()
     else:
-        modal._mouse_init[:] = np.nan
+        modal._mouse_init = None
 
         modal._mode_cache[0].pop(-1)
         modal._mode_cache[0].append(modal._mouse_reg_loc.copy())
@@ -1202,8 +1202,8 @@ def lasso_sel_start(modal, context, event, keys, func_data):
 
 def lasso_sel_mouse(modal, context, event, func_data):
     if event.alt:
-        if np.isnan(modal._mouse_init).all():
-            modal._mouse_init[:] = modal._mouse_reg_loc
+        if modal._mouse_init is None:
+            modal._mouse_init = modal._mouse_reg_loc.copy()
         else:
             offset = modal._mouse_reg_loc-modal._mouse_init
 
@@ -1211,10 +1211,10 @@ def lasso_sel_mouse(modal, context, event, func_data):
                 modal._mode_cache[0][p][0] += offset[0]
                 modal._mode_cache[0][p][1] += offset[1]
 
-            modal._mouse_init[:] = modal._mouse_reg_loc
+            modal._mouse_init = modal._mouse_reg_loc.copy()
 
     else:
-        modal._mouse_init[:] = np.nan
+        modal._mouse_init = None
 
         prev_loc = Vector(modal._mode_cache[0][-1])
         cur_loc = Vector(modal._mouse_reg_loc)
@@ -1304,10 +1304,10 @@ def circle_sel_start_resize(modal, context, event, keys, func_data):
     modal._current_tool = modal._circle_resize_tool
 
     if modal._mouse_reg_loc[0]-modal.circle_radius < 0:
-        modal._mouse_init[:] = modal._mouse_reg_loc
+        modal._mouse_init = modal._mouse_reg_loc.copy()
         modal._mouse_init[0] += modal.circle_radius
     else:
-        modal._mouse_init[:] = modal._mouse_reg_loc
+        modal._mouse_init = modal._mouse_reg_loc.copy()
         modal._mouse_init[0] -= modal.circle_radius
 
     modal._mode_cache.append(modal.circle_radius)
@@ -1377,7 +1377,7 @@ def rotate_norms_mouse(modal, context, event, func_data):
     if ang != 0.0:
         modal._mode_cache[1] = modal._mode_cache[1]+ang*modal._mode_cache[2]
         rotate_vectors(modal, modal._mode_cache[1])
-        modal._mouse_init[:] = modal._mouse_reg_loc
+        modal._mouse_init = modal._mouse_reg_loc.copy()
 
         modal.redraw_active = True
     return
@@ -1431,7 +1431,7 @@ def rotate_post_navigate(modal, context, event, func_data):
         rotate_vectors(modal, modal._mode_cache[1])
         modal.redraw_active = True
 
-    modal._mouse_init[:] = modal._mouse_reg_loc
+    modal._mouse_init = modal._mouse_reg_loc.copy()
     bpy.context.window.cursor_modal_set('DEFAULT')
     modal.rotating = True
     modal.selection_drawing = True
