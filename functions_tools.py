@@ -17,7 +17,7 @@ def setup_tools(modal):
     tool.set_mouse_function(mouse)
     tool.add_cancel_key('Cancel Modal')
     tool.set_cancel_function(cancel_modal)
-    tool.add_cancel_key('Confirm Modal')
+    tool.add_confirm_key('Confirm Modal')
     tool.set_confirm_function(confirm_modal)
     tool.add_keymap_argument('History Undo', hist_undo)
     tool.add_keymap_argument('History Redo', hist_redo)
@@ -321,7 +321,7 @@ def setup_tools(modal):
 
         tool.add_cancel_key('Cancel Modal')
         tool.set_cancel_function(cancel_modal)
-        tool.add_cancel_key('Confirm Modal')
+        tool.add_confirm_key('Confirm Modal')
         tool.set_confirm_function(confirm_modal)
 
         tool.add_keymap_argument('Select All', ui_select_all)
