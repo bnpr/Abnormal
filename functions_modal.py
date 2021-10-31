@@ -47,8 +47,6 @@ def set_new_normals(modal):
     if modal._container.filter_mask.any():
         modal._container.new_norms[:] = modal._container.cache_norms * (
             1.0-modal._container.filter_weights[:, None]) + modal._container.new_norms * modal._container.filter_weights[:, None]
-    else:
-        modal._container.new_norms[:] = modal._container.new_norms
 
     # Get the scale factor to normalized new normals
     scale = 1 / np.sqrt(np.sum(np.square(modal._container.new_norms), axis=1))
