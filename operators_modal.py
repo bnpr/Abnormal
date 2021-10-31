@@ -158,6 +158,7 @@ class ABN_OT_normal_editor_modal(Operator):
         self._point_size = self._display_prefs.point_size
         self._loop_tri_size = self._display_prefs.loop_tri_size
         self._selected_only = self._display_prefs.selected_only
+        self._draw_weights = self._display_prefs.draw_weights
         self._selected_scale = self._display_prefs.selected_scale
         self._individual_loops = self._behavior_prefs.individual_loops
         if self._display_prefs.ui_scale == 0.0:
@@ -231,6 +232,7 @@ class ABN_OT_normal_editor_modal(Operator):
         self._container.set_point_size(self._point_size)
         self._container.set_loop_scale(self._loop_tri_size)
         self._container.set_draw_only_selected(self._selected_only)
+        self._container.set_draw_weights(self._draw_weights)
         self._container.set_draw_tris(self._individual_loops)
 
         # INITIALIZE POINT DATA
@@ -238,7 +240,7 @@ class ABN_OT_normal_editor_modal(Operator):
         self._orbit_ob = add_orbit_empty(self._object)
         self._target_emp = add_target_empty(self._object)
 
-        update_filter_weights(self)
+        update_filter_from_vg(self)
 
         # INITIALIZE UI WINDOW
         load_keymap(self)

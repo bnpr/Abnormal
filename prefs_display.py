@@ -7,6 +7,7 @@ from bpy.props import *
 class prefs(PropertyGroup):
     selected_only: BoolProperty(default=False)
     selected_scale: BoolProperty(default=True)
+    draw_weights: BoolProperty(default=True)
     display_wireframe: BoolProperty(default=True)
     normal_size: FloatProperty(default=0.5, min=0.01, max=10.0)
     point_size: FloatProperty(default=1.0, min=.1, max=10.0)
@@ -20,6 +21,7 @@ class prefs(PropertyGroup):
     alignment_collapsed: BoolProperty(default=True)
     direction_collapsed: BoolProperty(default=True)
     modify_collapsed: BoolProperty(default=True)
+    filter_collapsed: BoolProperty(default=True)
     copy_collapsed: BoolProperty(default=True)
     modes_collapsed: BoolProperty(default=True)
 
@@ -34,6 +36,8 @@ def draw(preference, context, layout):
               layout.row(), 'Display Selected Normals Only')
     label_row(preference.display, 'selected_scale',
               layout.row(), 'Scale Selected Nomrals')
+    label_row(preference.display, 'draw_weights',
+              layout.row(), 'Draw Filter Weights')
     label_row(preference.display, 'display_wireframe',
               layout.row(), 'Display Wireframe')
     label_row(preference.display, 'normal_size',
@@ -57,6 +61,8 @@ def draw(preference, context, layout):
               layout.row(), 'Normal Direction menu collapsed')
     label_row(preference.display, 'modify_collapsed',
               layout.row(), 'Modify Normals menu collapsed')
+    label_row(preference.display, 'filter_collapsed',
+              layout.row(), 'Filter menu collapsed')
     label_row(preference.display, 'copy_collapsed',
               layout.row(), 'Copy/Paster menu collapsed')
     label_row(preference.display, 'modes_collapsed',

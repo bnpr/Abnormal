@@ -166,7 +166,6 @@ def rotate_vectors(modal, angle):
 # AXIS ALIGNMENT
 #
 def flatten_normals(modal, axis):
-    update_filter_weights(modal)
 
     norms = modal._container.new_norms[modal._container.sel_status]
     norms[:, axis] = 0.0
@@ -190,7 +189,6 @@ def flatten_normals(modal, axis):
 
 
 def align_to_axis_normals(modal, axis, dir):
-    update_filter_weights(modal)
 
     vec = [0, 0, 0]
     vec[axis] = dir
@@ -205,7 +203,6 @@ def align_to_axis_normals(modal, axis, dir):
 # MANIPULATE NORMALS
 #
 def average_vertex_normals(modal):
-    update_filter_weights(modal)
 
     sel_pos = get_selected_points(modal, any_selected=True)
     sel_loops = modal._container.vert_link_ls[sel_pos]
@@ -230,7 +227,6 @@ def average_vertex_normals(modal):
 
 
 def average_selected_normals(modal):
-    update_filter_weights(modal)
 
     avg_norm = np.mean(
         modal._container.new_norms[modal._container.sel_status], axis=0)
@@ -243,7 +239,6 @@ def average_selected_normals(modal):
 
 
 def smooth_normals(modal, fac):
-    update_filter_weights(modal)
 
     sel_pos = get_selected_points(modal, any_selected=True)
     conn_pos = modal._container.vert_link_vs[sel_pos]
@@ -269,7 +264,6 @@ def smooth_normals(modal, fac):
 
 
 def sharpen_edge_normals(modal):
-    update_filter_weights(modal)
 
     sel_pos = get_selected_points(modal, any_selected=False)
 
@@ -338,7 +332,6 @@ def flip_normals(modal):
 
 
 def set_outside_inside(modal, direction):
-    update_filter_weights(modal)
 
     if modal._object_smooth:
         sel_pos = get_selected_points(modal, any_selected=True)
@@ -379,7 +372,6 @@ def reset_normals(modal):
 
 
 def set_normals_from_faces(modal):
-    update_filter_weights(modal)
 
     # Get all faces that have all loops selected
     sel_fs = modal._container.sel_status[modal._container.face_link_ls]
@@ -430,7 +422,6 @@ def set_normals_from_faces(modal):
 # COPY/PASTE
 #
 def copy_active_to_selected(modal):
-    update_filter_weights(modal)
 
     act_loops = modal._container.act_status.nonzero()[0]
 
@@ -478,7 +469,6 @@ def store_active_normal(modal):
 
 
 def paste_normal(modal):
-    update_filter_weights(modal)
 
     if modal._copy_normals.size > 0:
         # 1 active loop so paste it onto all selected
@@ -664,6 +654,7 @@ def cache_point_data(modal):
 
     modal._container.loop_faces = np.array(link_fs, dtype=np.int32)
     modal._container.filter_weights = np.ones(loop_amnt, dtype=np.float32)
+    modal._container.filter_mask = np.ones(loop_amnt, dtype=bool)
 
     #
 
@@ -849,30 +840,6 @@ def find_coord_mirror(modal, mir_coords, mir_axis, mat, kd):
     # filters out -1 mathc loop indices
     match_tans = match_loops_vecs(mir_tangs, tans, match_loops)
     return match_tans
-
-
-def update_filter_weights(modal):
-    abn_props = bpy.context.scene.abnormal_props
-
-    weights = [1.0] * len(modal._object.data.loops)
-    if abn_props.vertex_group != '' and abn_props.vertex_group != modal._current_filter:
-        if abn_props.vertex_group in modal._object.vertex_groups:
-            for v in modal._object_bm.verts:
-                vg = modal._object.vertex_groups[abn_props.vertex_group]
-                modal._current_filter = abn_props.vertex_group
-
-                try:
-                    weight = vg.weight(v.index)
-                    modal._container.filter_weights[modal._container.vert_link_ls[v.index]] = weight
-
-                except:
-                    modal._container.filter_weights[modal._container.vert_link_ls[v.index]] = 0.0
-
-        else:
-            modal._current_filter = ''
-            abn_props.vertex_group = ''
-
-    return
 
 
 def init_nav_list(modal):
@@ -1065,6 +1032,7 @@ def finish_modal(modal, restore):
     modal._display_prefs.point_size = modal._point_size
     modal._display_prefs.loop_tri_size = modal._loop_tri_size
     modal._display_prefs.selected_only = modal._selected_only
+    modal._display_prefs.draw_weights = modal._draw_weights
     modal._display_prefs.selected_scale = modal._selected_scale
     modal._behavior_prefs.individual_loops = modal._individual_loops
     modal._display_prefs.ui_scale = modal._ui_scale
@@ -1146,6 +1114,54 @@ def check_area(modal):
     #                         return region, area.spaces.active.region_3d
 
     return bpy.context.region, bpy.context.region_data
+
+
+def update_filter_from_vg(modal):
+    abn_props = bpy.context.scene.abnormal_props
+
+    if abn_props.vertex_group != '' and abn_props.vertex_group != modal._current_filter:
+        if abn_props.vertex_group in modal._object.vertex_groups:
+
+            for v in modal._object_bm.verts:
+                vg = modal._object.vertex_groups[abn_props.vertex_group]
+                modal._current_filter = abn_props.vertex_group
+
+                try:
+                    weight = vg.weight(v.index)
+                    modal._container.filter_weights[modal._container.vert_link_ls[v.index]] = weight
+
+                except:
+                    modal._container.filter_weights[modal._container.vert_link_ls[v.index]] = 0.0
+
+            modal._container.filter_mask[:] = False
+            modal._container.filter_mask[modal._container.filter_weights > 0.0] = True
+
+        else:
+            modal._current_filter = ''
+            abn_props.vertex_group = ''
+
+        modal.redraw = True
+
+    return
+
+
+def selection_to_filer_mask(modal):
+    modal._container.filter_mask[:] = modal._container.sel_status
+    modal._container.filter_weights[modal._container.sel_status] = 1.0
+    modal._container.filter_weights[~modal._container.sel_status] = 0.0
+    modal._current_filter = ''
+
+    modal.redraw = True
+    return
+
+
+def clear_filter_mask(modal):
+    modal._container.filter_mask[:] = True
+    modal._container.filter_weights[:] = 1.0
+    modal._current_filter = ''
+
+    modal.redraw = True
+    return
 
 
 #
@@ -1264,7 +1280,6 @@ def add_target_empty(ob):
 
 
 def start_sphereize_mode(modal):
-    update_filter_weights(modal)
 
     for i in range(len(bpy.context.selected_objects)):
         bpy.context.selected_objects[0].select_set(False)
@@ -1290,7 +1305,7 @@ def start_sphereize_mode(modal):
     modal._tools_panel.set_visibility(False)
     modal._sphere_panel.set_visibility(True)
     modal._sphere_panel.set_new_position(
-        modal._mouse_reg_loc.tolist(), window_dims=modal._window.dimensions)
+        modal._mouse_reg_loc, window_dims=modal._window.dimensions)
 
     sphereize_normals(modal)
     return
@@ -1340,7 +1355,6 @@ def sphereize_normals(modal):
 
 
 def start_point_mode(modal):
-    update_filter_weights(modal)
 
     for i in range(len(bpy.context.selected_objects)):
         bpy.context.selected_objects[0].select_set(False)
@@ -1367,7 +1381,7 @@ def start_point_mode(modal):
     modal._tools_panel.set_visibility(False)
     modal._point_panel.set_visibility(True)
     modal._point_panel.set_new_position(
-        modal._mouse_reg_loc.tolist(), window_dims=modal._window.dimensions)
+        modal._mouse_reg_loc, window_dims=modal._window.dimensions)
 
     point_normals(modal)
     return

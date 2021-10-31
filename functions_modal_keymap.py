@@ -196,6 +196,21 @@ def keymap_target(modal):
     return
 
 
+def keymap_gradient(modal):
+    kt = modal._keymap_box
+    kt.clear_rows()
+    text_height = 8
+
+    kt.add_text_row(text_height, keymap_string_find(
+        modal.keymap.keymap_items, 'Gradient Point Move Start'))
+    kt.add_text_row(text_height, keymap_string_find(
+        modal.keymap.keymap_items, 'Gradient Flip'))
+    kt.add_text_row(text_height, keymap_string_find(
+        modal.keymap.keymap_items, 'Cancel Tool 1', name_replace='Cancel'))
+    modal._export_panel.create_shape_data()
+    return
+
+
 def keymap_mirror(modal):
     kt = modal._keymap_box
     kt.clear_rows()
@@ -264,6 +279,23 @@ def keymap_target_move(modal):
         modal.keymap.keymap_items, 'Target Move Y Axis'))
     kt.add_text_row(text_height, keymap_string_find(
         modal.keymap.keymap_items, 'Target Move Z Axis'))
+    kt.add_text_row(text_height, keymap_string_find(
+        modal.keymap.keymap_items, 'Confirm Tool 1', name_replace='Confirm Move'))
+    kt.add_text_row(text_height, keymap_string_find(
+        modal.keymap.keymap_items, 'Cancel Tool 2', name_replace='Cancel Move'))
+    modal._export_panel.create_shape_data()
+    return
+
+
+def keymap_gradient_move(modal):
+    kt = modal._keymap_box
+    kt.clear_rows()
+    text_height = 8
+
+    kt.add_text_row(text_height, keymap_string_find(
+        modal.keymap.keymap_items, 'Gradient Point Move X Axis'))
+    kt.add_text_row(text_height, keymap_string_find(
+        modal.keymap.keymap_items, 'Gradient Point Move Y Axis'))
     kt.add_text_row(text_height, keymap_string_find(
         modal.keymap.keymap_items, 'Confirm Tool 1', name_replace='Confirm Move'))
     kt.add_text_row(text_height, keymap_string_find(

@@ -109,7 +109,7 @@ def init_ui_panels(modal, rw, rh, scale):
     # POINT AT PANEL
     if True:
         modal._point_panel = modal._window.add_panel(
-            modal._mouse_reg_loc.tolist(), 250)
+            [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
         modal._point_panel.set_separation(8)
         modal._point_panel.set_horizontal_alignment('LEFT')
         modal._point_panel.add_header(
@@ -143,7 +143,7 @@ def init_ui_panels(modal, rw, rh, scale):
     # SPHEREIZE PANEL
     if True:
         modal._sphere_panel = modal._window.add_panel(
-            modal._mouse_reg_loc.tolist(), 250)
+            [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
         modal._sphere_panel.set_separation(8)
         modal._sphere_panel.set_horizontal_alignment('LEFT')
         modal._sphere_panel.add_header(
@@ -196,6 +196,11 @@ def init_ui_panels(modal, rw, rh, scale):
         bool = row.add_bool(20, 'Scale Up Selected Normals',
                             default=modal._selected_scale)
         bool.set_click_up_func(toggle_selected_scale)
+
+        row = box.add_row()
+        bool = row.add_bool(20, 'Draw Filter Weights',
+                            default=modal._draw_weights)
+        bool.set_click_up_func(toggle_draw_weights)
 
         row = box.add_row()
         modal._xray_bool = row.add_bool(
@@ -520,6 +525,45 @@ def init_ui_panels(modal, rw, rh, scale):
         but.add_tooltip_text_line(
             'Set the object to Flat Shading while preserving the current normals')
 
+    # FILTER PANEL
+    if True:
+        panel = modal._window.add_subpanel_popup(
+            [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
+        modal._filter_panel = panel
+        panel.set_separation(8)
+        panel.set_horizontal_alignment('LEFT')
+        panel.set_visibility(False)
+        panel.set_close_on_click(False)
+        panel.set_close_margin(2)
+        panel.set_height_min_max(
+            max=bpy.context.region.height*0.9)
+
+        box = modal._filter_panel.add_box()
+
+        row = box.add_row()
+        but = row.add_button(20, 'Create Filter Mask From Vgroup')
+        but.set_click_up_func(filter_mask_from_vg)
+        but.add_tooltip_text_line(
+            'Convert the vertex group set in the addon panel into a vertex mask with gradient weights')
+
+        row = box.add_row()
+        but = row.add_button(20, 'Create Filter Mask From Selected')
+        but.set_click_up_func(filter_mask_from_sel)
+        but.add_tooltip_text_line(
+            'Convert the current selection to a filter mask with full weight on all selected loops')
+
+        row = box.add_row()
+        but = row.add_button(20, 'Clear Filter Mask')
+        but.set_click_up_func(filter_mask_clear)
+        but.add_tooltip_text_line(
+            'Clear filter mask and gradient weights')
+
+        row = box.add_row()
+        but = row.add_button(20, 'Start Filter Gradient Tool')
+        but.set_click_up_func(gradient_tool_start)
+        but.add_tooltip_text_line(
+            'Create a filter weight gradient for the current gradient mask')
+
     # COPY/PASTE PANEL
     if True:
         panel = modal._window.add_subpanel_popup(
@@ -625,6 +669,11 @@ def init_ui_panels(modal, rw, rh, scale):
             bool = row.add_bool(20, 'Scale Up Selected Normals',
                                 default=modal._selected_scale)
             bool.set_click_up_func(toggle_selected_scale)
+
+            row = boxx.add_row()
+            bool = row.add_bool(20, 'Draw Filter Weights',
+                                default=modal._draw_weights)
+            bool.set_click_up_func(toggle_draw_weights)
 
             row = boxx.add_row()
             modal._xray_bool = row.add_bool(
@@ -1025,6 +1074,53 @@ def init_ui_panels(modal, rw, rh, scale):
         box = modal._tools_panel.add_box()
         row = box.add_row()
         hbut = row.add_hover_button(30,
+                                    'Filter Settings')
+        hbut.set_click_up_func(toggle_filter_button)
+        hbut.set_hover_down_func(filter_panel_show)
+        hbut.set_font_size(16)
+        hbut.set_bool(not modal._display_prefs.filter_collapsed)
+        hbut.set_draw_box(not hbut.bool)
+
+        modal._filter_panel.set_hover_ref(row)
+
+        if True:
+            boxx = box.add_box()
+
+            boxx.set_visibility(not modal._display_prefs.filter_collapsed)
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Create Filter Mask From Vgroup')
+            but.set_click_up_func(filter_mask_from_vg)
+            but.add_tooltip_text_line(
+                'Convert the vertex group set in the addon panel into a vertex mask with gradient weights')
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Create Filter Mask From Selected')
+            but.set_click_up_func(filter_mask_from_sel)
+            but.add_tooltip_text_line(
+                'Convert the current selection to a filter mask with full weight on all selected loops')
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Clear Filter Mask')
+            but.set_click_up_func(filter_mask_clear)
+            but.add_tooltip_text_line(
+                'Clear filter mask and gradient weights')
+
+            row = boxx.add_row()
+            but = row.add_button(20, 'Start Filter Gradient Tool')
+            but.set_click_up_func(gradient_tool_start)
+            but.add_tooltip_text_line(
+                'Create a filter weight gradient for the current gradient mask')
+
+            modal._filter_box = boxx
+
+        #
+        #
+        #
+
+        box = modal._tools_panel.add_box()
+        row = box.add_row()
+        hbut = row.add_hover_button(30,
                                     'Copy/Paste Normals')
         hbut.set_click_up_func(toggle_copy_button)
         hbut.set_hover_down_func(copy_panel_show)
@@ -1102,44 +1198,44 @@ def init_ui_panels(modal, rw, rh, scale):
 
 
 # BUTTON FUNCTIONS
-def change_ui_scale(modal, arguments):
-    arguments[0]._ui_scale = modal.value
+def change_ui_scale(ui_item, arguments):
+    arguments[0]._ui_scale = ui_item.value
 
     arguments[0]._window.set_scale(arguments[0]._ui_scale)
     arguments[0]._window.create_shape_data()
     return True
 
 
-def change_gizmo_size(modal, arguments):
-    arguments[0]._gizmo_size = modal.value
-    arguments[0]._rot_gizmo.update_size(modal.value)
+def change_gizmo_size(ui_item, arguments):
+    arguments[0]._gizmo_size = ui_item.value
+    arguments[0]._rot_gizmo.update_size(ui_item.value)
     return
 
 
-def change_point_size(modal, arguments):
-    arguments[0]._point_size = modal.value
+def change_point_size(ui_item, arguments):
+    arguments[0]._point_size = ui_item.value
     arguments[0]._container.set_point_size(
         arguments[0]._point_size)
     arguments[0].redraw = True
     return
 
 
-def change_loop_tri_size(modal, arguments):
-    arguments[0]._loop_tri_size = modal.value
+def change_loop_tri_size(ui_item, arguments):
+    arguments[0]._loop_tri_size = ui_item.value
     arguments[0]._container.set_loop_scale(
         arguments[0]._loop_tri_size)
     arguments[0].redraw = True
     return
 
 
-def change_mirror_range(modal, arguments):
-    arguments[0]._mirror_range = modal.value
+def change_mirror_range(ui_item, arguments):
+    arguments[0]._mirror_range = ui_item.value
     cache_mirror_data(arguments[0])
     return
 
 
-def change_line_brightness(modal, arguments):
-    arguments[0]._line_brightness = modal.value
+def change_line_brightness(ui_item, arguments):
+    arguments[0]._line_brightness = ui_item.value
     arguments[0]._container.set_brightess(
         arguments[0]._line_brightness)
 
@@ -1148,55 +1244,55 @@ def change_line_brightness(modal, arguments):
     return
 
 
-def change_normal_size(modal, arguments):
-    arguments[0]._normal_size = modal.value
+def change_normal_size(ui_item, arguments):
+    arguments[0]._normal_size = ui_item.value
     arguments[0]._container.set_normal_scale(
         arguments[0]._normal_size)
     arguments[0].redraw = True
     return
 
 
-def change_sphereize_strength(modal, arguments):
-    arguments[0].target_strength = modal.value
+def change_sphereize_strength(ui_item, arguments):
+    arguments[0].target_strength = ui_item.value
 
     if arguments[0]._container.sel_status.any():
         sphereize_normals(arguments[0])
     return
 
 
-def change_point_strength(modal, arguments):
-    arguments[0].target_strength = modal.value
+def change_point_strength(ui_item, arguments):
+    arguments[0].target_strength = ui_item.value
 
     if arguments[0]._container.sel_status.any():
         point_normals(arguments[0])
     return
 
 
-def change_smooth_strength(modal, arguments):
-    arguments[0]._smooth_strength = modal.value
+def change_smooth_strength(ui_item, arguments):
+    arguments[0]._smooth_strength = ui_item.value
     return
 
 
-def change_smooth_iterations(modal, arguments):
-    arguments[0]._smooth_iterations = modal.value
+def change_smooth_iterations(ui_item, arguments):
+    arguments[0]._smooth_iterations = ui_item.value
     return
 
 
-def change_rotation_increment(modal, arguments):
+def change_rotation_increment(ui_item, arguments):
     for item in arguments[0]._rot_increment_row.items:
         if item.item_type == 'BOOLEAN':
             item.set_bool(False)
 
-    if modal.custom_id[0] == 0:
-        modal.set_bool(True)
+    if ui_item.custom_id[0] == 0:
+        ui_item.set_bool(True)
         arguments[0]._rot_increment_one = True
         arguments[0]._rot_increment = 1
-    if modal.custom_id[0] == 1:
-        modal.set_bool(True)
+    if ui_item.custom_id[0] == 1:
+        ui_item.set_bool(True)
         arguments[0]._rot_increment_five = True
         arguments[0]._rot_increment = 5
-    if modal.custom_id[0] == 2:
-        modal.set_bool(True)
+    if ui_item.custom_id[0] == 2:
+        ui_item.set_bool(True)
         arguments[0]._rot_increment_ten = True
         arguments[0]._rot_increment = 10
 
@@ -1206,67 +1302,75 @@ def change_rotation_increment(modal, arguments):
 #
 
 
-def toggle_use_gizmo(modal, arguments):
-    arguments[0]._use_gizmo = modal.bool_val
+def toggle_use_gizmo(ui_item, arguments):
+    arguments[0]._use_gizmo = ui_item.bool_val
     update_orbit_empty(arguments[0])
     gizmo_update_hide(arguments[0], arguments[0]._use_gizmo)
     return
 
 
-def toggle_x_ray(modal, arguments):
-    arguments[0]._x_ray_mode = modal.bool_val
+def toggle_x_ray(ui_item, arguments):
+    arguments[0]._x_ray_mode = ui_item.bool_val
     return
 
 
-def toggle_wireframe(modal, arguments):
-    arguments[0]._use_wireframe_overlay = modal.bool_val
+def toggle_wireframe(ui_item, arguments):
+    arguments[0]._use_wireframe_overlay = ui_item.bool_val
     for space in arguments[0]._draw_area.spaces:
         if space.type == 'VIEW_3D':
-            space.overlay.show_wireframes = modal.bool_val
+            space.overlay.show_wireframes = ui_item.bool_val
             space.overlay.wireframe_threshold = 1.0
     return
 
 
-def toggle_selected_scale(modal, arguments):
-    arguments[0]._selected_scale = modal.bool_val
+def toggle_selected_scale(ui_item, arguments):
+    arguments[0]._selected_scale = ui_item.bool_val
     arguments[0]._container.set_scale_selection(
         arguments[0]._selected_scale)
     arguments[0].redraw = True
     return
 
 
-def toggle_show_only_selected(modal, arguments):
-    arguments[0]._selected_only = modal.bool_val
+def toggle_show_only_selected(ui_item, arguments):
+    arguments[0]._selected_only = ui_item.bool_val
     arguments[0]._container.set_draw_only_selected(
         arguments[0]._selected_only)
     arguments[0].redraw = True
     return
 
 
-def toggle_mirror_axis(modal, arguments):
-    if modal.custom_id[0] == 0:
-        arguments[0]._mirror_x = modal.bool_val
-    if modal.custom_id[0] == 1:
-        arguments[0]._mirror_y = modal.bool_val
-    if modal.custom_id[0] == 2:
-        arguments[0]._mirror_z = modal.bool_val
+def toggle_draw_weights(ui_item, arguments):
+    arguments[0]._draw_weights = ui_item.bool_val
+    arguments[0]._container.set_draw_weights(
+        arguments[0]._draw_weights)
+    arguments[0].redraw = True
     return
 
 
-def toggle_align_vectors(modal, arguments):
-    arguments[0].point_align = modal.bool_val
+def toggle_mirror_axis(ui_item, arguments):
+    if ui_item.custom_id[0] == 0:
+        arguments[0]._mirror_x = ui_item.bool_val
+    if ui_item.custom_id[0] == 1:
+        arguments[0]._mirror_y = ui_item.bool_val
+    if ui_item.custom_id[0] == 2:
+        arguments[0]._mirror_z = ui_item.bool_val
+    return
+
+
+def toggle_align_vectors(ui_item, arguments):
+    arguments[0].point_align = ui_item.bool_val
 
     if arguments[0]._container.sel_status.any():
         point_normals(arguments[0])
     return
 
 
-def toggle_individual_loops(modal, arguments):
-    arguments[0]._individual_loops = modal.bool_val
+def toggle_individual_loops(ui_item, arguments):
+    arguments[0]._individual_loops = ui_item.bool_val
     arguments[0]._container.set_draw_tris(
         arguments[0]._individual_loops)
 
-    if modal.bool_val == False:
+    if ui_item.bool_val == False:
         sel_pos = get_selected_points(arguments[0], any_selected=True)
         arguments[0]._container.sel_status[arguments[0]._container.vert_link_ls[sel_pos]] = True
 
@@ -1423,6 +1527,31 @@ def modify_panel_show(ui_item, arguments):
     return
 
 
+def toggle_filter_button(ui_item, arguments):
+    arguments[0]._filter_box.set_visibility(
+        not arguments[0]._filter_box.visible)
+
+    ui_item.set_bool(not ui_item.bool)
+    ui_item.set_draw_box(not ui_item.bool)
+    if arguments[0]._filter_box.visible == False:
+        repos_subpanel(arguments[0]._filter_panel, ui_item, arguments[0])
+    else:
+        arguments[0]._filter_panel.set_visibility(False)
+
+    arguments[0]._tools_panel.create_shape_data()
+    return
+
+
+def filter_panel_show(ui_item, arguments):
+    if ui_item.bool == False:
+        repos_subpanel(arguments[0]._filter_panel, ui_item, arguments[0])
+
+    else:
+        arguments[0]._filter_panel.set_visibility(False)
+
+    return
+
+
 def toggle_copy_button(ui_item, arguments):
     arguments[0]._copy_box.set_visibility(
         not arguments[0]._copy_box.visible)
@@ -1476,91 +1605,123 @@ def modes_panel_show(ui_item, arguments):
 #
 
 
-def mirror_selection(modal, arguments):
-    if arguments[0]._container.sel_status.any():
-        mirror_normals(arguments[0], modal.custom_id[0])
+def filter_mask_from_vg(ui_item, arguments):
+    update_filter_from_vg(arguments[0])
     return
 
 
-def flatten_axis(modal, arguments):
-    if arguments[0]._container.sel_status.any():
-        flatten_normals(arguments[0], modal.custom_id[0])
+def filter_mask_from_sel(ui_item, arguments):
+    selection_to_filer_mask(arguments[0])
     return
 
 
-def algin_to_axis(modal, arguments):
+def filter_mask_clear(ui_item, arguments):
+    clear_filter_mask(arguments[0])
+    return
+
+
+def gradient_tool_start(ui_item, arguments):
+    arguments[0]._current_tool = arguments[0]._gradient_tool
+    keymap_gradient(arguments[0])
+    arguments[0]._mode_cache.append(np.array([False, False], dtype=bool))
+    arguments[0]._mode_cache.append([False, 0, False, 1])
+    arguments[0]._mode_cache.append(np.array([False, False], dtype=bool))
+    arguments[0]._mode_cache.append(
+        np.array([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]], dtype=np.float32))
+    arguments[0]._mode_cache.append(
+        np.array([0.0, 0.0], dtype=np.float32))
+
+    # Cache current weights
+    arguments[0]._mode_cache.append(
+        arguments[0]._container.filter_weights.copy())
+    return
+
+
+def mirror_selection(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
-        if modal.custom_id[0] == 0:
+        mirror_normals(arguments[0], ui_item.custom_id[0])
+    return
+
+
+def flatten_axis(ui_item, arguments):
+    if arguments[0]._container.sel_status.any():
+        flatten_normals(arguments[0], ui_item.custom_id[0])
+    return
+
+
+def algin_to_axis(ui_item, arguments):
+    if arguments[0]._container.sel_status.any():
+        if ui_item.custom_id[0] == 0:
             align_to_axis_normals(arguments[0], 0, 1)
-        if modal.custom_id[0] == 1:
+        if ui_item.custom_id[0] == 1:
             align_to_axis_normals(arguments[0], 0, -1)
-        if modal.custom_id[0] == 2:
+        if ui_item.custom_id[0] == 2:
             align_to_axis_normals(arguments[0], 1, 1)
-        if modal.custom_id[0] == 3:
+        if ui_item.custom_id[0] == 3:
             align_to_axis_normals(arguments[0], 1, -1)
-        if modal.custom_id[0] == 4:
+        if ui_item.custom_id[0] == 4:
             align_to_axis_normals(arguments[0], 2, 1)
-        if modal.custom_id[0] == 5:
+        if ui_item.custom_id[0] == 5:
             align_to_axis_normals(arguments[0], 2, -1)
 
     return
 
 
-def flip_selection(modal, arguments):
+def flip_selection(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
         flip_normals(arguments[0])
     return
 
 
-def set_direction(modal, arguments):
+def set_direction(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
-        if modal.custom_id[0] == 0:
+        if ui_item.custom_id[0] == 0:
             set_outside_inside(arguments[0], 1)
-        if modal.custom_id[0] == 1:
+        if ui_item.custom_id[0] == 1:
             set_outside_inside(arguments[0], -1)
 
     return
 
 
-def set_from_faces(modal, arguments):
+def set_from_faces(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
         set_normals_from_faces(arguments[0])
 
     return
 
 
-def average_individual(modal, arguments):
+def average_individual(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
         average_vertex_normals(arguments[0])
     return
 
 
-def average_selection(modal, arguments):
+def average_selection(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
         average_selected_normals(arguments[0])
     return
 
 
-def smooth_selection(modal, arguments):
+def smooth_selection(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
         smooth_normals(arguments[0], 0.5)
     return
 
 
-def sharpen_edges(modal, arguments):
+def sharpen_edges(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
         sharpen_edge_normals(arguments[0])
     return
 
 
-def change_shading(modal, arguments):
-    if modal.custom_id[0] == 0:
+def change_shading(ui_item, arguments):
+    if ui_item.custom_id[0] == 0:
         for p in arguments[0]._object.data.polygons:
             p.use_smooth = True
         arguments[0]._object_smooth = True
         set_new_normals(arguments[0])
 
-    if modal.custom_id[0] == 1:
+    if ui_item.custom_id[0] == 1:
         for p in arguments[0]._object.data.polygons:
             p.use_smooth = False
         arguments[0]._object_smooth = False
@@ -1568,68 +1729,68 @@ def change_shading(modal, arguments):
     return
 
 
-def active_to_selection(modal, arguments):
+def active_to_selection(ui_item, arguments):
     if arguments[0]._container.act_status.any():
         copy_active_to_selected(arguments[0])
     return
 
 
-def store_active(modal, arguments):
+def store_active(ui_item, arguments):
     if arguments[0]._container.act_status.any():
         store_active_normal(arguments[0])
     return
 
 
-def paste_stored(modal, arguments):
+def paste_stored(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
         paste_normal(arguments[0])
     return
 
 
-def begin_sphereize_mode(modal, arguments):
+def begin_sphereize_mode(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
         start_sphereize_mode(arguments[0])
     return
 
 
-def finish_sphereize_mode(modal, arguments):
-    if modal.custom_id[0] == 0:
+def finish_sphereize_mode(ui_item, arguments):
+    if ui_item.custom_id[0] == 0:
         end_sphereize_mode(arguments[0], True)
     else:
         end_sphereize_mode(arguments[0], False)
     return
 
 
-def begin_point_mode(modal, arguments):
+def begin_point_mode(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
         start_point_mode(arguments[0])
     return
 
 
-def finish_point_mode(modal, arguments):
-    if modal.custom_id[0] == 0:
+def finish_point_mode(ui_item, arguments):
+    if ui_item.custom_id[0] == 0:
         end_point_mode(arguments[0], True)
     else:
         end_point_mode(arguments[0], False)
     return
 
 
-def end_modal(modal, arguments):
-    if modal.custom_id[0] == 0:
+def end_modal(ui_item, arguments):
+    if ui_item.custom_id[0] == 0:
         arguments[0]._confirm_modal = True
-    if modal.custom_id[0] == 1:
+    if ui_item.custom_id[0] == 1:
         arguments[0]._cancel_modal = True
 
     return
 
 
-def reset_vectors(modal, arguments):
+def reset_vectors(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
         reset_normals(arguments[0])
     return
 
 
-def save_preferences(modal, arguments):
+def save_preferences(ui_item, arguments):
     arguments[0]._behavior_prefs.individual_loops = arguments[0]._individual_loops
     arguments[0]._behavior_prefs.rotate_gizmo_use = arguments[0]._use_gizmo
 
@@ -1639,6 +1800,7 @@ def save_preferences(modal, arguments):
     arguments[0]._display_prefs.point_size = arguments[0]._point_size
     arguments[0]._display_prefs.loop_tri_size = arguments[0]._loop_tri_size
     arguments[0]._display_prefs.selected_only = arguments[0]._selected_only
+    arguments[0]._display_prefs.draw_weights = arguments[0]._draw_weights
     arguments[0]._display_prefs.selected_scale = arguments[0]._selected_scale
     arguments[0]._display_prefs.display_wireframe = arguments[0]._use_wireframe_overlay
     arguments[0]._display_prefs.ui_scale = arguments[0]._ui_scale
@@ -1655,14 +1817,14 @@ def save_preferences(modal, arguments):
     return
 
 
-def rotate_normals_incremental(modal, arguments):
+def rotate_normals_incremental(ui_item, arguments):
     if arguments[0]._container.sel_status.any():
         incremental_rotate_vectors(
-            arguments[0], modal.custom_id[0], modal.custom_id[1])
+            arguments[0], ui_item.custom_id[0], ui_item.custom_id[1])
     return
 
 
-def reset_ui(modal, arguments):
+def reset_ui(ui_item, arguments):
     rw = arguments[0].act_reg.width
     rh = arguments[0].act_reg.height
     arguments[0]._export_panel.set_new_position([rw-25, rh-75])

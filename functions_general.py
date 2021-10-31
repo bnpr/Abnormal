@@ -429,6 +429,59 @@ def hsv_to_rgb_list(hsv):
     return rgb
 
 
+def hsv_to_rgb_array(array):
+    s_mask = array[:, 1] == 0.0
+
+    rgb_arr = np.ones(array.shape[0]*4, dtype=np.float32).reshape(-1, 4)
+    rgb_arr[s_mask, 0] = array[s_mask, 2]
+    rgb_arr[s_mask, 1] = array[s_mask, 2]
+    rgb_arr[s_mask, 2] = array[s_mask, 2]
+
+    i = (array[:, 0] * 6).astype(np.int32)
+    f = (array[:, 0] * 6) - i
+
+    p = array[:, 2] * (1-array[:, 1])
+    q = array[:, 2] * (1-array[:, 1]*f)
+    t = array[:, 2] * (1-array[:, 1]*(1-f))
+
+    i = i % 6
+
+    mask_a = i == 0
+    mask_b = i == 1
+    mask_c = i == 2
+    mask_d = i == 3
+    mask_e = i == 5
+    mask_f = i == 6
+
+    rgb_arr[mask_a, 0] = array[mask_a, 2]
+    rgb_arr[mask_a, 1] = t[mask_a]
+    rgb_arr[mask_a, 2] = p[mask_a]
+
+    rgb_arr[mask_b, 0] = q[mask_b]
+    rgb_arr[mask_b, 1] = array[mask_b, 2]
+    rgb_arr[mask_b, 2] = p[mask_b]
+
+    rgb_arr[mask_c, 0] = p[mask_c]
+    rgb_arr[mask_c, 1] = array[mask_c, 2]
+    rgb_arr[mask_c, 2] = t[mask_c]
+
+    rgb_arr[mask_d, 0] = p[mask_d]
+    rgb_arr[mask_d, 1] = q[mask_d]
+    rgb_arr[mask_d, 2] = array[mask_d, 2]
+
+    rgb_arr[mask_e, 0] = t[mask_e]
+    rgb_arr[mask_e, 1] = p[mask_e]
+    rgb_arr[mask_e, 2] = array[mask_e, 2]
+
+    rgb_arr[mask_f, 0] = array[mask_f, 2]
+    rgb_arr[mask_f, 1] = p[mask_f]
+    rgb_arr[mask_f, 2] = q[mask_f]
+
+    rgb_arr[:, 3] = array[:, 3]
+
+    return rgb_arr
+
+
 #
 #
 
@@ -710,6 +763,54 @@ def get_np_matrix_transformed_vecs(array, mat):
 
     transformed_array = (n_mat @ full_array.T).T[:, :-1]
     return transformed_array
+
+
+def get_np_vec_angles(vecs_a, vecs_b):
+    #
+    # Get the angles between 2 sets of vectors
+    #
+    dots = get_np_normalized_vecs(vecs_a) * get_np_normalized_vecs(vecs_b)
+
+    angs = np.arccos(np.clip(np.sum(dots, axis=1), -1.0, 1.0))
+
+    return angs
+
+
+def get_np_vec_angles_signed(vecs_a, vecs_b, switch=False, full_range=False):
+    #
+    # Get the signed angles between 2 sets of vectors
+    # Only uses the X and Y coords to get the angle
+    # Z axis should be 0.0
+    #
+    angs = get_np_vec_angles(vecs_a, vecs_b)
+
+    cross = np.cross(vecs_a, vecs_b)
+    cross = cross[:, 2] >= 0.0
+    cross.shape = angs.shape
+
+    angs[cross] *= -1
+
+    # Reverse angle if going backwards
+    if switch:
+        angs *= -1
+
+    # Convert negative counter clockwise values to 0-2pi range
+    if full_range:
+        angs[angs < 0.0] = np.pi*2 + angs[angs < 0.0]
+
+    return angs
+
+
+def get_np_vec_lengths(array):
+    #
+    # Given a vector numpy array get distance to test coord
+    # Subtract test_co from array, Square each axis,
+    # get the square root of each axis, and sum the axis of each vector for a distance
+    #
+
+    dists = np.sqrt(np.sum(np.square(array), axis=1))
+
+    return dists
 
 
 #

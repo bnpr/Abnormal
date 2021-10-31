@@ -57,6 +57,41 @@ def draw(preference, context, layout):
     layout.separator()
     #
 
+    keymap_row(keymap_items, 'Filter Mask From Selected',
+               layout.row(), 'Create Filter Mask From Selected Key')
+    keymap_row(keymap_items, 'Clear Filter Mask',
+               layout.row(), 'Clear Filter Mask Key')
+    keymap_row(keymap_items, 'Start Filter Gradient Tool',
+               layout.row(), 'Start Filter Gradient Tool Key')
+
+    keymap_row(keymap_items, 'Gradient Point Move Start',
+               layout.row(), 'Gradient Point Move Start Key')
+    keymap_row(keymap_items, 'Gradient Enable Angle Snap',
+               layout.row(), 'Gradient Enable Angle Snap Key')
+
+    keymap_row(keymap_items, 'Gradient Snap Angle Increase 1',
+               layout.row(), 'Gradient Snap Angle Increase 1 Key')
+    keymap_row(keymap_items, 'Gradient Snap Angle Increase 2',
+               layout.row(), 'Gradient Snap Angle Increase 2 Key')
+    keymap_row(keymap_items, 'Gradient Snap Angle Decrease 1',
+               layout.row(), 'Gradient Snap Angle Decrease 1 Key')
+    keymap_row(keymap_items, 'Gradient Snap Angle Decrease 2',
+               layout.row(), 'Gradient Snap Angle Decrease 2 Key')
+
+    keymap_row(keymap_items, 'Gradient Point Move X Axis',
+               layout.row(), 'Gradient Point Move X Axis Key')
+    keymap_row(keymap_items, 'Gradient Point Move Y Axis',
+               layout.row(), 'Gradient Point Move Y Axis Key')
+
+    keymap_row(keymap_items, 'Gradient Flip Direction',
+               layout.row(), 'Gradient Flip Direction Key')
+    keymap_row(keymap_items, 'Gradient Switch Type',
+               layout.row(), 'Gradient Switch Type Key')
+
+    #
+    layout.separator()
+    #
+
     keymap_row(keymap_items, 'Cancel Modal', layout.row(), 'Cancel Modal Key')
     keymap_row(keymap_items, 'Confirm Modal',
                layout.row(), 'Confirm Modal Key')

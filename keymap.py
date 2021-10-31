@@ -195,6 +195,39 @@ def register():
             km.keymap_items.new('Target Move Z Axis',
                                 'Z', 'PRESS')
 
+            km.keymap_items.new('Filter Mask From Selected',
+                                'G', 'PRESS', ctrl=True)
+            km.keymap_items.new('Clear Filter Mask',
+                                'G', 'PRESS', alt=True)
+            km.keymap_items.new('Start Filter Gradient Tool',
+                                'G', 'PRESS', shift=True)
+
+            km.keymap_items.new('Gradient Point Move Start',
+                                'G', 'PRESS')
+            km.keymap_items.new('Gradient Enable Angle Snap',
+                                'C', 'PRESS')
+
+            km.keymap_items.new('Gradient Flip Direction',
+                                'F', 'PRESS')
+            km.keymap_items.new('Gradient Switch Type',
+                                'T', 'PRESS')
+
+            km.keymap_items.new('Gradient Snap Angle Increase 1',
+                                'WHEELDOWNMOUSE', 'PRESS')
+            km.keymap_items.new('Gradient Snap Angle Increase 2',
+                                'WHEELOUTMOUSE', 'PRESS')
+            km.keymap_items.new('Gradient Snap Angle Decrease 1',
+                                'WHEELUPMOUSE', 'PRESS')
+            km.keymap_items.new('Gradient Snap Angle Decrease 2',
+                                'WHEELINMOUSE', 'PRESS')
+
+            km.keymap_items.new('Gradient Point Move X Axis',
+                                'X', 'PRESS')
+            km.keymap_items.new('Gradient Point Move Y Axis',
+                                'Y', 'PRESS')
+
+            #
+
             km.keymap_items.new('Confirm Tool 1',
                                 'LEFTMOUSE', 'PRESS', any=True)
             km.keymap_items.new('Confirm Tool 2',

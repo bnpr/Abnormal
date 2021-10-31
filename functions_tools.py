@@ -77,6 +77,13 @@ def setup_tools(modal):
     tool.add_keymap_argument(
         'Add Shortest Path Selection', add_shortest_select)
 
+    tool.add_keymap_argument(
+        'Filter Mask From Selected', filter_from_sel)
+    tool.add_keymap_argument(
+        'Clear Filter Mask', filter_clear)
+    tool.add_keymap_argument(
+        'Start Filter Gradient Tool', start_filter_gradient)
+
     modal._basic_tool = tool
     modal._current_tool = modal._basic_tool
 
@@ -258,6 +265,54 @@ def setup_tools(modal):
         tool.add_keymap_argument('Align Normals Neg Z', align_neg_z)
 
         modal._align_tool = tool
+
+        # GRADIENT
+        tool = modal.tools.add_tool(inherit_confirm=False)
+        tool.set_cancel_function(gradient_cancel)
+        tool.set_confirm_function(gradient_confirm)
+        tool.add_keymap_argument(
+            'Gradient Point Move Start', gradient_start_move)
+
+        tool.add_keymap_argument(
+            'New Click Selection', gradient_new_click_select)
+        tool.add_keymap_argument(
+            'Add Click Selection', gradient_add_click_select)
+
+        tool.add_keymap_argument(
+            'Gradient Flip Direction', gradient_flip_dir)
+        tool.add_keymap_argument(
+            'Gradient Switch Type', gradient_switch_type)
+
+        modal._gradient_tool = tool
+
+        # GRADIENT MOVE
+        tool = modal.tools.add_tool()
+        tool.set_mouse_function(gradient_move_mouse)
+        tool.set_cancel_function(gradient_move_cancel)
+        tool.set_confirm_function(gradient_move_confirm)
+        tool.add_keymap_argument(
+            'Gradient Enable Angle Snap', gradient_enable_snap)
+
+        tool.add_keymap_argument(
+            'Gradient Snap Angle Increase 1', gradient_snap_angle_increase)
+        tool.add_keymap_argument(
+            'Gradient Snap Angle Increase 2', gradient_snap_angle_increase)
+        tool.add_keymap_argument(
+            'Gradient Snap Angle Decrease 1', gradient_snap_angle_decrease)
+        tool.add_keymap_argument(
+            'Gradient Snap Angle Decrease 2', gradient_snap_angle_decrease)
+
+        tool.add_keymap_argument(
+            'Gradient Point Move X Axis', gradient_move_set_x)
+        tool.add_keymap_argument(
+            'Gradient Point Move Y Axis', gradient_move_set_y)
+
+        tool.add_keymap_argument(
+            'Gradient Flip Direction', gradient_flip_dir)
+        tool.add_keymap_argument(
+            'Gradient Switch Type', gradient_switch_type)
+
+        modal._gradient_move_tool = tool
 
     # UI TOOLS
     if True:
@@ -744,7 +799,6 @@ def reset_gizmo(modal, context, event, keys, func_data):
 
 
 def rotate_start(modal, context, event, keys, func_data):
-    update_filter_weights(modal)
 
     if modal._container.sel_status.any():
         avg_loc = np.mean(
@@ -1068,11 +1122,25 @@ def add_shortest_select(modal, context, event, keys, func_data):
     return
 
 
+def filter_from_sel(modal, context, event, keys, func_data):
+    selection_to_filer_mask(modal)
+    return
+
+
+def filter_clear(modal, context, event, keys, func_data):
+    clear_filter_mask(modal)
+    return
+
+
+def start_filter_gradient(modal, context, event, keys, func_data):
+    modal._current_tool = modal._gradient_tool
+    return
+
+
 #
 # BOX SELECT FUNCS
 def box_sel_start(modal, context, event, keys, func_data):
-    modal._mode_cache.append(
-        [modal._mouse_reg_loc.tolist(), modal._mouse_reg_loc.tolist()])
+    modal._mode_cache.append(modal._mouse_reg_loc.copy())
     modal.box_selecting = True
     return
 
@@ -1093,7 +1161,7 @@ def box_sel_mouse(modal, context, event, func_data):
         modal._mouse_init[:] = np.nan
 
         modal._mode_cache[0].pop(-1)
-        modal._mode_cache[0].append(modal._mouse_reg_loc.tolist())
+        modal._mode_cache[0].append(modal._mouse_reg_loc.copy())
     return
 
 
@@ -1127,7 +1195,7 @@ def box_sel_cancel(modal, context, event, keys, func_data):
 #
 # LASSO SELECT FUNCS
 def lasso_sel_start(modal, context, event, keys, func_data):
-    modal._mode_cache.append([modal._mouse_reg_loc.tolist()])
+    modal._mode_cache.append([modal._mouse_reg_loc.copy()])
     modal.lasso_selecting = True
     return
 
@@ -1153,7 +1221,7 @@ def lasso_sel_mouse(modal, context, event, func_data):
         offset = cur_loc.xy - prev_loc.xy
 
         if offset.length > 5.0:
-            modal._mode_cache[0].append(modal._mouse_reg_loc.tolist())
+            modal._mode_cache[0].append(modal._mouse_reg_loc.copy())
     return
 
 
@@ -1398,7 +1466,7 @@ def rotate_set_z(modal, context, event, keys, func_data):
 #
 # SPHEREIZE FUNCS
 def sphereize_mouse(modal, context, event, func_data):
-    hov_status = modal._window.test_hover(modal._mouse_reg_loc.tolist())
+    hov_status = modal._window.test_hover(modal._mouse_reg_loc)
     modal.ui_hover = hov_status != None
     return
 
@@ -1409,7 +1477,7 @@ def sphereize_start_move(modal, context, event, keys, func_data):
     rco = view3d_utils.location_3d_to_region_2d(
         modal.act_reg, modal.act_rv3d, modal._target_emp.location)
 
-    modal._mode_cache.append(modal._mouse_reg_loc.tolist())
+    modal._mode_cache.append(modal._mouse_reg_loc.copy())
     modal._mode_cache.append(modal._target_emp.location.copy())
     modal._mode_cache.append(rco)
     keymap_target_move(modal)
@@ -1428,12 +1496,12 @@ def sphereize_confirm(modal, context, event, keys, func_data):
         # Test 2d ui selection
         if modal._sphere_panel.visible:
             modal._sphere_panel.test_click_down(
-                modal._mouse_reg_loc.tolist(), event.shift, arguments=[event])
+                modal._mouse_reg_loc, event.shift, arguments=[event])
             modal.click_hold = True
     else:
         if modal._sphere_panel.visible:
             modal._sphere_panel.test_click_up(
-                modal._mouse_reg_loc.tolist(), event.shift, arguments=[event])
+                modal._mouse_reg_loc, event.shift, arguments=[event])
             modal.click_hold = False
     return
 
@@ -1456,7 +1524,7 @@ def sphereize_move_mouse(modal, context, event, func_data):
     sphereize_normals(modal)
 
     modal._mode_cache.pop(1)
-    modal._mode_cache.insert(1, modal._mouse_reg_loc.tolist())
+    modal._mode_cache.insert(1, modal._mouse_reg_loc.copy())
 
     modal.redraw_active = True
     return
@@ -1523,7 +1591,7 @@ def sphereize_move_set_z(modal, context, event, keys, func_data):
 #
 # POINT FUNCS
 def point_mouse(modal, context, event, func_data):
-    hov_status = modal._window.test_hover(modal._mouse_reg_loc.tolist())
+    hov_status = modal._window.test_hover(modal._mouse_reg_loc)
     modal.ui_hover = hov_status != None
     return
 
@@ -1534,7 +1602,7 @@ def point_start_move(modal, context, event, keys, func_data):
     rco = view3d_utils.location_3d_to_region_2d(
         modal.act_reg, modal.act_rv3d, modal._target_emp.location)
 
-    modal._mode_cache.append(modal._mouse_reg_loc.tolist())
+    modal._mode_cache.append(modal._mouse_reg_loc.copy())
     modal._mode_cache.append(modal._target_emp.location.copy())
     modal._mode_cache.append(rco)
     keymap_target_move(modal)
@@ -1553,12 +1621,12 @@ def point_confirm(modal, context, event, keys, func_data):
         # Test 2d ui selection
         if modal._point_panel.visible:
             modal._point_panel.test_click_down(
-                modal._mouse_reg_loc.tolist(), event.shift, arguments=[event])
+                modal._mouse_reg_loc, event.shift, arguments=[event])
             modal.click_hold = True
     else:
         if modal._point_panel.visible:
             modal._point_panel.test_click_up(
-                modal._mouse_reg_loc.tolist(), event.shift, arguments=[event])
+                modal._mouse_reg_loc, event.shift, arguments=[event])
             modal.click_hold = False
     return
 
@@ -1575,7 +1643,7 @@ def point_move_mouse(modal, context, event, func_data):
     point_normals(modal)
 
     modal._mode_cache.pop(1)
-    modal._mode_cache.insert(1, modal._mouse_reg_loc.tolist())
+    modal._mode_cache.insert(1, modal._mouse_reg_loc.copy())
 
     modal.redraw_active = True
     return
@@ -1837,4 +1905,233 @@ def align_neg_z(modal, context, event, keys, func_data):
 
 def align_cancel(modal, context, event, keys, func_data):
     tool_end(modal)
+    return
+
+
+#
+# GRADIENT FUNCS
+def gradient_cancel(modal, context, event, keys, func_data):
+    tool_end(modal)
+    return
+
+
+def gradient_confirm(modal, context, event, keys, func_data):
+    tool_end(modal)
+    return
+
+
+def gradient_new_click_select(modal, context, event, keys, func_data):
+
+    po1_dist = get_np_vec_lengths(
+        modal._mode_cache[3, 2] - modal._mouse_reg_loc[:2])
+    po2_dist = get_np_vec_lengths(
+        modal._mode_cache[3, 3] - modal._mouse_reg_loc[:2])
+
+    if po1_dist < 15 or po2_dist < 15:
+        modal._mode_cache[0, :] = False
+        if po1_dist < po2_dist:
+            modal._mode_cache[0, 0] = True
+        else:
+            modal._mode_cache[0, 1] = True
+
+    return
+
+
+def gradient_add_click_select(modal, context, event, keys, func_data):
+
+    po1_dist = get_np_vec_lengths(
+        modal._mode_cache[3, 2] - modal._mouse_reg_loc[:2])
+    po2_dist = get_np_vec_lengths(
+        modal._mode_cache[3, 3] - modal._mouse_reg_loc[:2])
+
+    # At least 1 point is in range
+    if po1_dist < 15 or po2_dist < 15:
+
+        # Both are in range
+        if po1_dist < 15 and po2_dist < 15:
+
+            # Both selected so unselect nearest
+            if modal._mode_cache[0].all():
+                if po1_dist < po2_dist:
+                    modal._mode_cache[0, 0] = False
+                else:
+                    modal._mode_cache[0, 1] = False
+
+            # At least one is unselected so select it
+            else:
+                if modal._mode_cache[0, 0] == False:
+                    modal._mode_cache[0, 0] = True
+
+                else:
+                    modal._mode_cache[0, 1] = True
+
+        # Only first point in range
+        elif po1_dist < 15:
+            modal._mode_cache[0, 0] = not modal._mode_cache[0, 0]
+
+        # Only second point in range
+        else:
+            modal._mode_cache[0, 1] = not modal._mode_cache[0, 1]
+
+    return
+
+
+def gradient_flip_dir(modal, context, event, keys, func_data):
+    modal._mode_cache[1][0] = not modal._mode_cache[1][0]
+    return
+
+
+def gradient_switch_type(modal, context, event, keys, func_data):
+    modal._mode_cache[1][1] = (modal._mode_cache[1][1]+1) % 2
+    return
+
+
+def gradient_start_move(modal, context, event, keys, func_data):
+    if modal._mode_cache[0].any():
+        modal._window.set_status('TRANSLATION')
+
+        modal._mode_cache.append(modal._mouse_reg_loc.copy())
+        keymap_gradient_move(modal)
+        modal._current_tool = modal._gradient_move_tool
+    return
+
+
+#
+# GRADIENT MOVE FUNCS
+def gradient_move_mouse(modal, context, event, func_data):
+    move_gradient_point(modal, event.shift)
+
+    modal._mode_cache.pop(-1)
+    modal._mode_cache.append(modal._mouse_reg_loc.copy())
+
+    modal.redraw = True
+    return
+
+
+def gradient_enable_snap(modal, context, event, keys, func_data):
+    modal._mode_cache[1][2] = not modal._mode_cache[1][2]
+    move_gradient_point(modal, event.shift)
+    return
+
+
+def gradient_snap_angle_increase(modal, context, event, keys, func_data):
+    if modal._mode_cache[1][3] < 5:
+        modal._mode_cache[1][3] += 1
+    return
+
+
+def gradient_snap_angle_decrease(modal, context, event, keys, func_data):
+    if modal._mode_cache[1][3] > 0:
+        modal._mode_cache[1][3] -= 1
+    return
+
+
+def gradient_move_confirm(modal, context, event, keys, func_data):
+    modal._window.clear_status()
+    keymap_gradient(modal)
+    modal._current_tool = modal._gradient_tool
+    modal._mode_cache.pop(-1)
+    end_active_drawing(modal)
+    return
+
+
+def gradient_move_cancel(modal, context, event, keys, func_data):
+    modal._window.clear_status()
+    modal.redraw = True
+    keymap_gradient(modal)
+    modal._current_tool = modal._gradient_tool
+    modal._mode_cache.pop(-1)
+    end_active_drawing(modal)
+    return
+
+
+def gradient_move_set_x(modal, context, event, keys, func_data):
+    if modal._mode_cache[2][1]:
+        modal._mode_cache[2][1] = False
+    else:
+        modal._mode_cache[2, :] = True
+
+    move_gradient_point(modal, event.shift)
+    modal.redraw = True
+    return
+
+
+def gradient_move_set_y(modal, context, event, keys, func_data):
+    if modal._mode_cache[2][0]:
+        modal._mode_cache[2][0] = False
+    else:
+        modal._mode_cache[2, :] = True
+
+    move_gradient_point(modal, event.shift)
+    modal.redraw = True
+    return
+
+
+def move_gradient_point(modal, shift):
+    offset = modal._mouse_reg_loc - modal._mode_cache[-1]
+
+    if shift:
+        offset *= 0.1
+
+    if modal._mode_cache[2, 0] == False:
+        offset[0] = 0
+    if modal._mode_cache[2, 1] == False:
+        offset[1] = 0
+
+    modal._mode_cache[4] += offset
+
+    # Write final pos to array
+    if modal._mode_cache[1] == False:
+        if modal._mode_cache[0, 0]:
+            modal._mode_cache[3, 2] = modal._mode_cache[3,
+                                                        0] + modal._mode_cache[4]
+
+        if modal._mode_cache[0, 1]:
+            modal._mode_cache[3, 3] = modal._mode_cache[3,
+                                                        1] + modal._mode_cache[4]
+
+    # Constraint to angle snaps
+    else:
+        increments = [90, 45, 30, 15, 10, 5]
+        snap = increments[modal._mode_cache[1][3]]
+
+        if modal._mode_cache[0, 0]:
+            po1 = modal._mode_cache[3, 0] + modal._mode_cache[4]
+        else:
+            po1 = modal._mode_cache[3, 0]
+
+        if modal._mode_cache[0, 1]:
+            po2 = modal._mode_cache[3, 1] + modal._mode_cache[4]
+        else:
+            po2 = modal._mode_cache[3, 1]
+
+        #
+
+        vec = po2 - po1
+        up_vec = np.array([[0.0, 1.0]])
+
+        ang = get_np_vec_angles_signed(vec, up_vec)
+
+        rots = round(ang/snap)
+
+        length = get_np_vec_lengths(po2 - po1)
+
+        #
+
+        if modal._mode_cache[0].all():
+            new_co = rotate_2d(po1, [0.0, length], rots * snap)
+
+            modal._mode_cache[3, 2] = po1
+            modal._mode_cache[3, 3] = new_co
+
+        elif modal._mode_cache[0, 1]:
+            new_co = rotate_2d(po1, [0.0, length], rots * snap)
+
+            modal._mode_cache[3, 3] = new_co
+
+        else:
+            new_co = rotate_2d(po2, [0.0, length], rots * snap)
+
+            modal._mode_cache[3, 2] = new_co
+
     return
