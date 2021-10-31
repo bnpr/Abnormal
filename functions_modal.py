@@ -44,9 +44,11 @@ def set_new_normals(modal):
         'use_edge_sharp', modal._container.og_sharp)
 
     # Lerp between cached and new normals by the filter weights
-    modal._container.new_norms = modal._container.cache_norms * \
-        (1.0-modal._container.filter_weights[:, None]) + \
-        modal._container.new_norms * modal._container.filter_weights[:, None]
+    if modal._container.filter_mask.any():
+        modal._container.new_norms[:] = modal._container.cache_norms * (
+            1.0-modal._container.filter_weights[:, None]) + modal._container.new_norms * modal._container.filter_weights[:, None]
+    else:
+        modal._container.new_norms[:] = modal._container.new_norms
 
     # Get the scale factor to normalized new normals
     scale = 1 / np.sqrt(np.sum(np.square(modal._container.new_norms), axis=1))
@@ -653,8 +655,8 @@ def cache_point_data(modal):
     modal._container.vert_link_ls.shape = [vert_amnt, max_link_loops]
 
     modal._container.loop_faces = np.array(link_fs, dtype=np.int32)
-    modal._container.filter_weights = np.ones(loop_amnt, dtype=np.float32)
-    modal._container.filter_mask = np.ones(loop_amnt, dtype=bool)
+    modal._container.filter_weights = np.zeros(loop_amnt, dtype=np.float32)
+    modal._container.filter_mask = np.zeros(loop_amnt, dtype=bool)
 
     #
 
@@ -1156,8 +1158,8 @@ def selection_to_filer_mask(modal):
 
 
 def clear_filter_mask(modal):
-    modal._container.filter_mask[:] = True
-    modal._container.filter_weights[:] = 1.0
+    modal._container.filter_mask[:] = False
+    modal._container.filter_weights[:] = 0.0
     modal._current_filter = ''
 
     modal.redraw = True

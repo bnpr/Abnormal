@@ -67,8 +67,8 @@ class ABNContainer:
         self.color_po_sel = (0.1, 0.7, 0.9, 1.0)
         self.color_po_act = (0.0, 0.0, 1.0, 1.0)
 
-        self.color_po_zero_weight = (0.66, 0.8, 1.0, 1.0)
-        self.color_po_full_weight = (0.0, 0.8, 1.0, 1.0)
+        self.color_po_zero_weight = (0.66, 1.0, 1.0, 1.0)
+        self.color_po_full_weight = (0.0, 1.0, 1.0, 1.0)
 
         self.color_normal = (0.83, 0.3, 0.4, 1.0)
         self.color_normal_sel = (0.83, 0.7, 0.9, 1.0)

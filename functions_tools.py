@@ -965,6 +965,7 @@ def normals_from_faces(modal, context, event, keys, func_data):
         add_to_undostack(modal, 0)
     return
 
+
 #
 
 
@@ -1467,7 +1468,11 @@ def rotate_set_z(modal, context, event, keys, func_data):
 # SPHEREIZE FUNCS
 def sphereize_mouse(modal, context, event, func_data):
     hov_status = modal._window.test_hover(modal._mouse_reg_loc)
-    modal.ui_hover = hov_status != None
+    modal.ui_hover = hov_status is not None
+    if modal.ui_hover:
+        ui_hover_timer_start(modal)
+        modal._current_tool = modal._ui_tool
+        return {'RUNNING_MODAL'}
     return
 
 
@@ -1592,7 +1597,11 @@ def sphereize_move_set_z(modal, context, event, keys, func_data):
 # POINT FUNCS
 def point_mouse(modal, context, event, func_data):
     hov_status = modal._window.test_hover(modal._mouse_reg_loc)
-    modal.ui_hover = hov_status != None
+    modal.ui_hover = hov_status is not None
+    if modal.ui_hover:
+        ui_hover_timer_start(modal)
+        modal._current_tool = modal._ui_tool
+        return {'RUNNING_MODAL'}
     return
 
 
