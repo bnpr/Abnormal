@@ -8,6 +8,8 @@ class ABNScnProperties(PropertyGroup):
     object: StringProperty()
     vertex_group: StringProperty(
         description='Vertex Group to filter normal changes with')
+    vcol: StringProperty(
+        description='Vertex Color to write data to/from')
 
 
 class AbnormalAddonPreferences(AddonPreferences):

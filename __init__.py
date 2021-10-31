@@ -1,4 +1,5 @@
 from . import operators_modal
+from . import operators
 from . import properties
 from . import ui
 from . import keymap
@@ -6,7 +7,7 @@ from bpy.props import *
 bl_info = {
     "name": "Abnormal",
     "author": "Cody Winchester (codywinch)",
-    "version": (1, 1),
+    "version": (1, 2),
     "blender": (2, 80, 0),
     "location": "3D View > Object and Properties > Object tab",
     "description": "BNPR Normal Editing Tools",
@@ -26,6 +27,8 @@ if "bpy" in locals():
         importlib.reload(properties)
     if "operators_modal" in locals():
         importlib.reload(operators_modal)
+    if "operators" in locals():
+        importlib.reload(operators)
 
 
 def register():
@@ -33,6 +36,7 @@ def register():
     keymap.register()
     properties.register()
     operators_modal.register()
+    operators.register()
 
 
 def unregister():
@@ -40,6 +44,7 @@ def unregister():
     keymap.unregister()
     properties.unregister()
     operators_modal.unregister()
+    operators.unregister()
 
 
 if __name__ == "__main__":
