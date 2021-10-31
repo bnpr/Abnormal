@@ -1,7 +1,6 @@
 import bpy
 from bpy.props import *
 from bpy.types import Operator
-from mathutils import Vector
 from .properties import *
 # from .functions_general import *
 # from .functions_drawing import *
@@ -47,7 +46,7 @@ class ABN_OT_normal_editor_modal(Operator):
         self._window.check_dimensions(context)
         # Check that mousemove is larger than a pixel to be tested
         mouse_move_check = True
-        if event.type == 'MOUSEMOVE' and Vector(self._mouse_reg_loc-self._prev_mouse_loc).length < 1.0:
+        if event.type == 'MOUSEMOVE' and get_np_vec_lengths((self._mouse_reg_loc-self._prev_mouse_loc).reshape(-1, 3)) < 1.0:
             mouse_move_check = False
 
         if mouse_move_check:
