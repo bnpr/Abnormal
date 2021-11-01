@@ -6,8 +6,9 @@ import numpy as np
 
 class ABN_OT_store_norms_in_vcol(Operator):
     bl_idname = "abnormal.store_norms_in_vcol"
-    bl_label = "Store Current Normals in Vertex Colors"
+    bl_label = "Normals  --->  Vertex Colors"
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    bl_description = 'Convert current custom normals to the selected Vertex Colors'
 
     def execute(self, context):
         scn = context.scene
@@ -37,8 +38,9 @@ class ABN_OT_store_norms_in_vcol(Operator):
 
 class ABN_OT_convert_vcol_to_norms(Operator):
     bl_idname = "abnormal.convert_vcol_to_norms"
-    bl_label = "Convert Vertex Colors to Normals"
+    bl_label = "Vertex Colors  --->  Normals"
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    bl_description = 'Convert selected Vertex Colors to custom normals'
 
     def execute(self, context):
         scn = context.scene

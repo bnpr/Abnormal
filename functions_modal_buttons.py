@@ -661,8 +661,8 @@ def init_ui_panels(modal, rw, rh, scale):
 
         if True:
             boxx = box.add_box()
-
             boxx.set_visibility(not modal._display_prefs.display_collapsed)
+
             row = boxx.add_row()
             bool = row.add_bool(20, 'Show Only Selected Normals',
                                 default=modal._selected_only)
@@ -783,7 +783,6 @@ def init_ui_panels(modal, rw, rh, scale):
 
         if True:
             boxx = box.add_box()
-
             boxx.set_visibility(not modal._display_prefs.symmetry_collapsed)
 
             boxx.add_text_row(20, 'Mirror Selected Normals:', font_size=12)
@@ -860,7 +859,6 @@ def init_ui_panels(modal, rw, rh, scale):
 
         if True:
             boxx = box.add_box()
-
             boxx.set_visibility(not modal._display_prefs.alignment_collapsed)
 
             boxx.add_text_row(20, 'Flatten Normals on Axis', font_size=12)
@@ -952,7 +950,6 @@ def init_ui_panels(modal, rw, rh, scale):
 
         if True:
             boxx = box.add_box()
-
             boxx.set_visibility(not modal._display_prefs.direction_collapsed)
 
             row = boxx.add_row()
@@ -1008,7 +1005,6 @@ def init_ui_panels(modal, rw, rh, scale):
 
         if True:
             boxx = box.add_box()
-
             boxx.set_visibility(not modal._display_prefs.modify_collapsed)
 
             row = boxx.add_row()
@@ -1088,7 +1084,6 @@ def init_ui_panels(modal, rw, rh, scale):
 
         if True:
             boxx = box.add_box()
-
             boxx.set_visibility(not modal._display_prefs.filter_collapsed)
 
             row = boxx.add_row()
@@ -1135,7 +1130,6 @@ def init_ui_panels(modal, rw, rh, scale):
 
         if True:
             boxx = box.add_box()
-
             boxx.set_visibility(not modal._display_prefs.copy_collapsed)
 
             row = boxx.add_row()
@@ -1174,7 +1168,6 @@ def init_ui_panels(modal, rw, rh, scale):
 
         if True:
             boxx = box.add_box()
-
             boxx.set_visibility(not modal._display_prefs.modes_collapsed)
 
             row = boxx.add_row()
