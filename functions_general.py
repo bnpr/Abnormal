@@ -21,6 +21,35 @@ def rotate_2d(origin, point, angle):
     return vec
 
 
+def rotate_2d_points(origins, points, angles):
+    x = (np.cos(angles) * (points[:, 0] - origins[:, 0]) -
+         np.sin(angles) * (points[:, 1] - origins[:, 1])).reshape(-1, 1)
+    y = (np.sin(angles) * (points[:, 0] - origins[:, 0]) +
+         np.cos(angles) * (points[:, 1] - origins[:, 1])).reshape(-1, 1)
+
+    vecs = np.hstack((x, y))
+    vecs += np.array(origins)
+    return vecs
+
+
+def get_circle_cos(origin, res, size, close_end=False):
+
+    if close_end:
+        res += 1
+
+    orgs = np.tile(np.array(origin, dtype=np.float32), res).reshape(-1, 2)
+    pos = orgs + np.array([0.0, size], dtype=np.float32)
+
+    if close_end:
+        angs = np.arange(res, dtype=np.float32) / (res-1) * np.radians(360)
+    else:
+        angs = np.arange(res, dtype=np.float32) / res * np.radians(360)
+
+    circ_pos = rotate_2d_points(orgs, pos, angs)
+
+    return circ_pos
+
+
 def refresh_bm(bm):
     bm.edges.ensure_lookup_table()
     bm.verts.ensure_lookup_table()

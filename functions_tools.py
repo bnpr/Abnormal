@@ -263,9 +263,14 @@ def setup_tools(modal):
         modal._align_tool = tool
 
         # GRADIENT
-        tool = modal.tools.add_tool(inherit_confirm=False)
-        tool.set_cancel_function(gradient_cancel)
-        tool.set_confirm_function(gradient_confirm)
+        tool = modal.tools.add_tool(
+            inherit_confirm=False, inherit_cancel=False, inherit_pass_thru=False)
+        tool.set_use_start(True)
+        tool.add_start_argument('Gradient Place Start', gradient_start_place)
+        tool.add_keymap_argument('Gradient Place End', gradient_end_place)
+
+        tool.set_mouse_function(gradient_mouse)
+
         tool.add_keymap_argument(
             'Gradient Point Move Start', gradient_start_move)
 
@@ -275,6 +280,11 @@ def setup_tools(modal):
             'Add Click Selection', gradient_add_click_select)
 
         tool.add_keymap_argument(
+            'Select All', gradient_select_all)
+        tool.add_keymap_argument(
+            'Deselect All', gradient_deselect_all)
+
+        tool.add_keymap_argument(
             'Gradient Flip Direction', gradient_flip_dir)
         tool.add_keymap_argument(
             'Gradient Switch Type', gradient_switch_type)
@@ -282,7 +292,7 @@ def setup_tools(modal):
         modal._gradient_tool = tool
 
         # GRADIENT MOVE
-        tool = modal.tools.add_tool()
+        tool = modal.tools.add_tool(inherit_pass_thru=False)
         tool.set_mouse_function(gradient_move_mouse)
         tool.set_cancel_function(gradient_move_cancel)
         tool.set_confirm_function(gradient_move_confirm)
@@ -423,6 +433,8 @@ def ui_tool(modal, context, event, func_data):
             modal._current_tool = modal._point_tool
         elif modal._sphere_panel.visible:
             modal._current_tool = modal._sphereize_tool
+        elif modal._gradient_panel.visible:
+            modal._current_tool = modal._gradient_tool
         else:
             modal._current_tool = modal._basic_tool
 
@@ -1880,29 +1892,46 @@ def align_cancel(modal, context, event, keys, func_data):
 
 #
 # GRADIENT FUNCS
-def gradient_cancel(modal, context, event, keys, func_data):
-    tool_end(modal)
+def gradient_mouse(modal, context, event, func_data):
+    hov_status = modal._window.test_hover(modal._mouse_reg_loc)
+    modal.ui_hover = hov_status is not None
+    if modal.ui_hover:
+        ui_hover_timer_start(modal)
+        modal._current_tool = modal._ui_tool
+        return {'RUNNING_MODAL'}
+
+    if modal.gradient_placed == False:
+        modal._mode_cache[3][1] = modal._mouse_reg_loc[:2]
+        modal._mode_cache[3][3] = modal._mouse_reg_loc[:2]
+
+        apply_gradient_weight(modal)
+
     return
 
 
-def gradient_confirm(modal, context, event, keys, func_data):
-    tool_end(modal)
+def gradient_select_all(modal, context, event, keys, func_data):
+    modal._mode_cache[0][:] = True
+    return
+
+
+def gradient_deselect_all(modal, context, event, keys, func_data):
+    modal._mode_cache[0][:] = False
     return
 
 
 def gradient_new_click_select(modal, context, event, keys, func_data):
 
     po1_dist = get_np_vec_lengths(
-        modal._mode_cache[3, 2] - modal._mouse_reg_loc[:2])
+        (modal._mode_cache[3][2] - modal._mouse_reg_loc[:2]).reshape(-1, 1))[0]
     po2_dist = get_np_vec_lengths(
-        modal._mode_cache[3, 3] - modal._mouse_reg_loc[:2])
+        (modal._mode_cache[3][3] - modal._mouse_reg_loc[:2]).reshape(-1, 1))[0]
 
     if po1_dist < 15 or po2_dist < 15:
-        modal._mode_cache[0, :] = False
+        modal._mode_cache[0][:] = False
         if po1_dist < po2_dist:
-            modal._mode_cache[0, 0] = True
+            modal._mode_cache[0][0] = True
         else:
-            modal._mode_cache[0, 1] = True
+            modal._mode_cache[0][1] = True
 
     return
 
@@ -1910,9 +1939,9 @@ def gradient_new_click_select(modal, context, event, keys, func_data):
 def gradient_add_click_select(modal, context, event, keys, func_data):
 
     po1_dist = get_np_vec_lengths(
-        modal._mode_cache[3, 2] - modal._mouse_reg_loc[:2])
+        (modal._mode_cache[3][2] - modal._mouse_reg_loc[:2]).reshape(-1, 1))[0]
     po2_dist = get_np_vec_lengths(
-        modal._mode_cache[3, 3] - modal._mouse_reg_loc[:2])
+        (modal._mode_cache[3][3] - modal._mouse_reg_loc[:2]).reshape(-1, 1))[0]
 
     # At least 1 point is in range
     if po1_dist < 15 or po2_dist < 15:
@@ -1923,25 +1952,24 @@ def gradient_add_click_select(modal, context, event, keys, func_data):
             # Both selected so unselect nearest
             if modal._mode_cache[0].all():
                 if po1_dist < po2_dist:
-                    modal._mode_cache[0, 0] = False
+                    modal._mode_cache[0][0] = False
                 else:
-                    modal._mode_cache[0, 1] = False
+                    modal._mode_cache[0][1] = False
 
             # At least one is unselected so select it
             else:
-                if modal._mode_cache[0, 0] == False:
-                    modal._mode_cache[0, 0] = True
-
+                if modal._mode_cache[0][0] == False:
+                    modal._mode_cache[0][0] = True
                 else:
-                    modal._mode_cache[0, 1] = True
+                    modal._mode_cache[0][1] = True
 
         # Only first point in range
         elif po1_dist < 15:
-            modal._mode_cache[0, 0] = not modal._mode_cache[0, 0]
+            modal._mode_cache[0][0] = not modal._mode_cache[0][0]
 
         # Only second point in range
         else:
-            modal._mode_cache[0, 1] = not modal._mode_cache[0, 1]
+            modal._mode_cache[0][1] = not modal._mode_cache[0][1]
 
     return
 
@@ -1960,9 +1988,25 @@ def gradient_start_move(modal, context, event, keys, func_data):
     if modal._mode_cache[0].any():
         modal._window.set_status('TRANSLATION')
 
+        modal._mode_cache[2][:] = True
+
         modal._mode_cache.append(modal._mouse_reg_loc.copy())
         keymap_gradient_move(modal)
         modal._current_tool = modal._gradient_move_tool
+    return
+
+
+def gradient_start_place(modal, context, event, keys, func_data):
+    modal.gradient_drawing = True
+    modal._mode_cache[3][0] = modal._mouse_reg_loc[:2]
+    modal._mode_cache[3][1] = modal._mouse_reg_loc[:2]
+    modal._mode_cache[3][2] = modal._mouse_reg_loc[:2]
+    modal._mode_cache[3][3] = modal._mouse_reg_loc[:2]
+    return
+
+
+def gradient_end_place(modal, context, event, keys, func_data):
+    modal.gradient_placed = True
     return
 
 
@@ -1981,22 +2025,52 @@ def gradient_move_mouse(modal, context, event, func_data):
 def gradient_enable_snap(modal, context, event, keys, func_data):
     modal._mode_cache[1][2] = not modal._mode_cache[1][2]
     move_gradient_point(modal, event.shift)
+
+    if modal._mode_cache[1][2]:
+        increments = [90, 45, 30, 15, 10, 5]
+        snap = increments[modal._mode_cache[1][3]]
+
+        modal._window.set_status('TRANSLATION: Snapping to ' + str(snap) + '°')
+    else:
+        modal._window.set_status('TRANSLATION')
+
     return
 
 
 def gradient_snap_angle_increase(modal, context, event, keys, func_data):
-    if modal._mode_cache[1][3] < 5:
-        modal._mode_cache[1][3] += 1
+    if modal._mode_cache[1][2]:
+        if modal._mode_cache[1][3] < 5:
+            modal._mode_cache[1][3] += 1
+            move_gradient_point(modal, event.shift)
+
+            increments = [90, 45, 30, 15, 10, 5]
+            snap = increments[modal._mode_cache[1][3]]
+
+            modal._window.set_status(
+                'TRANSLATION: Snapping to ' + str(snap) + '°')
     return
 
 
 def gradient_snap_angle_decrease(modal, context, event, keys, func_data):
-    if modal._mode_cache[1][3] > 0:
-        modal._mode_cache[1][3] -= 1
+    if modal._mode_cache[1][2]:
+        if modal._mode_cache[1][3] > 0:
+            modal._mode_cache[1][3] -= 1
+            move_gradient_point(modal, event.shift)
+
+            increments = [90, 45, 30, 15, 10, 5]
+            snap = increments[modal._mode_cache[1][3]]
+
+            modal._window.set_status(
+                'TRANSLATION: Snapping to ' + str(snap) + '°')
     return
 
 
 def gradient_move_confirm(modal, context, event, keys, func_data):
+    modal._mode_cache[3][0] = modal._mode_cache[3][2]
+    modal._mode_cache[3][1] = modal._mode_cache[3][3]
+    modal._mode_cache[4][:] = 0.0
+    modal._mode_cache[1][2] = False
+
     modal._window.clear_status()
     keymap_gradient(modal)
     modal._current_tool = modal._gradient_tool
@@ -2006,6 +2080,13 @@ def gradient_move_confirm(modal, context, event, keys, func_data):
 
 
 def gradient_move_cancel(modal, context, event, keys, func_data):
+    modal._mode_cache[3][2] = modal._mode_cache[3][0]
+    modal._mode_cache[3][3] = modal._mode_cache[3][1]
+    modal._mode_cache[4][:] = 0.0
+    modal._mode_cache[1][2] = False
+
+    apply_gradient_weight(modal)
+
     modal._window.clear_status()
     modal.redraw = True
     keymap_gradient(modal)
@@ -2016,10 +2097,15 @@ def gradient_move_cancel(modal, context, event, keys, func_data):
 
 
 def gradient_move_set_x(modal, context, event, keys, func_data):
-    if modal._mode_cache[2][1]:
+    if modal._mode_cache[2].all():
         modal._mode_cache[2][1] = False
+
+    elif modal._mode_cache[2][1]:
+        modal._mode_cache[2][1] = False
+        modal._mode_cache[2][0] = True
+
     else:
-        modal._mode_cache[2, :] = True
+        modal._mode_cache[2][:] = True
 
     move_gradient_point(modal, event.shift)
     modal.redraw = True
@@ -2027,10 +2113,15 @@ def gradient_move_set_x(modal, context, event, keys, func_data):
 
 
 def gradient_move_set_y(modal, context, event, keys, func_data):
-    if modal._mode_cache[2][0]:
+    if modal._mode_cache[2].all():
         modal._mode_cache[2][0] = False
+
+    elif modal._mode_cache[2][0]:
+        modal._mode_cache[2][0] = False
+        modal._mode_cache[2][1] = True
+
     else:
-        modal._mode_cache[2, :] = True
+        modal._mode_cache[2][:] = True
 
     move_gradient_point(modal, event.shift)
     modal.redraw = True
@@ -2038,70 +2129,69 @@ def gradient_move_set_y(modal, context, event, keys, func_data):
 
 
 def move_gradient_point(modal, shift):
-    offset = modal._mouse_reg_loc - modal._mode_cache[-1]
+    offset = (modal._mouse_reg_loc - modal._mode_cache[-1])[:2]
 
     if shift:
         offset *= 0.1
 
-    if modal._mode_cache[2, 0] == False:
-        offset[0] = 0
-    if modal._mode_cache[2, 1] == False:
-        offset[1] = 0
-
     modal._mode_cache[4] += offset
 
-    # Write final pos to array
-    if modal._mode_cache[1] == False:
-        if modal._mode_cache[0, 0]:
-            modal._mode_cache[3, 2] = modal._mode_cache[3,
-                                                        0] + modal._mode_cache[4]
+    move = modal._mode_cache[4].copy()
+    if modal._mode_cache[2][0] == False:
+        move[0] = 0
+    if modal._mode_cache[2][1] == False:
+        move[1] = 0
 
-        if modal._mode_cache[0, 1]:
-            modal._mode_cache[3, 3] = modal._mode_cache[3,
-                                                        1] + modal._mode_cache[4]
+    # Write final pos to array
+    if modal._mode_cache[1][2] == False:
+        if modal._mode_cache[0][0]:
+            modal._mode_cache[3][2] = modal._mode_cache[3][0] + move
+        if modal._mode_cache[0][1]:
+            modal._mode_cache[3][3] = modal._mode_cache[3][1] + move
 
     # Constraint to angle snaps
     else:
         increments = [90, 45, 30, 15, 10, 5]
         snap = increments[modal._mode_cache[1][3]]
 
-        if modal._mode_cache[0, 0]:
-            po1 = modal._mode_cache[3, 0] + modal._mode_cache[4]
+        if modal._mode_cache[0][0]:
+            po1 = modal._mode_cache[3][0] + modal._mode_cache[4]
         else:
-            po1 = modal._mode_cache[3, 0]
+            po1 = modal._mode_cache[3][0]
 
-        if modal._mode_cache[0, 1]:
-            po2 = modal._mode_cache[3, 1] + modal._mode_cache[4]
+        if modal._mode_cache[0][1]:
+            po2 = modal._mode_cache[3][1] + modal._mode_cache[4]
         else:
-            po2 = modal._mode_cache[3, 1]
+            po2 = modal._mode_cache[3][1]
+
+        if modal._mode_cache[0][0] and not modal._mode_cache[0][1]:
+            po1, po2 = po2, po1
 
         #
 
-        vec = po2 - po1
-        up_vec = np.array([[0.0, 1.0]])
+        vec = (np.hstack(((po2 - po1), [0.0]))).reshape(1, -1)
+        up_vec = np.array([[0.0, 1.0, 0.0]])
 
-        ang = get_np_vec_angles_signed(vec, up_vec)
+        ang = get_np_vec_angles_signed(vec, up_vec)[0]
 
-        rots = round(ang/snap)
+        rots = round(ang/np.radians(snap))
 
-        length = get_np_vec_lengths(po2 - po1)
+        length = get_np_vec_lengths((po2 - po1).reshape(1, -1))[0]
 
         #
 
+        new_co = rotate_2d(po1, po1+[0.0, length], rots * np.radians(snap))
         if modal._mode_cache[0].all():
-            new_co = rotate_2d(po1, [0.0, length], rots * snap)
 
-            modal._mode_cache[3, 2] = po1
-            modal._mode_cache[3, 3] = new_co
+            modal._mode_cache[3][2] = po1
+            modal._mode_cache[3][3] = new_co
 
-        elif modal._mode_cache[0, 1]:
-            new_co = rotate_2d(po1, [0.0, length], rots * snap)
-
-            modal._mode_cache[3, 3] = new_co
+        elif modal._mode_cache[0][1]:
+            modal._mode_cache[3][3] = new_co
 
         else:
-            new_co = rotate_2d(po2, [0.0, length], rots * snap)
+            modal._mode_cache[3][2] = new_co
 
-            modal._mode_cache[3, 2] = new_co
+    apply_gradient_weight(modal)
 
     return

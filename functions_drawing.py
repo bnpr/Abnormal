@@ -94,10 +94,31 @@ def draw_callback_2d(modal, context):
             clear_draw = True
 
         if context.area == modal._draw_area:
+            start_col = (1.0, 0.0, 0.0, 1)
+            end_col = (0.0, 0.0, 1.0, 1)
+            if modal.gradient_drawing:
+                if modal._mode_cache[0][0]:
+                    start_col = (1.0, 0.7, 0.7, 1)
+                if modal._mode_cache[0][1]:
+                    end_col = (0.7, 0.7, 1.0, 1)
+
+            modal.shader_2d.bind()
+            modal.shader_2d.uniform_float("color", start_col)
+            modal.batch_gradient_start_screen_points.draw(modal.shader_2d)
+
+            modal.shader_2d.bind()
+            modal.shader_2d.uniform_float("color", end_col)
+            modal.batch_gradient_end_screen_points.draw(modal.shader_2d)
+
             bgl.glLineWidth(2)
             modal.shader_2d.bind()
             modal.shader_2d.uniform_float("color", (0.05, 0.05, 0.05, 1))
             modal.batch_rotate_screen_lines.draw(modal.shader_2d)
+
+            bgl.glLineWidth(2)
+            modal.shader_2d.bind()
+            modal.shader_2d.uniform_float("color", (0.05, 0.05, 0.05, 1))
+            modal.batch_gradient_screen_lines.draw(modal.shader_2d)
 
             bgl.glLineWidth(1)
             modal.shader_2d.bind()
@@ -211,27 +232,18 @@ def create_selection_drawing_lists(modal):
     circlesel_screen_lines = []
     if modal.circle_selecting or modal.circle_resizing:
         if modal.circle_resizing:
-            cur_loc = Vector(modal._mouse_init)
+            cur_loc = modal._mouse_init[:2]
         else:
-            cur_loc = Vector(modal._mouse_reg_loc)
+            cur_loc = modal._mouse_reg_loc[:2]
 
-        co = cur_loc.copy()
-        co[1] += modal.circle_radius
-        angle = math.radians(360/32)
-
-        for i in range(32):
-            circlesel_screen_lines.append(co.xy)
-            co = rotate_2d(cur_loc, co, angle)
-            circlesel_screen_lines.append(co.xy)
+        circlesel_screen_lines = get_circle_cos(
+            cur_loc, 32, modal.circle_radius, close_end=True).tolist()
 
     # LASSO SELECTION LINES
     lassosel_screen_lines = []
     if modal.lasso_selecting:
-        for i in range(len(modal._mode_cache[0])):
-            lassosel_screen_lines.append(
-                [modal._mode_cache[0][i-1][0], modal._mode_cache[0][i-1][1]])
-            lassosel_screen_lines.append(
-                [modal._mode_cache[0][i][0], modal._mode_cache[0][i][1]])
+        lassosel_screen_lines = np.vstack(
+            (np.array(modal._mode_cache[0]), modal._mode_cache[0][0]))[:, [0, 1]].tolist()
 
     # BOX SELECTION LINES
     boxsel_screen_lines = []
@@ -277,15 +289,40 @@ def create_selection_drawing_lists(modal):
         dashed_lines = vec_to_dashed(start_co, vec, int(vec.length/10))
         rot_screen_lines += dashed_lines
 
+    gradient_screen_lines = []
+    gradient_start_screen_points = []
+    gradient_end_screen_points = []
+    # GRADIENT LINE
+    if modal.gradient_drawing:
+        start_co = modal._mode_cache[3][2]
+        end_co = modal._mode_cache[3][3]
+
+        vec = end_co-start_co
+        dashed_lines = vec_to_dashed(
+            start_co, vec, int(get_np_vec_lengths(vec.reshape(1, -1))[0]/10))
+        gradient_screen_lines += dashed_lines
+
+        gradient_start_screen_points = get_circle_cos(
+            start_co, 16, 5).tolist()
+        gradient_end_screen_points = get_circle_cos(
+            end_co, 16, 5).tolist()
+
     # STORE 2D BATCHES
     modal.batch_boxsel_screen_lines = batch_for_shader(
         modal.shader_2d, 'LINES', {"pos": boxsel_screen_lines})
     modal.batch_lassosel_screen_lines = batch_for_shader(
-        modal.shader_2d, 'LINES', {"pos": lassosel_screen_lines})
+        modal.shader_2d, 'LINE_STRIP', {"pos": lassosel_screen_lines})
     modal.batch_circlesel_screen_lines = batch_for_shader(
-        modal.shader_2d, 'LINES', {"pos": circlesel_screen_lines})
+        modal.shader_2d, 'LINE_STRIP', {"pos": circlesel_screen_lines})
     modal.batch_rotate_screen_lines = batch_for_shader(
         modal.shader_2d, 'LINES', {"pos": rot_screen_lines})
+
+    modal.batch_gradient_screen_lines = batch_for_shader(
+        modal.shader_2d, 'LINES', {"pos": gradient_screen_lines})
+    modal.batch_gradient_start_screen_points = batch_for_shader(
+        modal.shader_2d, 'TRI_FAN', {"pos": gradient_start_screen_points})
+    modal.batch_gradient_end_screen_points = batch_for_shader(
+        modal.shader_2d, 'TRI_FAN', {"pos": gradient_end_screen_points})
 
     return
 
@@ -295,10 +332,17 @@ def empty_selection_drawing_lists(modal):
     modal.batch_boxsel_screen_lines = batch_for_shader(
         modal.shader_2d, 'LINES', {"pos": []})
     modal.batch_lassosel_screen_lines = batch_for_shader(
-        modal.shader_2d, 'LINES', {"pos": []})
+        modal.shader_2d, 'LINE_STRIP', {"pos": []})
     modal.batch_circlesel_screen_lines = batch_for_shader(
-        modal.shader_2d, 'LINES', {"pos": []})
+        modal.shader_2d, 'LINE_STRIP', {"pos": []})
     modal.batch_rotate_screen_lines = batch_for_shader(
         modal.shader_2d, 'LINES', {"pos": []})
+
+    modal.batch_gradient_screen_lines = batch_for_shader(
+        modal.shader_2d, 'LINES', {"pos": []})
+    modal.batch_gradient_start_screen_points = batch_for_shader(
+        modal.shader_2d, 'TRI_FAN', {"pos": []})
+    modal.batch_gradient_end_screen_points = batch_for_shader(
+        modal.shader_2d, 'TRI_FAN', {"pos": []})
 
     return

@@ -890,6 +890,9 @@ def add_to_undostack(modal, stack_type):
             elif modal._history_stack[0] == 1:
                 modal._history_normal_stack.pop(0)
                 modal._history_normal_position -= 1
+            elif modal._history_stack[0] == 1:
+                modal._history_filter_stack.pop(0)
+                modal._history_filter_position -= 1
 
             modal._history_stack.pop(0)
             modal._history_position -= 1
@@ -899,6 +902,8 @@ def add_to_undostack(modal, stack_type):
             modal._history_select_stack.pop(-1)
         elif modal._history_stack[-1] == 1:
             modal._history_normal_stack.pop(-1)
+        elif modal._history_stack[-1] == 1:
+            modal._history_filter_stack.pop(-1)
 
         modal._history_stack.pop(-1)
 
@@ -922,18 +927,29 @@ def add_to_undostack(modal, stack_type):
         modal._history_stack.insert(0, stack_type)
         modal._history_normal_stack.insert(0, cur_normals)
 
-    # Initial status
+    # Filter mask weights status
     elif stack_type == 2:
+        cur_mask = modal._container.filter_mask.copy()
+        cur_weights = modal._container.filter_weights.copy()
+
+        modal._history_stack.insert(0, stack_type)
+        modal._history_filter_stack.insert(0, [cur_mask, cur_weights])
+
+    # Initial status
+    elif stack_type == 3:
         sel_status = modal._container.sel_status.nonzero()[0]
         vis_status = modal._container.hide_status.nonzero()[0]
         act_status = modal._container.act_status.nonzero()[0]
         cur_normals = modal._container.new_norms.copy()
+        cur_mask = modal._container.filter_mask.copy()
+        cur_weights = modal._container.filter_weights.copy()
 
         modal._history_stack.insert(0, stack_type)
 
         modal._history_select_stack.insert(
             0, [sel_status, vis_status, act_status])
         modal._history_normal_stack.insert(0, cur_normals)
+        modal._history_filter_stack.insert(0, [cur_mask, cur_weights])
 
         modal.redraw = True
         update_orbit_empty(modal)
@@ -1140,6 +1156,8 @@ def update_filter_from_vg(modal):
             modal._current_filter = ''
             abn_props.vertex_group = ''
 
+        modal._container.cache_norms[:] = modal._container.new_norms
+
         modal.redraw = True
 
     return
@@ -1151,6 +1169,8 @@ def selection_to_filer_mask(modal):
     modal._container.filter_weights[~modal._container.sel_status] = 0.0
     modal._current_filter = ''
 
+    modal._container.cache_norms[:] = modal._container.new_norms
+
     modal.redraw = True
     return
 
@@ -1159,6 +1179,8 @@ def clear_filter_mask(modal):
     modal._container.filter_mask[:] = False
     modal._container.filter_weights[:] = 0.0
     modal._current_filter = ''
+
+    modal._container.cache_norms[:] = modal._container.new_norms
 
     modal.redraw = True
     return
@@ -1317,11 +1339,13 @@ def end_sphereize_mode(modal, keep_normals):
         modal._container.new_norms[:] = modal._container.cache_norms
         set_new_normals(modal)
 
+    else:
+        add_to_undostack(modal, 1)
+
     # modal._export_panel.set_visibility(True)
     modal._tools_panel.set_visibility(True)
     modal._sphere_panel.set_visibility(False)
 
-    add_to_undostack(modal, 1)
     modal.translate_axis = 2
     modal.translate_mode = 0
     clear_translate_axis_draw(modal)
@@ -1396,11 +1420,13 @@ def end_point_mode(modal, keep_normals):
         modal._container.new_norms[:] = modal._container.cache_norms
         set_new_normals(modal)
 
+    else:
+        add_to_undostack(modal, 1)
+
     # modal._export_panel.set_visibility(True)
     modal._tools_panel.set_visibility(True)
     modal._point_panel.set_visibility(False)
 
-    add_to_undostack(modal, 1)
     modal.translate_axis = 2
     modal.translate_mode = 0
     clear_translate_axis_draw(modal)
@@ -1476,6 +1502,86 @@ def move_target(modal, shift):
 
         modal._target_emp.location = modal._mode_cache[2].copy()
         modal._target_emp.location += def_vec
+
+    return
+
+
+def start_gradient_mode(modal):
+    modal._mode_cache.append(np.array([False, False], dtype=bool))
+    modal._mode_cache.append([False, 0, False, 1])
+    modal._mode_cache.append(np.array([False, False], dtype=bool))
+    modal._mode_cache.append(
+        np.array([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]], dtype=np.float32))
+    modal._mode_cache.append(
+        np.array([0.0, 0.0], dtype=np.float32))
+
+    rcos = get_np_region_cos(modal._container.loop_coords[modal._container.filter_mask],
+                             modal.act_reg, modal.act_rv3d)
+    modal._mode_cache.append(rcos)
+
+    # Cache current weights
+    modal._mode_cache.append(
+        modal._container.filter_weights.copy())
+
+    gizmo_update_hide(modal, False)
+    keymap_gradient(modal)
+    modal.selection_drawing = True
+    modal._current_tool = modal._gradient_tool
+    modal._filter_panel.set_visibility(False)
+    modal._tools_panel.set_visibility(False)
+    modal._gradient_panel.set_visibility(True)
+    modal._gradient_panel.set_new_position(
+        modal._mouse_reg_loc, window_dims=modal._window.dimensions)
+
+    return
+
+
+def end_gradient_mode(modal, keep):
+    if keep == False:
+        modal._container.filter_weights[:] = modal._mode_cache[6]
+        modal.redraw = True
+
+    else:
+        add_to_undostack(modal, 2)
+
+    modal._tools_panel.set_visibility(True)
+    modal._gradient_panel.set_visibility(False)
+
+    modal.gradient_drawing = False
+    modal.gradient_placed = False
+    end_selection_drawing(modal)
+    modal._mouse_init = None
+    modal._mode_cache.clear()
+    keymap_refresh(modal)
+    modal._current_tool = modal._basic_tool
+
+    gizmo_update_hide(modal, True)
+    return
+
+
+def apply_gradient_weight(modal):
+    co1 = np.hstack((modal._mode_cache[3][2], [0.0]))
+    co2 = np.hstack((modal._mode_cache[3][3], [0.0]))
+
+    ss_cos = modal._mode_cache[5]
+
+    vec = (co2-co1).reshape(1, -1)
+
+    length = get_np_vec_lengths(vec)[0]
+
+    vec = get_np_normalized_vecs(vec)
+    vecs = ss_cos - co1
+
+    dots = np.clip(np.sum(vecs * vec, axis=1), 0.0, length)
+
+    # if modal.normalize:
+    #     dots -= np.min(dots)
+    #     dots *= (1.0 / np.max(dots))
+
+    modal._container.filter_weights[modal._container.filter_mask] = 1.0 - (
+        dots/length)
+
+    modal.redraw = True
 
     return
 

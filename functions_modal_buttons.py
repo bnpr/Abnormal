@@ -173,9 +173,49 @@ def init_ui_panels(modal, rw, rh, scale):
         modal.sphere_strength.set_slide_factor(2)
         modal.sphere_strength.set_value_change_func(change_sphereize_strength)
 
+    # GRADIENT PANEL
+    if True:
+        modal._gradient_panel = modal._window.add_panel(
+            [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
+        modal._gradient_panel.set_separation(8)
+        modal._gradient_panel.set_horizontal_alignment('LEFT')
+        modal._gradient_panel.add_header(
+            False, 'Filter Gradient', 30, False)
+        modal._gradient_panel.set_header_font_size(20)
+        modal._gradient_panel.set_height_min_max(
+            max=modal.act_reg.height*0.95)
+        modal._gradient_panel.header.set_draw_box(False)
+        modal._gradient_panel.set_visibility(False)
+
+        box = modal._gradient_panel.add_box()
+
+        row = box.add_row()
+        but = row.add_button(20, 'Flip Gradient Direction')
+        but.set_click_up_func(gradient_flip)
+
+        row = box.add_row()
+        but = row.add_button(20, 'Linear Gradient')
+        but.set_custom_id(0)
+        but.set_click_up_func(gradient_switch_type)
+
+        but = row.add_button(20, 'Spherical Gradient')
+        but.set_custom_id(1)
+        but.set_click_up_func(gradient_switch_type)
+
+        row = box.add_row()
+        but = row.add_button(20, 'Confirm Gradient')
+        but.set_custom_id(True)
+        but.set_click_up_func(gradient_end)
+
+        but = row.add_button(20, 'Cancel Gradient')
+        but.set_custom_id(False)
+        but.set_click_up_func(gradient_end)
+
+    #
+    #
     #
 
-    # DISPLAY SETTINGS PANEL
+    # DISPLAY SETTINGS SUBPANEL
     if True:
         panel = modal._window.add_subpanel_popup(
             [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
@@ -255,7 +295,7 @@ def init_ui_panels(modal, rw, rh, scale):
         but = row.add_button(20, 'Save Addon Preferences')
         but.set_click_up_func(save_preferences)
 
-    # SYMMETRY PANEL
+    # SYMMETRY SUBPANEL
     if True:
         panel = modal._window.add_subpanel_popup(
             [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
@@ -324,7 +364,7 @@ def init_ui_panels(modal, rw, rh, scale):
         # num.set_slide_factor(2)
         # num.set_value_change_func(change_mirror_range)
 
-    # ALIGNMENT PANEL
+    # ALIGNMENT SUBPANEL
     if True:
         panel = modal._window.add_subpanel_popup(
             [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
@@ -408,7 +448,7 @@ def init_ui_panels(modal, rw, rh, scale):
         but.add_tooltip_text_line(
             'Set selected normals to the local negative Z axis')
 
-    # NORMAL DIRECTION PANEL
+    # NORMAL DIRECTION SUBPANEL
     if True:
         panel = modal._window.add_subpanel_popup(
             [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
@@ -456,7 +496,7 @@ def init_ui_panels(modal, rw, rh, scale):
         but.add_tooltip_text_line(
             'Useful for creating hard edges based on which faces are selected')
 
-    # MODIFY NORMALS PANEL
+    # MODIFY NORMALS SUBPANEL
     if True:
         panel = modal._window.add_subpanel_popup(
             [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
@@ -528,7 +568,7 @@ def init_ui_panels(modal, rw, rh, scale):
         but.add_tooltip_text_line(
             'Set the object to Flat Shading while preserving the current normals')
 
-    # FILTER PANEL
+    # FILTER SUBPANEL
     if True:
         panel = modal._window.add_subpanel_popup(
             [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
@@ -567,7 +607,7 @@ def init_ui_panels(modal, rw, rh, scale):
         but.add_tooltip_text_line(
             'Create a filter weight gradient for the current gradient mask')
 
-    # COPY/PASTE PANEL
+    # COPY/PASTE SUBPANEL
     if True:
         panel = modal._window.add_subpanel_popup(
             [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
@@ -598,7 +638,7 @@ def init_ui_panels(modal, rw, rh, scale):
         but.add_tooltip_text_line(
             'Paste the stored loop/vertex normal onto selected points')
 
-    # TARGET MODES PANEL
+    # TARGET MODES SUBPANEL
     if True:
         panel = modal._window.add_subpanel_popup(
             [modal._mouse_reg_loc[0], modal._mouse_reg_loc[1]], 250)
@@ -623,6 +663,10 @@ def init_ui_panels(modal, rw, rh, scale):
         but.set_click_up_func(begin_point_mode)
         but.add_tooltip_text_line(
             'Start the Point Normals at Target mode')
+
+    #
+    #
+    #
 
     # EXPORT PANEL
     if True:
@@ -1600,37 +1644,112 @@ def modes_panel_show(ui_item, arguments):
 
 #
 
+def gradient_new_click_select(ui_item, arguments):
+
+    po1_dist = get_np_vec_lengths(
+        arguments[0]._mode_cache[3, 2] - arguments[0]._mouse_reg_loc[:2])
+    po2_dist = get_np_vec_lengths(
+        arguments[0]._mode_cache[3, 3] - arguments[0]._mouse_reg_loc[:2])
+
+    if po1_dist < 15 or po2_dist < 15:
+        arguments[0]._mode_cache[0, :] = False
+        if po1_dist < po2_dist:
+            arguments[0]._mode_cache[0, 0] = True
+        else:
+            arguments[0]._mode_cache[0, 1] = True
+
+    return
+
+
+def gradient_add_click_select(ui_item, arguments):
+
+    po1_dist = get_np_vec_lengths(
+        arguments[0]._mode_cache[3, 2] - arguments[0]._mouse_reg_loc[:2])
+    po2_dist = get_np_vec_lengths(
+        arguments[0]._mode_cache[3, 3] - arguments[0]._mouse_reg_loc[:2])
+
+    # At least 1 point is in range
+    if po1_dist < 15 or po2_dist < 15:
+
+        # Both are in range
+        if po1_dist < 15 and po2_dist < 15:
+
+            # Both selected so unselect nearest
+            if arguments[0]._mode_cache[0].all():
+                if po1_dist < po2_dist:
+                    arguments[0]._mode_cache[0, 0] = False
+                else:
+                    arguments[0]._mode_cache[0, 1] = False
+
+            # At least one is unselected so select it
+            else:
+                if arguments[0]._mode_cache[0, 0] == False:
+                    arguments[0]._mode_cache[0, 0] = True
+
+                else:
+                    arguments[0]._mode_cache[0, 1] = True
+
+        # Only first point in range
+        elif po1_dist < 15:
+            arguments[0]._mode_cache[0, 0] = not arguments[0]._mode_cache[0, 0]
+
+        # Only second point in range
+        else:
+            arguments[0]._mode_cache[0, 1] = not arguments[0]._mode_cache[0, 1]
+
+    return
+
+
+def gradient_flip(ui_item, arguments):
+    arguments[0]._mode_cache[1][0] = not arguments[0]._mode_cache[1][0]
+    return
+
+
+def gradient_switch_type(ui_item, arguments):
+    arguments[0]._mode_cache[1][1] = ui_item.custom_id
+    return
+
+
+def gradient_end(ui_item, arguments):
+    end_gradient_mode(arguments[0], ui_item.custom_id)
+    return
+
+
+def gradient_start_move(ui_item, arguments):
+    if arguments[0]._mode_cache[0].any():
+        arguments[0]._window.set_status('TRANSLATION')
+
+        arguments[0]._mode_cache.append(arguments[0]._mouse_reg_loc.copy())
+        keymap_gradient_move(arguments[0])
+        arguments[0]._current_tool = arguments[0]._gradient_move_tool
+    return
+
 
 def filter_mask_from_vg(ui_item, arguments):
     update_filter_from_vg(arguments[0])
+    add_to_undostack(arguments[0], 2)
     return
 
 
 def filter_mask_from_sel(ui_item, arguments):
     selection_to_filer_mask(arguments[0])
+    add_to_undostack(arguments[0], 2)
     return
 
 
 def filter_mask_clear(ui_item, arguments):
     clear_filter_mask(arguments[0])
+    add_to_undostack(arguments[0], 2)
     return
 
 
 def gradient_tool_start(ui_item, arguments):
-    arguments[0]._current_tool = arguments[0]._gradient_tool
-    keymap_gradient(arguments[0])
-    arguments[0]._mode_cache.append(np.array([False, False], dtype=bool))
-    arguments[0]._mode_cache.append([False, 0, False, 1])
-    arguments[0]._mode_cache.append(np.array([False, False], dtype=bool))
-    arguments[0]._mode_cache.append(
-        np.array([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]], dtype=np.float32))
-    arguments[0]._mode_cache.append(
-        np.array([0.0, 0.0], dtype=np.float32))
-
-    # Cache current weights
-    arguments[0]._mode_cache.append(
-        arguments[0]._container.filter_weights.copy())
+    if arguments[0]._container.filter_mask.any():
+        start_gradient_mode(arguments[0])
     return
+
+
+#
 
 
 def mirror_selection(ui_item, arguments):

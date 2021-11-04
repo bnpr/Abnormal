@@ -69,6 +69,11 @@ def draw(preference, context, layout):
     keymap_row(keymap_items, 'Gradient Enable Angle Snap',
                layout.row(), 'Gradient Enable Angle Snap Key')
 
+    keymap_row(keymap_items, 'Gradient Place Start',
+               layout.row(), 'Gradient Place Start Key')
+    keymap_row(keymap_items, 'Gradient Place End',
+               layout.row(), 'Gradient Place End Key')
+
     keymap_row(keymap_items, 'Gradient Snap Angle Increase 1',
                layout.row(), 'Gradient Snap Angle Increase 1 Key')
     keymap_row(keymap_items, 'Gradient Snap Angle Increase 2',

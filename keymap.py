@@ -212,6 +212,11 @@ def register():
             km.keymap_items.new('Gradient Switch Type',
                                 'T', 'PRESS')
 
+            km.keymap_items.new('Gradient Place Start',
+                                'LEFTMOUSE', 'PRESS')
+            km.keymap_items.new('Gradient Place End',
+                                'LEFTMOUSE', 'RELEASE')
+
             km.keymap_items.new('Gradient Snap Angle Increase 1',
                                 'WHEELDOWNMOUSE', 'PRESS')
             km.keymap_items.new('Gradient Snap Angle Increase 2',

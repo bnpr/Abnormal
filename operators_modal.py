@@ -178,6 +178,8 @@ class ABN_OT_normal_editor_modal(Operator):
         self.circle_selecting = False
         self.circle_resizing = False
         self.circle_removing = False
+        self.gradient_drawing = False
+        self.gradient_placed = False
 
         self._popup_panel = None
 
@@ -195,9 +197,11 @@ class ABN_OT_normal_editor_modal(Operator):
         self._history_stack = []
         self._history_select_stack = []
         self._history_normal_stack = []
+        self._history_filter_stack = []
         self._history_position = 0
         self._history_select_position = 0
         self._history_normal_position = 0
+        self._history_filter_position = 0
         self._history_steps = 128
 
         # INITIALIZE OBJECTS
@@ -268,7 +272,7 @@ class ABN_OT_normal_editor_modal(Operator):
         dns["dh2d"] = self._draw_handle_2d
         dns["dh3d"] = self._draw_handle_3d
 
-        add_to_undostack(self, 2)
+        add_to_undostack(self, 3)
 
         self._window.check_in_window()
 
