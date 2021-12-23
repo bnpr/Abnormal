@@ -12,80 +12,82 @@ def setup_tools(modal):
     modal.tools.set_confirm_keys(['Confirm Tool 1', 'Confirm Tool 2'])
     modal.tools.set_pass_through_events(modal.nav_list)
 
-    tool = modal.tools.add_tool(
-        inherit_cancel=False, inherit_confirm=False)
-    tool.set_mouse_function(mouse)
-    tool.add_cancel_key('Cancel Modal')
-    tool.set_cancel_function(cancel_modal)
-    tool.add_confirm_key('Confirm Modal')
-    tool.set_confirm_function(confirm_modal)
-    tool.add_keymap_argument('History Undo', hist_undo)
-    tool.add_keymap_argument('History Redo', hist_redo)
-    tool.set_always_function(click_hold_release)
-    tool.add_keymap_argument('Toggle Gizmo', toggle_gizmo)
+    # BASIC TOOL
+    if True:
+        tool = modal.tools.add_tool(
+            inherit_cancel=False, inherit_confirm=False)
+        tool.set_mouse_function(mouse)
+        tool.add_cancel_key('Cancel Modal')
+        tool.set_cancel_function(cancel_modal)
+        tool.add_confirm_key('Confirm Modal')
+        tool.set_confirm_function(confirm_modal)
+        tool.add_keymap_argument('History Undo', hist_undo)
+        tool.add_keymap_argument('History Redo', hist_redo)
+        tool.set_always_function(click_hold_release)
 
-    # tool.set_pre_pass_through_function(gizmo_pre_navigate)
-    # tool.set_post_pass_through_function(gizmo_post_navigate)
+        # tool.set_pre_pass_through_function(gizmo_pre_navigate)
+        # tool.set_post_pass_through_function(gizmo_post_navigate)
 
-    tool.add_keymap_argument(
-        'Box Select Start', box_select_start)
-    tool.add_keymap_argument(
-        'Circle Select Start', circle_select_start)
-    tool.add_keymap_argument(
-        'Lasso Select Start', lasso_select_start)
+        tool.add_keymap_argument(
+            'Box Select Start', box_select_start)
+        tool.add_keymap_argument(
+            'Circle Select Start', circle_select_start)
+        tool.add_keymap_argument(
+            'Lasso Select Start', lasso_select_start)
 
-    tool.add_keymap_argument('Toggle Gizmo', toggle_gizmo)
+        tool.add_keymap_argument('Toggle Gizmo', toggle_gizmo)
 
-    tool.add_keymap_argument('Hide Selected', hide_selected)
-    tool.add_keymap_argument('Hide Unselected', hide_unselected)
-    tool.add_keymap_argument('Unhide', unhide)
+        tool.add_keymap_argument('Hide Selected', hide_selected)
+        tool.add_keymap_argument('Hide Unselected', hide_unselected)
+        tool.add_keymap_argument('Unhide', unhide)
 
-    tool.add_keymap_argument('Reset Gizmo Rotation', reset_gizmo)
-    tool.add_keymap_argument('Rotate Normals', rotate_start)
-    tool.add_keymap_argument('Toggle X-Ray', toggle_xray)
-    tool.add_keymap_argument('Mirror Normals Start', mirror_start)
-    # tool.add_keymap_argument('Sharpen Edge', sharpen_edges)
-    tool.add_keymap_argument('Smooth Normals', smooth_norms)
-    tool.add_keymap_argument('Flatten Normals Start', flatten_norms)
-    tool.add_keymap_argument('Align Normals Start', align_norms)
-    tool.add_keymap_argument('Copy Active Normal', copy_active)
+        tool.add_keymap_argument('Reset Gizmo Rotation', reset_gizmo)
+        tool.add_keymap_argument('Rotate Normals', rotate_start)
+        tool.add_keymap_argument('Toggle X-Ray', toggle_xray)
+        tool.add_keymap_argument('Mirror Normals Start', mirror_start)
+        # tool.add_keymap_argument('Sharpen Edge', sharpen_edges)
+        tool.add_keymap_argument('Smooth Normals', smooth_norms)
+        tool.add_keymap_argument('Flatten Normals Start', flatten_norms)
+        tool.add_keymap_argument('Align Normals Start', align_norms)
+        tool.add_keymap_argument('Copy Active Normal', copy_active)
 
-    tool.add_keymap_argument('Paste Stored Normal', paste_stored)
-    tool.add_keymap_argument(
-        'Paste Active Normal to Selected', paste_active_to_selected)
-    tool.add_keymap_argument('Set Normals Outside', set_outside)
-    tool.add_keymap_argument('Set Normals Inside', set_inside)
-    tool.add_keymap_argument('Flip Normals', flip_norms)
-    tool.add_keymap_argument('Reset Vectors', reset_vectors)
-    tool.add_keymap_argument('Average Individual Normals', average_individual)
-    tool.add_keymap_argument('Average Selected Normals', average_selected)
-    tool.add_keymap_argument('Set Normals From Faces', normals_from_faces)
+        tool.add_keymap_argument('Paste Stored Normal', paste_stored)
+        tool.add_keymap_argument(
+            'Paste Active Normal to Selected', paste_active_to_selected)
+        tool.add_keymap_argument('Set Normals Outside', set_outside)
+        tool.add_keymap_argument('Set Normals Inside', set_inside)
+        tool.add_keymap_argument('Flip Normals', flip_norms)
+        tool.add_keymap_argument('Reset Vectors', reset_vectors)
+        tool.add_keymap_argument(
+            'Average Individual Normals', average_individual)
+        tool.add_keymap_argument('Average Selected Normals', average_selected)
+        tool.add_keymap_argument('Set Normals From Faces', normals_from_faces)
 
-    #
+        #
 
-    tool.add_keymap_argument('Select All', select_all)
-    tool.add_keymap_argument('Deselect All', deselect_all)
-    tool.add_keymap_argument('Select Linked', select_linked)
-    tool.add_keymap_argument('Select Hover Linked', select_hover_linked)
-    tool.add_keymap_argument('Invert Selection', invert_selection)
-    tool.add_keymap_argument('New Click Selection', new_click_select)
-    tool.add_keymap_argument('Add Click Selection', add_click_select)
-    tool.add_keymap_argument('New Loop Selection', new_loop_select)
-    tool.add_keymap_argument('Add Loop Selection', add_loop_select)
-    tool.add_keymap_argument(
-        'New Shortest Path Selection', new_shortest_select)
-    tool.add_keymap_argument(
-        'Add Shortest Path Selection', add_shortest_select)
+        tool.add_keymap_argument('Select All', select_all)
+        tool.add_keymap_argument('Deselect All', deselect_all)
+        tool.add_keymap_argument('Select Linked', select_linked)
+        tool.add_keymap_argument('Select Hover Linked', select_hover_linked)
+        tool.add_keymap_argument('Invert Selection', invert_selection)
+        tool.add_keymap_argument('New Click Selection', new_click_select)
+        tool.add_keymap_argument('Add Click Selection', add_click_select)
+        tool.add_keymap_argument('New Loop Selection', new_loop_select)
+        tool.add_keymap_argument('Add Loop Selection', add_loop_select)
+        tool.add_keymap_argument(
+            'New Shortest Path Selection', new_shortest_select)
+        tool.add_keymap_argument(
+            'Add Shortest Path Selection', add_shortest_select)
 
-    tool.add_keymap_argument(
-        'Filter Mask From Selected', filter_from_sel)
-    tool.add_keymap_argument(
-        'Clear Filter Mask', filter_clear)
-    tool.add_keymap_argument(
-        'Start Filter Gradient Tool', start_filter_gradient)
+        tool.add_keymap_argument(
+            'Filter Mask From Selected', filter_from_sel)
+        tool.add_keymap_argument(
+            'Clear Filter Mask', filter_clear)
+        tool.add_keymap_argument(
+            'Start Filter Gradient Tool', start_filter_gradient)
 
-    modal._basic_tool = tool
-    modal._current_tool = modal._basic_tool
+        modal._basic_tool = tool
+        modal._current_tool = modal._basic_tool
 
     #
     #
