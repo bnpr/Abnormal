@@ -9,7 +9,7 @@ bl_info = {
     "author": "Cody Winchester (codywinch)",
     "version": (1, 2),
     "blender": (2, 80, 0),
-    "location": "3D View > Object and Properties > Object tab",
+    "location": "3D View > N Panel > BNPR Abnormal Tab",
     "description": "BNPR Normal Editing Tools",
     "warning": "",
     "wiki_url": "",
