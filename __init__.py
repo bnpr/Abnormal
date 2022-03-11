@@ -4,6 +4,7 @@ from . import properties
 from . import ui
 from . import keymap
 from bpy.props import *
+
 bl_info = {
     "name": "Abnormal",
     "author": "Cody Winchester (codywinch)",
