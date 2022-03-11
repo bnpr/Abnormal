@@ -992,7 +992,7 @@ class CUINumProp(CUIItem):
                             self.update_batches(pos)
 
                         bpy.context.window.cursor_warp(
-                            bpy.context.region.x + self.init_click_loc[0], bpy.context.region.y + self.init_click_loc[1])
+                            int(bpy.context.region.x + self.init_click_loc[0]), int(bpy.context.region.y + self.init_click_loc[1]))
 
         return
 
