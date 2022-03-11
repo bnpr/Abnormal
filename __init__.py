@@ -3,10 +3,11 @@ from . import properties
 from . import ui
 from . import keymap
 from bpy.props import *
+
 bl_info = {
     "name": "Abnormal",
     "author": "Cody Winchester (codywinch)",
-    "version": (1, 1),
+    "version": (1, 1, 1),
     "blender": (2, 80, 0),
     "location": "3D View > Object and Properties > Object tab",
     "description": "BNPR Normal Editing Tools",
