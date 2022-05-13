@@ -18,7 +18,7 @@ class ABN_OT_normal_editor_modal(Operator):
 
     def modal(self, context, event):
         self._modal_running = False
-        status = {"RUNNING_MODAL"}
+        status = {"PASS_THROUGH"}
 
         if bpy.context.area == None:
             finish_modal(self, True)
