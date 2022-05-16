@@ -1373,7 +1373,7 @@ class CUINumProp(CUIItem):
 
                         # Warp cursor back to initial location so the cursor wont go out of blender or hit edge of monitor and stop
                         bpy.context.window.cursor_warp(
-                            bpy.context.region.x + self.init_click_loc[0], bpy.context.region.y + self.init_click_loc[1])
+                            int(bpy.context.region.x + self.init_click_loc[0], bpy.context.region.y + self.init_click_loc[1]))
 
         return
 
