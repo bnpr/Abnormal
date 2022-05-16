@@ -1279,7 +1279,7 @@ def change_line_brightness(ui_item, arguments):
     arguments[0]._container.set_brightess(
         arguments[0]._line_brightness)
 
-    if arguments[0]._container.mac_shader:
+    if arguments[0]._container.alt_shader:
         arguments[0].redraw = True
     return
 

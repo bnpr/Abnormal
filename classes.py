@@ -7,11 +7,11 @@ from .functions_general import *
 
 
 class ABNContainer:
-    def __init__(self, mat, mac_shader=False):
-        self.mac_shader = mac_shader
+    def __init__(self, mat, alt_shader=False):
+        self.alt_shader = alt_shader
 
-        if mac_shader:
-            self.create_mac_shader()
+        if alt_shader:
+            self.create_alt_shader()
         else:
             self.create_shader()
             self.create_point_shader()
@@ -25,7 +25,6 @@ class ABNContainer:
 
         self.draw_tris = False
         self.draw_only_selected = False
-        self.draw_weights = True
         self.scale_selection = True
 
         # NP ARRAYS
@@ -77,7 +76,7 @@ class ABNContainer:
         self.update_color_render()
         return
 
-    def create_mac_shader(self):
+    def create_alt_shader(self):
         self.shader = gpu.shader.from_builtin('3D_FLAT_COLOR')
         return
 
@@ -144,7 +143,7 @@ class ABNContainer:
         return
 
     def clear_batches(self):
-        if self.mac_shader:
+        if self.alt_shader:
             self.batch_po = batch_for_shader(
                 self.shader, 'POINTS', {"pos": [], "color": []})
             self.batch_po_sel = batch_for_shader(
@@ -173,8 +172,6 @@ class ABNContainer:
         po_cos = self.loop_coords[self.sel_status]
         po_norms = self.new_norms[self.sel_status]
         act_status = self.act_status[self.sel_status]
-        filt_mask = self.filter_mask[self.sel_status]
-        weight_mask = self.filter_weights[self.sel_status][filt_mask]
 
         if self.scale_selection:
             world_norms = po_cos + \
@@ -195,26 +192,10 @@ class ABNContainer:
         cols.shape = [po_cos.shape[0], 4]
         cols[act_status] = self.rcol_normal_act
 
-        # Draw filter weights on norms
-        if self.draw_weights:
-            w_cols = np.zeros(filt_mask.nonzero()[0].size * 4,
-                              dtype=np.float32).reshape(-1, 4)
-            f_cols = w_cols.copy()
-
-            w_cols[:] = self.color_po_zero_weight
-            f_cols[:] = self.color_po_full_weight
-
-            w_cols = w_cols * (1.0 - weight_mask.reshape(-1, 1)) + \
-                f_cols * weight_mask.reshape(-1, 1)
-
-            w_cols = hsv_to_rgb_array(w_cols)
-
-            cols[filt_mask] = w_cols
-
         norm_colors = np.array(list(zip(cols, cols)))
         norm_colors.shape = [po_cos.shape[0] * 2, 4]
 
-        if self.mac_shader:
+        if self.alt_shader:
             norm_colors[:, [0, 1, 2]] *= self.brightness
 
         #
@@ -229,8 +210,6 @@ class ABNContainer:
         # all points are static
         sel_mask = self.sel_status[~self.hide_status]
         act_mask = self.act_status[~self.hide_status]
-        filt_mask = self.filter_mask[~self.hide_status]
-        weight_mask = self.filter_weights[~self.hide_status][filt_mask]
 
         points = self.loop_coords[~self.hide_status]
 
@@ -243,23 +222,7 @@ class ABNContainer:
         po_colors[sel_mask] = self.rcol_po_sel
         po_colors[act_mask] = self.rcol_po_act
 
-        # Draw filter weights on points
-        if self.draw_weights:
-            w_cols = np.zeros(filt_mask.nonzero()[0].size * 4,
-                              dtype=np.float32).reshape(-1, 4)
-            f_cols = w_cols.copy()
-
-            w_cols[:] = self.color_po_zero_weight
-            f_cols[:] = self.color_po_full_weight
-
-            w_cols = w_cols * (1.0 - weight_mask.reshape(-1, 1)) + \
-                f_cols * weight_mask.reshape(-1, 1)
-
-            w_cols = hsv_to_rgb_array(w_cols)
-
-            po_colors[filt_mask] = w_cols
-
-        if self.mac_shader:
+        if self.alt_shader:
             po_colors[:, [0, 1, 2]] *= self.brightness
 
             self.batch_po = batch_for_shader(
@@ -290,16 +253,12 @@ class ABNContainer:
             t_colors[sel_mask] = self.rcol_tri_sel
             t_colors[act_mask] = self.rcol_tri_act
 
-            # Draw filter weights on loop tris
-            if self.draw_weights:
-                t_colors[filt_mask] = w_cols
-
             tri_colors = np.array(list(zip(t_colors, t_colors, t_colors)))
             tri_colors.shape = [tris.shape[0]*3, 4]
 
             tris.shape = [tris.shape[0]*3, 3]
 
-            if self.mac_shader:
+            if self.alt_shader:
                 tri_colors[:, [0, 1, 2]] *= self.brightness
 
         self.batch_tri = batch_for_shader(
@@ -315,9 +274,6 @@ class ABNContainer:
             non_sel_status = np.ones(self.loop_coords.shape[0], dtype=bool)
             non_sel_status[self.sel_status] = False
             non_sel_status = non_sel_status[~self.hide_status]
-
-            w_cols = w_cols[non_sel_status[filt_mask]]
-            filt_mask = filt_mask[non_sel_status]
 
             po_cos = self.loop_coords[~self.hide_status][non_sel_status]
             po_norms = self.new_norms[~self.hide_status][non_sel_status]
@@ -349,10 +305,6 @@ class ABNContainer:
         n_colors[sel_mask] = self.rcol_normal_sel
         n_colors[act_mask] = self.rcol_normal_act
 
-        # Draw filter weights on normals
-        if self.draw_weights:
-            n_colors[filt_mask] = w_cols
-
         if self.draw_only_selected:
             po_cos = po_cos[sel_mask]
             world_norms = world_norms[sel_mask]
@@ -364,7 +316,7 @@ class ABNContainer:
         norm_colors = np.array(list(zip(n_colors, n_colors)))
         norm_colors.shape = [n_colors.shape[0] * 2, 4]
 
-        if self.mac_shader:
+        if self.alt_shader:
             norm_colors[:, [0, 1, 2]] *= self.brightness
 
         self.batch_normal = batch_for_shader(
@@ -389,7 +341,7 @@ class ABNContainer:
     def draw(self):
         matrix = bpy.context.region_data.perspective_matrix
 
-        if self.mac_shader:
+        if self.alt_shader:
             if self.draw_tris:
                 # Static Tris
                 self.shader.bind()
@@ -479,10 +431,6 @@ class ABNContainer:
 
     def set_draw_only_selected(self, status):
         self.draw_only_selected = status
-        return
-
-    def set_draw_weights(self, status):
-        self.draw_weights = status
         return
 
     def set_draw_tris(self, status):
