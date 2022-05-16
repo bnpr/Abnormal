@@ -1084,8 +1084,9 @@ def finish_modal(modal, restore):
 
     restore_modifiers(modal)
 
-    abn_props = bpy.context.scene.abnormal_props
-    abn_props.object = ''
+    addon_prefs = bpy.context.preferences.addons[__package__.split('.')[
+        0]].preferences
+    addon_prefs.object = ''
 
     delete_orbit_empty(modal)
     if modal._target_emp is not None:
@@ -1133,14 +1134,16 @@ def check_area(modal):
 
 
 def update_filter_from_vg(modal):
-    abn_props = bpy.context.scene.abnormal_props
 
-    if abn_props.vertex_group != '' and abn_props.vertex_group != modal._current_filter:
-        if abn_props.vertex_group in modal._object.vertex_groups:
+    addon_prefs = bpy.context.preferences.addons[__package__.split('.')[
+        0]].preferences
+
+    if addon_prefs.vertex_group != '' and addon_prefs.vertex_group != modal._current_filter:
+        if addon_prefs.vertex_group in modal._object.vertex_groups:
 
             for v in modal._object_bm.verts:
-                vg = modal._object.vertex_groups[abn_props.vertex_group]
-                modal._current_filter = abn_props.vertex_group
+                vg = modal._object.vertex_groups[addon_prefs.vertex_group]
+                modal._current_filter = addon_prefs.vertex_group
 
                 try:
                     weight = vg.weight(v.index)
@@ -1154,7 +1157,7 @@ def update_filter_from_vg(modal):
 
         else:
             modal._current_filter = ''
-            abn_props.vertex_group = ''
+            addon_prefs.vertex_group = ''
 
         modal._container.cache_norms[:] = modal._container.new_norms
 

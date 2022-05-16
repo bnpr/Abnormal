@@ -1,7 +1,6 @@
 import bpy
 from bpy.props import *
 from bpy.types import Operator
-from .properties import *
 # from .functions_general import *
 # from .functions_drawing import *
 # from .functions_modal import *
@@ -146,7 +145,7 @@ class ABN_OT_normal_editor_modal(Operator):
         self.redraw_active = False
         self.circle_radius = 50
 
-        context.scene.abnormal_props.object = context.active_object.name
+        self._addon_prefs.object = context.active_object.name
 
         # VIEWPORT DISPLAY SETTINGS
         self._x_ray_mode = False

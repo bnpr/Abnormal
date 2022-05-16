@@ -2,18 +2,20 @@ import bpy
 from bpy.props import *
 from bpy.types import PropertyGroup, AddonPreferences
 from . import prefs_display, prefs_behavior, prefs_sel_keymap, prefs_shortcut_keymap, prefs_tool_keymap
+from .ui import update_panel
 
 
-class ABNScnProperties(PropertyGroup):
+class AbnormalAddonPreferences(AddonPreferences):
+    bl_idname = __package__
+
     object: StringProperty()
     vertex_group: StringProperty(
         description='Vertex Group to filter normal changes with')
     vcol: StringProperty(
         description='Vertex Color to write data to/from')
 
-
-class AbnormalAddonPreferences(AddonPreferences):
-    bl_idname = __package__
+    use_n_panel: BoolProperty(
+        default=True, description='Use N Panel tab for addon. If False use the 3D View Header', update=update_panel)
 
     settings: EnumProperty(
         name='Settings', description='Settings to display',
@@ -46,10 +48,7 @@ def register():
     prefs_sel_keymap.register()
     prefs_shortcut_keymap.register()
     prefs_tool_keymap.register()
-    bpy.utils.register_class(ABNScnProperties)
     bpy.utils.register_class(AbnormalAddonPreferences)
-
-    bpy.types.Scene.abnormal_props = PointerProperty(type=ABNScnProperties)
     return
 
 
@@ -59,8 +58,5 @@ def unregister():
     prefs_sel_keymap.unregister()
     prefs_shortcut_keymap.unregister()
     prefs_tool_keymap.unregister()
-    bpy.utils.unregister_class(ABNScnProperties)
     bpy.utils.unregister_class(AbnormalAddonPreferences)
-
-    del bpy.types.Scene.abnormal_props
     return

@@ -13,9 +13,11 @@ class ABN_OT_store_norms_in_vcol(Operator):
     def execute(self, context):
         scn = context.scene
         aobj = context.active_object
-        abn_props = context.scene.abnormal_props
 
-        if abn_props.vcol is not None and abn_props.vcol in aobj.data.vertex_colors:
+        addon_prefs = bpy.context.preferences.addons[__package__.split('.')[
+            0]].preferences
+
+        if addon_prefs.vcol is not None and addon_prefs.vcol in aobj.data.vertex_colors:
             aobj.data.calc_normals_split()
 
             loop_amnt = len(aobj.data.loops)
@@ -30,7 +32,7 @@ class ABN_OT_store_norms_in_vcol(Operator):
             alphas = np.ones(loop_amnt, dtype=np.float32).reshape(-1, 1)
             norms = np.hstack((norms, alphas))
 
-            aobj.data.vertex_colors[abn_props.vcol].data.foreach_set(
+            aobj.data.vertex_colors[addon_prefs.vcol].data.foreach_set(
                 'color', norms.ravel())
 
         return {'FINISHED'}
@@ -45,16 +47,18 @@ class ABN_OT_convert_vcol_to_norms(Operator):
     def execute(self, context):
         scn = context.scene
         aobj = context.active_object
-        abn_props = context.scene.abnormal_props
 
-        if abn_props.vcol is not None and abn_props.vcol in aobj.data.vertex_colors:
+        addon_prefs = bpy.context.preferences.addons[__package__.split('.')[
+            0]].preferences
+
+        if addon_prefs.vcol is not None and addon_prefs.vcol in aobj.data.vertex_colors:
             aobj.data.calc_normals_split()
 
             loop_amnt = len(aobj.data.loops)
 
             cols = np.zeros(loop_amnt*4, dtype=np.float32)
 
-            aobj.data.vertex_colors[abn_props.vcol].data.foreach_get(
+            aobj.data.vertex_colors[addon_prefs.vcol].data.foreach_get(
                 'color', cols)
 
             cols.shape = [loop_amnt, 4]
