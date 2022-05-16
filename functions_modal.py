@@ -890,7 +890,7 @@ def add_to_undostack(modal, stack_type):
             elif modal._history_stack[0] == 1:
                 modal._history_normal_stack.pop(0)
                 modal._history_normal_position -= 1
-            elif modal._history_stack[0] == 1:
+            elif modal._history_stack[0] == 2:
                 modal._history_filter_stack.pop(0)
                 modal._history_filter_position -= 1
 
@@ -902,7 +902,7 @@ def add_to_undostack(modal, stack_type):
             modal._history_select_stack.pop(-1)
         elif modal._history_stack[-1] == 1:
             modal._history_normal_stack.pop(-1)
-        elif modal._history_stack[-1] == 1:
+        elif modal._history_stack[-1] == 2:
             modal._history_filter_stack.pop(-1)
 
         modal._history_stack.pop(-1)
