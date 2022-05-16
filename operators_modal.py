@@ -1,12 +1,9 @@
 import bpy
 from bpy.props import *
 from bpy.types import Operator
-from mathutils import Vector
-from .properties import *
 # from .functions_general import *
 # from .functions_drawing import *
 # from .functions_modal import *
-from .functions_keymaps import *
 from .functions_modal_buttons import *
 from .functions_modal_keymap import *
 from .functions_tools import *
@@ -20,7 +17,7 @@ class ABN_OT_normal_editor_modal(Operator):
 
     def modal(self, context, event):
         self._modal_running = False
-        status = {"RUNNING_MODAL"}
+        status = {"PASS_THROUGH"}
 
         if bpy.context.area == None:
             finish_modal(self, True)
@@ -48,25 +45,13 @@ class ABN_OT_normal_editor_modal(Operator):
         self._window.check_dimensions(context)
         # Check that mousemove is larger than a pixel to be tested
         mouse_move_check = True
-        if event.type == 'MOUSEMOVE' and Vector(self._mouse_reg_loc-self._prev_mouse_loc).length < 1.0:
+        if event.type == 'MOUSEMOVE' and get_np_vec_lengths((self._mouse_reg_loc-self._prev_mouse_loc).reshape(-1, 3)) < 1.0:
             mouse_move_check = False
 
         if mouse_move_check:
-            if self.typing:
-                status = typing_keymap(self, context, event)
+            status = self._current_tool.test_mode(
+                self, context, event, self.keymap, None)
 
-            elif self.tool_mode and self._current_tool != None:
-                if self.ui_hover:
-                    status = basic_ui_hover_keymap(self, context, event)
-                else:
-                    status = self._current_tool.test_mode(
-                        self, context, event, self.keymap, None)
-
-            else:
-                if self.ui_hover:
-                    status = basic_ui_hover_keymap(self, context, event)
-                else:
-                    status = basic_keymap(self, context, event)
             self._prev_mouse_loc[:] = self._mouse_reg_loc
 
         if self._confirm_modal:
@@ -160,7 +145,7 @@ class ABN_OT_normal_editor_modal(Operator):
         self.redraw_active = False
         self.circle_radius = 50
 
-        context.scene.abnormal_props.object = context.active_object.name
+        self._addon_prefs.object = context.active_object.name
 
         # VIEWPORT DISPLAY SETTINGS
         self._x_ray_mode = False
@@ -171,6 +156,7 @@ class ABN_OT_normal_editor_modal(Operator):
         self._point_size = self._display_prefs.point_size
         self._loop_tri_size = self._display_prefs.loop_tri_size
         self._selected_only = self._display_prefs.selected_only
+        self._draw_weights = self._display_prefs.draw_weights
         self._selected_scale = self._display_prefs.selected_scale
         self._individual_loops = self._behavior_prefs.individual_loops
         if self._display_prefs.ui_scale == 0.0:
@@ -182,15 +168,9 @@ class ABN_OT_normal_editor_modal(Operator):
         # CACHE VIEWPORT SETTINGS
         viewport_change_cache(self, context)
 
-        # NAVIGATION KEYS LIST
-        init_nav_list(self)
-
         # MODES
         self.rotating = False
-        self.sphereize_mode = False
-        self.point_mode = False
         self.gizmo_click = False
-        self.waiting = False
 
         self.box_selecting = False
         self.lasso_selecting = False
@@ -198,22 +178,27 @@ class ABN_OT_normal_editor_modal(Operator):
         self.circle_resizing = False
         self.circle_removing = False
 
-        self._current_tool = None
-        self.tool_mode = False
+        self._popup_panel = None
+
+        self._hover_timer = None
+        self._hover_stop_time = 0.0
+        self._hover_delay_passed = False
+        self._hover_delay = 0.7
 
         self.click_hold = False
-        self.selection_drawing = True
-        self.typing = False
-        self.bezier_changing = False
         self.ui_hover = False
+        self.selection_drawing = True
+        self.bezier_changing = False
 
         # UNDO STACK STORAGE
         self._history_stack = []
         self._history_select_stack = []
         self._history_normal_stack = []
+        self._history_filter_stack = []
         self._history_position = 0
         self._history_select_position = 0
         self._history_normal_position = 0
+        self._history_filter_position = 0
         self._history_steps = 128
 
         # INITIALIZE OBJECTS
@@ -240,13 +225,14 @@ class ABN_OT_normal_editor_modal(Operator):
         self.shader_3d = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
         self._container = ABNContainer(
-            self._object.matrix_world.normalized())
+            self._object.matrix_world.normalized(), alt_shader=self._behavior_prefs.alt_drawing)
         self._container.set_scale_selection(self._selected_scale)
         self._container.set_brightess(self._line_brightness)
         self._container.set_normal_scale(self._normal_size)
         self._container.set_point_size(self._point_size)
         self._container.set_loop_scale(self._loop_tri_size)
         self._container.set_draw_only_selected(self._selected_only)
+        self._container.set_draw_weights(self._draw_weights)
         self._container.set_draw_tris(self._individual_loops)
 
         # INITIALIZE POINT DATA
@@ -254,10 +240,14 @@ class ABN_OT_normal_editor_modal(Operator):
         self._orbit_ob = add_orbit_empty(self._object)
         self._target_emp = add_target_empty(self._object)
 
-        update_filter_weights(self)
+        update_filter_from_vg(self)
 
         # INITIALIZE UI WINDOW
         load_keymap(self)
+
+        # NAVIGATION KEYS LIST
+        init_nav_list(self)
+
         init_ui_panels(self, rw, rh, self._ui_scale)
 
         update_orbit_empty(self)
@@ -279,7 +269,7 @@ class ABN_OT_normal_editor_modal(Operator):
         dns["dh2d"] = self._draw_handle_2d
         dns["dh3d"] = self._draw_handle_3d
 
-        add_to_undostack(self, 2)
+        add_to_undostack(self, 3)
 
         self._window.check_in_window()
 

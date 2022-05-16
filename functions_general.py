@@ -21,6 +21,35 @@ def rotate_2d(origin, point, angle):
     return vec
 
 
+def rotate_2d_points(origins, points, angles):
+    x = (np.cos(angles) * (points[:, 0] - origins[:, 0]) -
+         np.sin(angles) * (points[:, 1] - origins[:, 1])).reshape(-1, 1)
+    y = (np.sin(angles) * (points[:, 0] - origins[:, 0]) +
+         np.cos(angles) * (points[:, 1] - origins[:, 1])).reshape(-1, 1)
+
+    vecs = np.hstack((x, y))
+    vecs += np.array(origins)
+    return vecs
+
+
+def get_circle_cos(origin, res, size, close_end=False):
+
+    if close_end:
+        res += 1
+
+    orgs = np.tile(np.array(origin, dtype=np.float32), res).reshape(-1, 2)
+    pos = orgs + np.array([0.0, size], dtype=np.float32)
+
+    if close_end:
+        angs = np.arange(res, dtype=np.float32) / (res-1) * np.radians(360)
+    else:
+        angs = np.arange(res, dtype=np.float32) / res * np.radians(360)
+
+    circ_pos = rotate_2d_points(orgs, pos, angs)
+
+    return circ_pos
+
+
 def refresh_bm(bm):
     bm.edges.ensure_lookup_table()
     bm.verts.ensure_lookup_table()
@@ -74,11 +103,11 @@ def ob_to_bm_world(ob):
     return bm
 
 
-def create_simple_bm(self, ob):
+def create_simple_bm(modal, ob):
 
     # turn off generative modifiers
     for mod in ob.modifiers:
-        self._objects_mod_status.append(
+        modal._objects_mod_status.append(
             [mod.show_viewport, mod.show_render, mod.name])
 
         if mod.type != 'MIRROR':
@@ -429,6 +458,59 @@ def hsv_to_rgb_list(hsv):
     return rgb
 
 
+def hsv_to_rgb_array(array):
+    s_mask = array[:, 1] == 0.0
+
+    rgb_arr = np.ones(array.shape[0]*4, dtype=np.float32).reshape(-1, 4)
+    rgb_arr[s_mask, 0] = array[s_mask, 2]
+    rgb_arr[s_mask, 1] = array[s_mask, 2]
+    rgb_arr[s_mask, 2] = array[s_mask, 2]
+
+    i = (array[:, 0] * 6).astype(np.int32)
+    f = (array[:, 0] * 6) - i
+
+    p = array[:, 2] * (1-array[:, 1])
+    q = array[:, 2] * (1-array[:, 1]*f)
+    t = array[:, 2] * (1-array[:, 1]*(1-f))
+
+    i = i % 6
+
+    mask_a = i == 0
+    mask_b = i == 1
+    mask_c = i == 2
+    mask_d = i == 3
+    mask_e = i == 5
+    mask_f = i == 6
+
+    rgb_arr[mask_a, 0] = array[mask_a, 2]
+    rgb_arr[mask_a, 1] = t[mask_a]
+    rgb_arr[mask_a, 2] = p[mask_a]
+
+    rgb_arr[mask_b, 0] = q[mask_b]
+    rgb_arr[mask_b, 1] = array[mask_b, 2]
+    rgb_arr[mask_b, 2] = p[mask_b]
+
+    rgb_arr[mask_c, 0] = p[mask_c]
+    rgb_arr[mask_c, 1] = array[mask_c, 2]
+    rgb_arr[mask_c, 2] = t[mask_c]
+
+    rgb_arr[mask_d, 0] = p[mask_d]
+    rgb_arr[mask_d, 1] = q[mask_d]
+    rgb_arr[mask_d, 2] = array[mask_d, 2]
+
+    rgb_arr[mask_e, 0] = t[mask_e]
+    rgb_arr[mask_e, 1] = p[mask_e]
+    rgb_arr[mask_e, 2] = array[mask_e, 2]
+
+    rgb_arr[mask_f, 0] = array[mask_f, 2]
+    rgb_arr[mask_f, 1] = p[mask_f]
+    rgb_arr[mask_f, 2] = q[mask_f]
+
+    rgb_arr[:, 3] = array[:, 3]
+
+    return rgb_arr
+
+
 #
 #
 
@@ -448,14 +530,14 @@ def ray_cast_view_occlude_test(co, mouse_co, bvh, region, rv3d):
     return occluded
 
 
-def ray_cast_to_mouse(self):
+def ray_cast_to_mouse(modal):
     # get the ray from the viewport and mouse
     view_vector = view3d_utils.region_2d_to_vector_3d(
-        self.act_reg, self.act_rv3d, self._mouse_reg_loc)
+        modal.act_reg, modal.act_rv3d, modal._mouse_reg_loc)
     ray_origin = view3d_utils.region_2d_to_origin_3d(
-        self.act_reg, self.act_rv3d, self._mouse_reg_loc)
+        modal.act_reg, modal.act_rv3d, modal._mouse_reg_loc)
 
-    hit, norm, ind, dist = self._object_bvh.ray_cast(
+    hit, norm, ind, dist = modal._object_bvh.ray_cast(
         ray_origin, view_vector, 10000)
 
     if hit != None and ind != None:
@@ -710,6 +792,54 @@ def get_np_matrix_transformed_vecs(array, mat):
 
     transformed_array = (n_mat @ full_array.T).T[:, :-1]
     return transformed_array
+
+
+def get_np_vec_angles(vecs_a, vecs_b):
+    #
+    # Get the angles between 2 sets of vectors
+    #
+    dots = get_np_normalized_vecs(vecs_a) * get_np_normalized_vecs(vecs_b)
+
+    angs = np.arccos(np.clip(np.sum(dots, axis=1), -1.0, 1.0))
+
+    return angs
+
+
+def get_np_vec_angles_signed(vecs_a, vecs_b, switch=False, full_range=False):
+    #
+    # Get the signed angles between 2 sets of vectors
+    # Only uses the X and Y coords to get the angle
+    # Z axis should be 0.0
+    #
+    angs = get_np_vec_angles(vecs_a, vecs_b)
+
+    cross = np.cross(vecs_a, vecs_b)
+    cross = cross[:, 2] >= 0.0
+    cross.shape = angs.shape
+
+    angs[cross] *= -1
+
+    # Reverse angle if going backwards
+    if switch:
+        angs *= -1
+
+    # Convert negative counter clockwise values to 0-2pi range
+    if full_range:
+        angs[angs < 0.0] = np.pi*2 + angs[angs < 0.0]
+
+    return angs
+
+
+def get_np_vec_lengths(array):
+    #
+    # Given a vector numpy array get distance to test coord
+    # Subtract test_co from array, Square each axis,
+    # get the square root of each axis, and sum the axis of each vector for a distance
+    #
+
+    dists = np.sqrt(np.sum(np.square(array), axis=1))
+
+    return dists
 
 
 #

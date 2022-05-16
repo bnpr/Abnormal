@@ -57,6 +57,15 @@ def draw(preference, context, layout):
     layout.separator()
     #
 
+    keymap_row(keymap_items, 'Filter Mask From Selected',
+               layout.row(), 'Create Filter Mask From Selected Key')
+    keymap_row(keymap_items, 'Clear Filter Mask',
+               layout.row(), 'Clear Filter Mask Key')
+
+    #
+    layout.separator()
+    #
+
     keymap_row(keymap_items, 'Cancel Modal', layout.row(), 'Cancel Modal Key')
     keymap_row(keymap_items, 'Confirm Modal',
                layout.row(), 'Confirm Modal Key')
