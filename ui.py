@@ -1,4 +1,5 @@
 import bpy
+from platform import system
 from bpy.props import *
 from bpy.types import Panel
 from .operators_modal import *
@@ -11,6 +12,12 @@ def load_handler(dummy):
         0]].preferences
 
     addon_prefs.use_n_panel = addon_prefs.use_n_panel
+
+    # Run check for user on Mac if so default to using alternate shader
+    if system() == 'Darwin':
+        addon_prefs.behavior.alt_drawing = True
+
+    return
 
 
 def update_panel(self, context):
