@@ -1156,7 +1156,8 @@ def start_filter_gradient(modal, context, event, keys, func_data):
 #
 # BOX SELECT FUNCS
 def box_sel_start(modal, context, event, keys, func_data):
-    modal._mode_cache.append(modal._mouse_reg_loc.copy())
+    modal._mode_cache.append(
+        [modal._mouse_reg_loc.copy(), modal._mouse_reg_loc.copy()])
     modal.box_selecting = True
     return
 
