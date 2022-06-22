@@ -76,7 +76,7 @@ def draw_callback_3d(modal, context):
         clear_draw = True
 
     if clear_draw:
-        print('Something is wrong, clear out 3D Draw Handler')
+        print('Something is wrong, 3D Draw Handler is being removed')
         dns = bpy.app.driver_namespace
         dc = dns.get("dh3d")
         try:
@@ -132,7 +132,7 @@ def draw_callback_2d(modal, context):
         clear_draw = True
 
     if clear_draw:
-        print('Something is wrong, clear out 2D Draw Handler')
+        print('Something is wrong, 2D Draw Handler is being removed')
         dns = bpy.app.driver_namespace
         dc = dns.get("dh2d")
         try:
