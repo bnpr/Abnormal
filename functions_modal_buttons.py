@@ -1622,7 +1622,7 @@ def toggle_modes_button(ui_item, arguments):
         not arguments[0]._modes_box.visible)
 
     ui_item.set_bool(not ui_item.bool)
-    ui_item.set_draw_box(hbut.bool)
+    ui_item.set_draw_box(not ui_item.bool)
     if arguments[0]._modes_box.visible == False:
         repos_subpanel(arguments[0]._modes_panel, ui_item, arguments[0])
     else:
