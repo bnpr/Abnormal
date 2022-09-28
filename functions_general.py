@@ -656,18 +656,18 @@ def get_np_region_cos(coords, region, region_data, depth=1.5):
         region, region_data, [region.width/2, region.height/2]))
     view_vecs = np.tile(view_vec, (loc_arr.shape[0], 1))
 
-    if region_data.view_perspective == 'PERSP':
+    if region_data.view_perspective == 'PERSP' or (region_data.view_perspective == 'CAMERA' and bpy.context.scene.camera.data.type == 'PERSP'):
         scale_center = np.array(view3d_utils.region_2d_to_origin_3d(
             region, region_data, [region.width/2, region.height/2]))
         dir_vecs = loc_arr - scale_center
 
-        dot_offsets = np.sum((loc_arr - scale_center) * view_vec, axis=1)
+        dot_offsets = np.sum(dir_vecs * view_vec, axis=1)
 
         scale_3d = depth/dot_offsets
 
         flat_locs = scale_center + dir_vecs*scale_3d[:, None]
 
-    elif region_data.view_perspective == 'ORTHO':
+    elif region_data.view_perspective == 'ORTHO' or (region_data.view_perspective == 'CAMERA' and bpy.context.scene.camera.data.type == 'ORTHO'):
         scale_center = np.array(bl_reg_co)
         dir_vecs = view_vecs
 
