@@ -49,8 +49,6 @@ class ABN_OT_switch_panel_loc(Operator):
     val: BoolProperty(default=True)
 
     def execute(self, context):
-        scn = context.scene
-        aobj = context.active_object
 
         addon_prefs = bpy.context.preferences.addons[__package__.split('.')[
             0]].preferences
@@ -71,7 +69,6 @@ class ABN_PT_abnormal_panel(Panel):
 
     def draw(self, context):
         layout = self.layout
-        scn = context.scene
         data = bpy.data
 
         addon_prefs = bpy.context.preferences.addons[__package__.split('.')[
@@ -163,6 +160,9 @@ class ABN_PT_abnormal_panel(Panel):
 
 def register():
     bpy.utils.register_class(ABN_OT_switch_panel_loc)
+    ABN_PT_abnormal_panel.bl_category = 'BNPR Abnormal'
+    ABN_PT_abnormal_panel.bl_region_type = 'UI'
+    ABN_PT_abnormal_panel.menu_remove()
     bpy.utils.register_class(ABN_PT_abnormal_panel)
     bpy.app.handlers.load_post.append(load_handler)
     return
