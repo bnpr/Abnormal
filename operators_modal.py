@@ -150,6 +150,7 @@ class ABN_OT_normal_editor_modal(Operator):
         # VIEWPORT DISPLAY SETTINGS
         self._x_ray_mode = False
         self._use_gizmo = self._behavior_prefs.rotate_gizmo_use
+        self._use_rotation_panel = self._behavior_prefs.rotate_panel_use
         self._gizmo_size = self._display_prefs.gizmo_size
         self._normal_size = self._display_prefs.normal_size
         self._line_brightness = self._display_prefs.line_brightness

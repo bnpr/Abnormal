@@ -479,6 +479,11 @@ def init_ui_panels(modal, rw, rh, scale):
         modal._gizmo_bool.set_click_up_func(toggle_use_gizmo)
 
         row = box.add_row()
+        modal._gizmo_panel_bool = row.add_bool(20, 'Use Rotation Panel',
+                                         default=modal._use_rotation_panel)
+        modal._gizmo_panel_bool.set_click_up_func(toggle_use_rotation_panel)
+
+        row = box.add_row()
         but = row.add_button(20, 'Average Individual Vertex Normals')
         but.set_click_up_func(average_individual)
         but.add_tooltip_text_line(
@@ -1007,6 +1012,11 @@ def init_ui_panels(modal, rw, rh, scale):
             modal._gizmo_bool.set_click_up_func(toggle_use_gizmo)
 
             row = boxx.add_row()
+            modal._gizmo_panel_bool = row.add_bool(20, 'Use Rotation Panel',
+                                            default=modal._use_rotation_panel)
+            modal._gizmo_panel_bool.set_click_up_func(toggle_use_rotation_panel)
+
+            row = boxx.add_row()
             but = row.add_button(20, 'Average Individual Vertex Normals')
             but.set_click_up_func(average_individual)
             but.add_tooltip_text_line(
@@ -1284,6 +1294,13 @@ def toggle_use_gizmo(ui_item, arguments):
     arguments[0]._use_gizmo = ui_item.bool_val
     update_orbit_empty(arguments[0])
     gizmo_update_hide(arguments[0], arguments[0]._use_gizmo)
+    return
+
+
+def toggle_use_rotation_panel(ui_item, arguments):
+    arguments[0]._use_rotation_panel = ui_item.bool_val
+    
+    arguments[0]._gizmo_panel.set_visibility(ui_item.bool_val)
     return
 
 
@@ -1754,6 +1771,7 @@ def reset_vectors(ui_item, arguments):
 def save_preferences(ui_item, arguments):
     arguments[0]._behavior_prefs.individual_loops = arguments[0]._individual_loops
     arguments[0]._behavior_prefs.rotate_gizmo_use = arguments[0]._use_gizmo
+    arguments[0]._behavior_prefs.rotate_panel_use = arguments[0]._use_rotation_panel
 
     arguments[0]._display_prefs.gizmo_size = arguments[0]._gizmo_size
     arguments[0]._display_prefs.normal_size = arguments[0]._normal_size

@@ -9,6 +9,7 @@ class prefs(PropertyGroup):
         default=False, description='Alternate drawing shaders. Useful for Mac users')
     individual_loops: BoolProperty(default=False)
     rotate_gizmo_use: BoolProperty(default=True)
+    rotate_panel_use: BoolProperty(default=True)
 
 
 def label_row(path, prop, row, label):
@@ -21,6 +22,8 @@ def draw(preference, context, layout):
               layout.row(), 'Use Alternate Drawing')
     label_row(preference.behavior, 'rotate_gizmo_use',
               layout.row(), 'Use Rotation Gizmo')
+    label_row(preference.behavior, 'rotate_panel_use',
+              layout.row(), 'Use Rotation Panel')
     label_row(preference.behavior, 'individual_loops',
               layout.row(), 'Edit Split Individual Loops')
 

@@ -985,6 +985,7 @@ def img_load(img_name, path):
 
 def finish_modal(modal, restore):
     modal._behavior_prefs.rotate_gizmo_use = modal._use_gizmo
+    modal._behavior_prefs.rotate_panel_use = modal._use_rotation_panel
     modal._display_prefs.gizmo_size = modal._gizmo_size
     modal._display_prefs.normal_size = modal._normal_size
     modal._display_prefs.line_brightness = modal._line_brightness
@@ -1215,12 +1216,13 @@ def gizmo_click_init(modal, event, giz_status):
 
 
 def relocate_gizmo_panel(modal):
-    rco = view3d_utils.location_3d_to_region_2d(
-        modal.act_reg, modal.act_rv3d, modal._orbit_ob.location)
+    if modal._use_rotation_panel:
+        rco = view3d_utils.location_3d_to_region_2d(
+            modal.act_reg, modal.act_rv3d, modal._orbit_ob.location)
 
-    if rco is not None:
-        modal._gizmo_panel.set_new_position(
-            [rco[0]+modal.gizmo_reposition_offset[0], rco[1]+modal.gizmo_reposition_offset[1]], modal._window.dimensions)
+        if rco is not None:
+            modal._gizmo_panel.set_new_position(
+                [rco[0]+modal.gizmo_reposition_offset[0], rco[1]+modal.gizmo_reposition_offset[1]], modal._window.dimensions)
     return
 
 
@@ -1228,7 +1230,7 @@ def gizmo_update_hide(modal, status):
     if modal._use_gizmo == False:
         status = False
 
-    modal._gizmo_panel.set_visibility(status)
+    modal._gizmo_panel.set_visibility(status and modal._use_rotation_panel)
     modal._rot_gizmo.set_visibility(status)
     return
 

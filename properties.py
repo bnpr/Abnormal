@@ -13,6 +13,8 @@ class AbnormalAddonPreferences(AddonPreferences):
         description='Vertex Group to filter normal changes with')
     vcol: StringProperty(
         description='Vertex Color to write data to/from')
+    attribute: StringProperty(
+        description='Attribute to write data to/from')
 
     use_n_panel: BoolProperty(
         default=True, description='Use N Panel tab for addon. If False use the 3D View Header', update=update_panel)

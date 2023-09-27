@@ -8,14 +8,15 @@ from bpy.props import *
 bl_info = {
     "name": "Abnormal",
     "author": "Cody Winchester (codywinch)",
-    "version": (1, 1, 2),
-    "blender": (2, 80, 0),
+    "version": (1, 1, 3),
+    "blender": (3, 60, 0),
     "location": "3D View > N Panel/Header > BNPR Abnormal Tab",
     "description": "BNPR Normal Editing Tools",
     "warning": "",
     "wiki_url": "",
     "category": "3D View"
 }
+
 if "bpy" in locals():
     import importlib
     if "__init__" in locals():
