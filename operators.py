@@ -135,7 +135,7 @@ class ABN_OT_convert_attr_to_norms(Operator):
 
         aobj.data.calc_normals_split()
 
-        loop_amnt = len(aobj.data.loops)
+        # loop_amnt = len(aobj.data.loops)
 
         # norms = np.zeros(loop_amnt*3, dtype=np.float32)
 
