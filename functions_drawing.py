@@ -31,34 +31,36 @@ def draw_callback_3d(modal, context):
         if modal._modal_running == False:
             clear_draw = True
 
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_VERTEX_PROGRAM_POINT_SIZE)
-        if modal._x_ray_mode == False:
-            bgl.glEnable(bgl.GL_DEPTH_TEST)
+        if context.area == modal._draw_area:
 
-        modal._container.draw()
+            bgl.glEnable(bgl.GL_BLEND)
+            bgl.glEnable(bgl.GL_VERTEX_PROGRAM_POINT_SIZE)
+            if modal._x_ray_mode == False:
+                bgl.glEnable(bgl.GL_DEPTH_TEST)
 
-        if len(modal.translate_draw_line) > 0:
-            bgl.glEnable(bgl.GL_DEPTH_TEST)
-            bgl.glLineWidth(2)
-            modal.shader_3d.bind()
-            if modal.translate_axis == 0:
-                modal.shader_3d.uniform_float("color", (1.0, 0.0, 0.0, 1.0))
-            if modal.translate_axis == 1:
-                modal.shader_3d.uniform_float("color", (0.0, 1.0, 0.0, 1.0))
-            if modal.translate_axis == 2:
-                modal.shader_3d.uniform_float("color", (0.0, 0.0, 1.0, 1.0))
-            modal.batch_translate_line.draw(modal.shader_3d)
-            bgl.glDisable(bgl.GL_DEPTH_TEST)
+            modal._container.draw()
 
-        if modal._x_ray_mode == False:
-            bgl.glDisable(bgl.GL_DEPTH_TEST)
+            if len(modal.translate_draw_line) > 0:
+                bgl.glEnable(bgl.GL_DEPTH_TEST)
+                bgl.glLineWidth(2)
+                modal.shader_3d.bind()
+                if modal.translate_axis == 0:
+                    modal.shader_3d.uniform_float("color", (1.0, 0.0, 0.0, 1.0))
+                if modal.translate_axis == 1:
+                    modal.shader_3d.uniform_float("color", (0.0, 1.0, 0.0, 1.0))
+                if modal.translate_axis == 2:
+                    modal.shader_3d.uniform_float("color", (0.0, 0.0, 1.0, 1.0))
+                modal.batch_translate_line.draw(modal.shader_3d)
+                bgl.glDisable(bgl.GL_DEPTH_TEST)
 
-        if modal._use_gizmo:
-            modal._window.gizmo_draw()
+            if modal._x_ray_mode == False:
+                bgl.glDisable(bgl.GL_DEPTH_TEST)
 
-        bgl.glDisable(bgl.GL_BLEND)
-        bgl.glDisable(bgl.GL_VERTEX_PROGRAM_POINT_SIZE)
+            if modal._use_gizmo:
+                modal._window.gizmo_draw()
+
+            bgl.glDisable(bgl.GL_BLEND)
+            bgl.glDisable(bgl.GL_VERTEX_PROGRAM_POINT_SIZE)
 
     except Exception:
         print()
