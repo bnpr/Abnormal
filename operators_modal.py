@@ -221,9 +221,16 @@ class ABN_OT_normal_editor_modal(Operator):
             self._object.data.use_auto_smooth = True
             self._object.data.auto_smooth_angle = 180
 
+        if bpy.app.version[0] >= 4:
+            shader_2d_str = 'UNIFORM_COLOR'
+            shader_3d_str = 'UNIFORM_COLOR'
+        else:
+            shader_2d_str = '2D_UNIFORM_COLOR'
+            shader_3d_str = '3D_UNIFORM_COLOR'
+
         # INITIALIZE BATCHES AND SHADERS
-        self.shader_2d = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
-        self.shader_3d = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        self.shader_2d = gpu.shader.from_builtin(shader_2d_str)
+        self.shader_3d = gpu.shader.from_builtin(shader_3d_str)
 
         self._container = ABNContainer(
             self._object.matrix_world.normalized(), alt_shader=self._behavior_prefs.alt_drawing)

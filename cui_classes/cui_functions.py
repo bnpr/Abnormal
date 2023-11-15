@@ -5,8 +5,10 @@ import bpy
 
 
 def scale_font_size(text, font_size, font_id, scale):
-
-    blf.size(font_id, font_size, 72)
+    if bpy.app.version[0] >= 4:
+        blf.size(font_id, font_size)
+    else:
+        blf.size(font_id, font_size, 72)
     blf.position(font_id, 0, 0, 0)
     size_w = blf.dimensions(font_id, text)
 
@@ -23,14 +25,19 @@ def scale_font_size(text, font_size, font_id, scale):
         # A size is found that is just over the target width of the scaled size
         while cur_width <= targ_width:
             cur_size += 1
-
-            blf.size(font_id, cur_size, 72)
+            if bpy.app.version[0] >= 4:
+                blf.size(font_id, cur_size)
+            else:
+                blf.size(font_id, cur_size, 72)
             cur_width, cur_height = blf.dimensions(
                 font_id, text)
 
         # When the font size that is just larger is found set the current font size to 1 below that
         cur_size -= 1
-        blf.size(font_id, cur_size, 72)
+        if bpy.app.version[0] >= 4:
+            blf.size(font_id, cur_size)
+        else:
+            blf.size(font_id, cur_size, 72)
         size_w = blf.dimensions(font_id, text)
 
     return cur_size

@@ -1,5 +1,4 @@
 import bpy
-import bgl
 import gpu
 import numpy as np
 from gpu_extras.batch import batch_for_shader
@@ -78,7 +77,11 @@ class ABNContainer:
         return
 
     def create_alt_shader(self):
-        self.shader = gpu.shader.from_builtin('3D_FLAT_COLOR')
+        if bpy.app.version[0] >= 4:
+            shader_3d_str = 'FLAT_COLOR'
+        else:
+            shader_3d_str = '3D_FLAT_COLOR'
+        self.shader = gpu.shader.from_builtin(shader_3d_str)
         return
 
     def create_shader(self):
@@ -395,18 +398,18 @@ class ABNContainer:
                 self.shader.bind()
                 self.batch_tri.draw(self.shader)
 
-            bgl.glPointSize(5*self.size)
+            gpu.state.point_size_set(5*self.size)
             # Static Non Sel Points
             self.shader.bind()
             self.batch_po.draw(self.shader)
 
             # Static Sel Points
-            bgl.glPointSize(8*self.size)
+            gpu.state.point_size_set(8*self.size)
             self.shader.bind()
             self.batch_po_sel.draw(self.shader)
 
             # Static Act Points
-            bgl.glPointSize(11*self.size)
+            gpu.state.point_size_set(11*self.size)
             self.shader.bind()
             self.batch_po_act.draw(self.shader)
 

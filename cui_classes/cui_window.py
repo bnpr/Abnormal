@@ -113,7 +113,10 @@ class CUIWindowContainer:
                          self.status_pos[0], self.status_pos[1], 0)
             blf.color(
                 self.status_font, self.color_status_render[0], self.color_status_render[1], self.color_status_render[2], self.color_status_render[3])
-            blf.size(self.status_font, self.status_size, 72)
+            if bpy.app.version[0] >= 4:
+                blf.size(self.status_font, self.status_size)
+            else:
+                blf.size(self.status_font, self.status_size, 72)
             blf.draw(self.status_font, self.status_text)
 
         return
@@ -124,7 +127,10 @@ class CUIWindowContainer:
                          self.key_pos[0], self.key_pos[1], 0)
             blf.color(
                 self.key_font, self.color_key_render[0], self.color_key_render[1], self.color_key_render[2], self.color_key_render[3])
-            blf.size(self.key_font, self.key_size, 72)
+            if bpy.app.version[0] >= 4:
+                blf.size(self.key_font, self.key_size)
+            else:
+                blf.size(self.key_font, self.key_size, 72)
             blf.draw(self.key_font, self.key_text)
 
         return
@@ -328,8 +334,13 @@ class CUIWindowContainer:
                                                           font_size=self.tooltip_box.font_size)
                     label.set_text_alignment('LEFT')
 
+                if bpy.app.version[0] >= 4:
+                    blf.size(self.tooltip_box.font_id,
+                             self.tooltip_box.font_size)
+                else:
                     blf.size(self.tooltip_box.font_id,
                              self.tooltip_box.font_size, 72)
+
                     size_w = blf.dimensions(self.tooltip_box.font_id, line)
                     size_h = blf.dimensions(self.tooltip_box.font_id, 'T')
 
@@ -883,7 +894,10 @@ class CUIWindowContainer:
         return
 
     def set_status_size(self, size):
-        blf.size(self.status_font, self.status_size, 72)
+        if bpy.app.version[0] >= 4:
+            blf.size(self.status_font, self.status_size)
+        else:
+            blf.size(self.status_font, self.status_size, 72)
         size = blf.dimensions(self.status_font, self.status_text)
 
         self.status_size = size * self.scale
@@ -900,7 +914,10 @@ class CUIWindowContainer:
         return
 
     def place_status_text(self):
-        blf.size(self.status_font, self.status_size, 72)
+        if bpy.app.version[0] >= 4:
+            blf.size(self.status_font, self.status_size)
+        else:
+            blf.size(self.status_font, self.status_size, 72)
         size = blf.dimensions(self.status_font, self.status_text)
 
         if 'T' in self.status_alignment:
@@ -938,7 +955,10 @@ class CUIWindowContainer:
         return
 
     def set_key_size(self, size):
-        blf.size(self.key_font, self.key_size, 72)
+        if bpy.app.version[0] >= 4:
+            blf.size(self.key_font, self.key_size)
+        else:
+            blf.size(self.key_font, self.key_size, 72)
         size = blf.dimensions(self.key_font, self.key_text)
 
         self.key_size = size * self.scale
@@ -955,7 +975,10 @@ class CUIWindowContainer:
         return
 
     def place_key_text(self):
-        blf.size(self.key_font, self.key_size, 72)
+        if bpy.app.version[0] >= 4:
+            blf.size(self.key_font, self.key_size)
+        else:
+            blf.size(self.key_font, self.key_size, 72)
         size = blf.dimensions(self.key_font, self.key_text)
 
         if 'T' in self.key_alignment:

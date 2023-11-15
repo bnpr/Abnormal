@@ -1,4 +1,3 @@
-import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
 from .cui_functions import *
@@ -126,19 +125,20 @@ class CUISpacedLines(CUIItemWidget):
         if self.visible:
             super().draw()
 
-            bgl.glEnable(bgl.GL_BLEND)
+            gpu.state.blend_set('ALPHA')
 
             self.shader.bind()
-            bgl.glLineWidth(self.line_thickness)
+            
+            gpu.state.line_width_set(self.line_thickness)
             self.shader.uniform_float("color", self.color_axis_lines_render)
             self.batch_lines.draw(self.shader)
 
             self.shader.bind()
-            bgl.glLineWidth(self.inbtwn_thickness)
+            gpu.state.line_width_set(self.inbtwn_thickness)
             self.shader.uniform_float("color", self.color_inbtwn_lines_render)
             self.batch_inbtwn_lines.draw(self.shader)
 
-            bgl.glDisable(bgl.GL_BLEND)
+            gpu.state.blend_set('NONE')
         return
 
     #
@@ -747,13 +747,10 @@ class CUIFrameGrid(CUIItem):
 
     def draw(self):
         # Get a currently in use scissor to reenable after the new scissor
-        cur_scissor = None
-        if bgl.glIsEnabled(bgl.GL_SCISSOR_TEST) == 1:
-            cur_scissor = bgl.Buffer(bgl.GL_INT, 4)
-            bgl.glGetIntegerv(bgl.GL_SCISSOR_BOX, cur_scissor)
+        cur_scissor = gpu.state.scissor_get()
 
-        bgl.glEnable(bgl.GL_SCISSOR_TEST)
-        bgl.glScissor(
+        gpu.state.scissor_test_set(True)
+        gpu.state.scissor_set(
             int(round(self.final_pos[0])),
             int(round(self.final_pos[1]-self.scale_height)),
             int(round(self.scale_width)),
@@ -768,12 +765,12 @@ class CUIFrameGrid(CUIItem):
 
         # Disable scissor as there is no previous scissor to continue with
         if cur_scissor is None:
-            bgl.glDisable(bgl.GL_SCISSOR_TEST)
+            gpu.state.scissor_test_set(False)
 
         # Reenable previous scissor
         else:
-            bgl.glEnable(bgl.GL_SCISSOR_TEST)
-            bgl.glScissor(
+            gpu.state.scissor_test_set(True)
+            gpu.state.scissor_set(
                 cur_scissor[0], cur_scissor[1], cur_scissor[2], cur_scissor[3])
         return
 
@@ -1315,7 +1312,11 @@ class CUIBaseSpline:
     # Basic spline class to be used for shape splines and fcurves
     #
     def __init__(self):
-        self.shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+        if bpy.app.version[0] >= 4:
+            shader_2d_str = 'UNIFORM_COLOR'
+        else:
+            shader_2d_str = '2D_UNIFORM_COLOR'
+        self.shader = gpu.shader.from_builtin(shader_2d_str)
 
         self.scale = 1.0
 
@@ -1440,14 +1441,14 @@ class CUIBaseSpline:
         return
 
     def draw(self):
-        bgl.glEnable(bgl.GL_BLEND)
+        gpu.state.blend_set('ALPHA')
 
-        bgl.glLineWidth(self.spline_thickness)
+        gpu.state.line_width_set(self.spline_thickness)
         self.shader.bind()
         self.shader.uniform_float("color", self.color_render)
         self.batch.draw(self.shader)
 
-        bgl.glLineWidth(self.handle_thickness)
+        gpu.state.line_width_set(self.handle_thickness)
         self.shader.bind()
         self.shader.uniform_float("color", self.color_handles_render)
         self.batch_handles.draw(self.shader)
@@ -1460,7 +1461,7 @@ class CUIBaseSpline:
         self.shader.uniform_float("color", self.color_pos_sel_render)
         self.batch_pos_sel.draw(self.shader)
 
-        bgl.glDisable(bgl.GL_BLEND)
+        gpu.state.blend_set('NONE')
 
         return
 
@@ -1722,11 +1723,11 @@ class CUIFcurveSpline(CUIBaseSpline):
         return
 
     def draw(self):
-        bgl.glEnable(bgl.GL_BLEND)
+        gpu.state.blend_set('ALPHA')
         self.shader.bind()
         self.shader.uniform_float("color", self.color_area_render)
         self.batch_area.draw(self.shader)
-        bgl.glDisable(bgl.GL_BLEND)
+        gpu.state.blend_set('NONE')
 
         super().draw()
 

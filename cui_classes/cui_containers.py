@@ -1,4 +1,3 @@
-import bgl
 from .cui_shapes import *
 from .cui_bezier_items import *
 from .cui_items import *
@@ -239,10 +238,7 @@ class CUIBoxContainer(CUIContainer):
             # Some test code is there for multi scissor boxes if I ever intend to try again
             if self.scrolling and (self.type == 'PANEL' or 'POPUP' in self.type):
                 # Get a currently in use scissor to reenable after the new scissor
-                cur_scissor = None
-                if bgl.glIsEnabled(bgl.GL_SCISSOR_TEST) == 1:
-                    cur_scissor = bgl.Buffer(bgl.GL_INT, 4)
-                    bgl.glGetIntegerv(bgl.GL_SCISSOR_BOX, cur_scissor)
+                cur_scissor = gpu.state.scissor_get()
 
                 # clip_pos = pos.copy()
                 # clip_pos[0] += self.horizontal_margin
@@ -252,11 +248,10 @@ class CUIBoxContainer(CUIContainer):
                 # if pos[1]+self.scroll_offset > position[1]:
                 #     offset = pos[1]+self.scroll_offset-position[1]
 
-                bgl.glEnable(bgl.GL_SCISSOR_TEST)
-                bgl.glScissor(
+                gpu.state.scissor_test_set(True)
+                gpu.state.scissor_set(
                     int(round(self.final_pos[0]+self.horizontal_margin)),
-                    int(round(
-                        self.final_pos[1]-self.scale_height+self.vertical_margin)),
+                    int(round(self.final_pos[1]-self.scale_height+self.vertical_margin)),
                     int(round((self.scale_width-self.horizontal_margin*2))),
                     int(round((self.scale_height-self.vertical_margin*2-offset)))
                 )
@@ -268,12 +263,12 @@ class CUIBoxContainer(CUIContainer):
             if self.scrolling and (self.type == 'PANEL' or 'POPUP' in self.type):
                 # Disable scissor as there is no previous scissor to continue with
                 if cur_scissor is None:
-                    bgl.glDisable(bgl.GL_SCISSOR_TEST)
+                    gpu.state.scissor_test_set(False)
 
                 # Reenable previous scissor
                 else:
-                    bgl.glEnable(bgl.GL_SCISSOR_TEST)
-                    bgl.glScissor(
+                    gpu.state.scissor_test_set(True)
+                    gpu.state.scissor_set(
                         cur_scissor[0], cur_scissor[1], cur_scissor[2], cur_scissor[3])
 
         return

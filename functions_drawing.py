@@ -1,5 +1,5 @@
 import bpy
-import bgl
+import gpu
 import traceback
 from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
@@ -32,17 +32,16 @@ def draw_callback_3d(modal, context):
             clear_draw = True
 
         if context.area == modal._draw_area:
-
-            bgl.glEnable(bgl.GL_BLEND)
-            bgl.glEnable(bgl.GL_VERTEX_PROGRAM_POINT_SIZE)
+            gpu.state.blend_set('ALPHA')
+            gpu.state.program_point_size_set(True)
             if modal._x_ray_mode == False:
-                bgl.glEnable(bgl.GL_DEPTH_TEST)
+                gpu.state.depth_test_set("LESS_EQUAL")
 
             modal._container.draw()
 
             if len(modal.translate_draw_line) > 0:
-                bgl.glEnable(bgl.GL_DEPTH_TEST)
-                bgl.glLineWidth(2)
+                gpu.state.depth_test_set("LESS_EQUAL")
+                gpu.state.line_width_set(2)
                 modal.shader_3d.bind()
                 if modal.translate_axis == 0:
                     modal.shader_3d.uniform_float("color", (1.0, 0.0, 0.0, 1.0))
@@ -51,16 +50,16 @@ def draw_callback_3d(modal, context):
                 if modal.translate_axis == 2:
                     modal.shader_3d.uniform_float("color", (0.0, 0.0, 1.0, 1.0))
                 modal.batch_translate_line.draw(modal.shader_3d)
-                bgl.glDisable(bgl.GL_DEPTH_TEST)
+                gpu.state.depth_test_set("NONE")
 
             if modal._x_ray_mode == False:
-                bgl.glDisable(bgl.GL_DEPTH_TEST)
+                gpu.state.depth_test_set("NONE")
 
             if modal._use_gizmo:
                 modal._window.gizmo_draw()
 
-            bgl.glDisable(bgl.GL_BLEND)
-            bgl.glDisable(bgl.GL_VERTEX_PROGRAM_POINT_SIZE)
+            gpu.state.blend_set('NONE')
+            gpu.state.program_point_size_set(False)
 
     except Exception:
         print()
@@ -96,22 +95,22 @@ def draw_callback_2d(modal, context):
             clear_draw = True
 
         if context.area == modal._draw_area:
-            bgl.glLineWidth(2)
+            gpu.state.line_width_set(2)
             modal.shader_2d.bind()
             modal.shader_2d.uniform_float("color", (0.05, 0.05, 0.05, 1))
             modal.batch_rotate_screen_lines.draw(modal.shader_2d)
 
-            bgl.glLineWidth(1)
+            gpu.state.line_width_set(1)
             modal.shader_2d.bind()
             modal.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
             modal.batch_boxsel_screen_lines.draw(modal.shader_2d)
 
-            bgl.glLineWidth(1)
+            gpu.state.line_width_set(1)
             modal.shader_2d.bind()
             modal.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
             modal.batch_circlesel_screen_lines.draw(modal.shader_2d)
 
-            bgl.glLineWidth(1)
+            gpu.state.line_width_set(1)
             modal.shader_2d.bind()
             modal.shader_2d.uniform_float("color", (1.0, 1.0, 1.0, 1))
             modal.batch_lassosel_screen_lines.draw(modal.shader_2d)

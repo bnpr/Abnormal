@@ -1,4 +1,3 @@
-import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
 from .cui_functions import *
@@ -14,7 +13,11 @@ class CUIBaseWidgetData:
     # Creates base data used by all widgets
     #
     def __init__(self):
-        self.shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+        if bpy.app.version[0] >= 4:
+            shader_2d_str = 'UNIFORM_COLOR'
+        else:
+            shader_2d_str = '2D_UNIFORM_COLOR'
+        self.shader = gpu.shader.from_builtin(shader_2d_str)
 
         self.scale = 1.0
 
@@ -118,19 +121,19 @@ class CUIShapeWidget(CUIBaseWidgetData):
 
     def draw(self):
         if self.visible:
-            bgl.glEnable(bgl.GL_BLEND)
+            gpu.state.blend_set('ALPHA')
             self.shader.bind()
             self.shader.uniform_float("color", self.color_render)
             self.batch_box.draw(self.shader)
-            bgl.glDisable(bgl.GL_BLEND)
+            gpu.state.blend_set('NONE')
 
             if self.use_outline:
-                bgl.glEnable(bgl.GL_BLEND)
-                bgl.glLineWidth(self.scale_outline_thickness)
+                gpu.state.blend_set('ALPHA')
+                gpu.state.line_width_set(self.scale_outline_thickness)
                 self.shader.bind()
                 self.shader.uniform_float("color", self.color_outline_render)
                 self.batch_box_lines.draw(self.shader)
-                bgl.glDisable(bgl.GL_BLEND)
+                gpu.state.blend_set('NONE')
         return
 
     #
@@ -276,7 +279,7 @@ class CUIRectWidget(CUIBaseWidgetData):
     def draw(self, color_override=None):
         if self.visible:
             if self.draw_box:
-                bgl.glEnable(bgl.GL_BLEND)
+                gpu.state.blend_set('ALPHA')
                 self.shader.bind()
 
                 if color_override:
@@ -289,15 +292,15 @@ class CUIRectWidget(CUIBaseWidgetData):
                         self.shader.uniform_float("color", self.color_render)
 
                 self.batch_box.draw(self.shader)
-                bgl.glDisable(bgl.GL_BLEND)
+                gpu.state.blend_set('NONE')
 
             if self.use_outline:
-                bgl.glEnable(bgl.GL_BLEND)
-                bgl.glLineWidth(self.scale_outline_thickness)
+                gpu.state.blend_set('ALPHA')
+                gpu.state.line_width_set(self.scale_outline_thickness)
                 self.shader.bind()
                 self.shader.uniform_float("color", self.color_outline_render)
                 self.batch_box_lines.draw(self.shader)
-                bgl.glDisable(bgl.GL_BLEND)
+                gpu.state.blend_set('NONE')
         return
 
     #
@@ -485,7 +488,7 @@ class CUIPolyWidget(CUIBaseWidgetData):
 
     def draw(self, color_override=None):
         if self.visible:
-            bgl.glEnable(bgl.GL_BLEND)
+            gpu.state.blend_set('ALPHA')
             self.shader.bind()
 
             if color_override:
@@ -494,7 +497,7 @@ class CUIPolyWidget(CUIBaseWidgetData):
                 self.shader.uniform_float("color", self.color_render)
 
             self.batch.draw(self.shader)
-            bgl.glDisable(bgl.GL_BLEND)
+            gpu.state.blend_set('NONE')
         return
 
     #

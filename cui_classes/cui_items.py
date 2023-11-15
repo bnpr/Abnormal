@@ -1,6 +1,5 @@
 import bpy
 import blf
-import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
 from .cui_functions import *
@@ -224,7 +223,11 @@ class CUIItemWidget(CUIRectWidget):
         self.text_auto_y = True
         self.text_margin = 2
 
-        self.shader_img = gpu.shader.from_builtin('2D_IMAGE')
+        if bpy.app.version[0] >= 4:
+            shader_img_str = 'IMAGE'
+        else:
+            shader_img_str = '2D_IMAGE'
+        self.shader_img = gpu.shader.from_builtin(shader_img_str)
 
         self.icon_pos = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
         self.icon_pos_offset = np.array([0.0, 0.0], dtype=np.float32)
@@ -275,8 +278,10 @@ class CUIItemWidget(CUIRectWidget):
             if self.text_render != '':
                 cur_size = scale_font_size(
                     self.text_render, self.font_size, self.font_id, self.scale)
-
-                blf.size(self.font_id, cur_size, 72)
+                if bpy.app.version[0] >= 4:
+                    blf.size(self.font_id, cur_size)
+                else:
+                    blf.size(self.font_id, cur_size, 72)
                 size_w = blf.dimensions(self.font_id, self.text_render)
                 size_h = blf.dimensions(self.font_id, 'T')
 
@@ -426,18 +431,20 @@ class CUIItemWidget(CUIRectWidget):
             if icon_img.gl_load():
                 raise Exception()
 
-            bgl.glEnable(bgl.GL_BLEND)
-            bgl.glActiveTexture(bgl.GL_TEXTURE0)
-            bgl.glBindTexture(bgl.GL_TEXTURE_2D, icon_img.bindcode)
+            gpu.state.blend_set('ALPHA')
+            texture = gpu.texture.from_image(icon_img)
             self.shader_img.bind()
-            self.shader_img.uniform_int("image", 0)
+            self.shader_img.uniform_sampler("image", texture)
             self.batch_icon.draw(self.shader_img)
-            bgl.glDisable(bgl.GL_BLEND)
+            gpu.state.blend_set('NONE')
         return
 
     def text_draw(self):
         if self.visible and self.text_render != '':
-            blf.size(self.font_id, self.scale_font_size, 72)
+            if bpy.app.version[0] >= 4:
+                blf.size(self.font_id, self.scale_font_size)
+            else:
+                blf.size(self.font_id, self.scale_font_size, 72)
             blf.position(self.font_id, self.text_pos[0], self.text_pos[1], 0)
             blf.color(
                 self.font_id, self.color_font_render[0], self.color_font_render[1], self.color_font_render[2], self.color_font_render[3])
@@ -600,12 +607,12 @@ class CUICheckWidget(CUIItemWidget):
 
         if self.bool_val and self.draw_check:
 
-            bgl.glEnable(bgl.GL_BLEND)
-            bgl.glLineWidth(self.bool_thickness)
+            gpu.state.blend_set('ALPHA')
+            gpu.state.line_width_set(self.bool_thickness)
             self.shader.bind()
             self.shader.uniform_float("color", self.color_check_render)
             self.batch_check.draw(self.shader)
-            bgl.glDisable(bgl.GL_BLEND)
+            gpu.state.blend_set('NONE')
 
         return
 
@@ -1734,11 +1741,9 @@ class CUIGizmo3DContainer:
 
     def draw(self):
         if self.visible:
-            # bgl.glDepthRange(0, 0.01)
             for i in range(len(self.gizmos)):
                 if self.gizmos[i*-1-1].active:
                     self.gizmos[i*-1-1].draw()
-            # bgl.glDepthRange(0, 1.0)
         return
 
     def create_shape_data(self, matrix):
@@ -1839,7 +1844,11 @@ class CUIGizmo3DContainer:
 
 class CUIGizmo:
     def __init__(self, size, scale, axis, giz_type, color):
-        self.shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        if bpy.app.version[0] >= 4:
+            shader_3d_str = 'UNIFORM_COLOR'
+        else:
+            shader_3d_str = '3D_UNIFORM_COLOR'
+        self.shader = gpu.shader.from_builtin(shader_3d_str)
 
         self.axis = axis
         self.type = giz_type
@@ -1863,7 +1872,6 @@ class CUIGizmo:
 
     def draw(self):
         if self.active:
-            # bgl.glDepthRange(0, 0.01)
 
             self.shader.bind()
             if self.hover and self.in_use == False:
@@ -1871,8 +1879,6 @@ class CUIGizmo:
             else:
                 self.shader.uniform_float("color", self.color)
             self.batch.draw(self.shader)
-
-            # bgl.glDepthRange(0, 1.0)
 
         return
 
@@ -1961,7 +1967,6 @@ class CUIRotateGizmo(CUIGizmo):
 
     def draw(self):
         if self.active:
-            # bgl.glDepthRange(0, 0.01)
 
             if self.in_use:
                 self.shader.bind()
@@ -1979,8 +1984,6 @@ class CUIRotateGizmo(CUIGizmo):
             else:
                 self.shader.uniform_float("color", self.color)
             self.batch.draw(self.shader)
-
-            # bgl.glDepthRange(0, 1.0)
 
         return
 
