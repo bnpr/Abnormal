@@ -18,7 +18,8 @@ class ABN_OT_store_norms_in_vcol(Operator):
             0]].preferences
 
         if addon_prefs.vcol is not None and addon_prefs.vcol in aobj.data.vertex_colors:
-            aobj.data.calc_normals_split()
+            if bpy.app.version[0] <= 4 and bpy.app.version[1] < 1:
+                aobj.data.calc_normals_split()
 
             loop_amnt = len(aobj.data.loops)
 
@@ -52,7 +53,8 @@ class ABN_OT_convert_vcol_to_norms(Operator):
             0]].preferences
 
         if addon_prefs.vcol is not None and addon_prefs.vcol in aobj.data.vertex_colors:
-            aobj.data.calc_normals_split()
+            if bpy.app.version[0] <= 4 and bpy.app.version[1] < 1:
+                aobj.data.calc_normals_split()
 
             loop_amnt = len(aobj.data.loops)
 
@@ -92,8 +94,9 @@ class ABN_OT_store_norms_in_attr(Operator):
         if aobj.data.attributes[addon_prefs.attribute].data_type != 'FLOAT_VECTOR':
             self.report({"ERROR"}, "Set attribute is not a vector type!")
             return {"CANCELLED"}
-    
-        aobj.data.calc_normals_split()
+
+        if bpy.app.version[0] <= 4 and bpy.app.version[1] < 1:
+            aobj.data.calc_normals_split()
 
         loop_amnt = len(aobj.data.loops)
 
@@ -133,7 +136,8 @@ class ABN_OT_convert_attr_to_norms(Operator):
             self.report({"ERROR"}, "Set attribute is not a vector type!")
             return {"CANCELLED"}
 
-        aobj.data.calc_normals_split()
+        if bpy.app.version[0] <= 4 and bpy.app.version[1] < 1:
+            aobj.data.calc_normals_split()
 
         # loop_amnt = len(aobj.data.loops)
 

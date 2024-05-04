@@ -534,8 +534,11 @@ def translate_axis_side(modal):
 #
 # MODAL
 #
+
+
 def cache_point_data(modal):
-    modal._object.data.calc_normals_split()
+    if bpy.app.version[0] <= 4 and bpy.app.version[1] < 1:
+        modal._object.data.calc_normals_split()
 
     vert_amnt = len(modal._object.data.vertices)
     edge_amnt = len(modal._object.data.edges)
