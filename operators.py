@@ -85,7 +85,7 @@ class ABN_OT_store_norms_in_attr(Operator):
         addon_prefs = bpy.context.preferences.addons[__package__.split('.')[
             0]].preferences
 
-        if addon_prefs.attribute is None or addon_prefs.attribute not in aobj.data.attributes or aobj.data.attributes[addon_prefs.attribute].domain != 'CORNER' or aobj.data.attributes[addon_prefs.attribute].data_type != 'FLOAT_VECTOR':
+        if addon_prefs.attribute is None or addon_prefs.attribute not in aobj.data.attributes:
             self.report({"ERROR"}, "Set attribute does not exist!")
             return {"CANCELLED"}
         if aobj.data.attributes[addon_prefs.attribute].domain != 'CORNER':
@@ -126,7 +126,7 @@ class ABN_OT_convert_attr_to_norms(Operator):
         addon_prefs = bpy.context.preferences.addons[__package__.split('.')[
             0]].preferences
 
-        if addon_prefs.attribute is None or addon_prefs.attribute not in aobj.data.attributes or aobj.data.attributes[addon_prefs.attribute].domain != 'CORNER' or aobj.data.attributes[addon_prefs.attribute].data_type != 'FLOAT_VECTOR':
+        if addon_prefs.attribute is None or addon_prefs.attribute not in aobj.data.attributes:
             self.report({"ERROR"}, "Set attribute does not exist!")
             return {"CANCELLED"}
         if aobj.data.attributes[addon_prefs.attribute].domain != 'CORNER':
